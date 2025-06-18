@@ -31,4 +31,23 @@
 *.out
 *.app
 
+# build directories
+build/
+
+# Mac files
 .DS_Store
+
+# Data directories
+data*/
+
+# python compiled files
+*.pyc
+
+# python cach
+*.egg-info/
+
+# doxygen files
+docs/
+
+# figure files
+figs/
