@@ -29,9 +29,9 @@ make unit_test
 ./unit_test
 ```
 
-## `pyMISO`
+## python
 
-シミュレーションデータ読み込みのためのpythonライブラリ。以下でインストール
+シミュレーションデータ読み込みのためのpythonライブラリ`pyMISO`。以下でインストール
 ```shell
 pip install .
 ```
@@ -42,3 +42,13 @@ import pyMISO
 data_dir = './data' # data directoryを指定
 d = pyMISO.Data(data_dir) # pyMISO.Dataオブジェクト生成
 ```
+## ドキュメント生成
+
+Doxygenを利用
+
+```shell
+mkdir -p docs/doxygen
+doxygen Doxyfile
+```
+
+`docs/doxygen/html/index.html`にHTMLが生成される。
