@@ -2,7 +2,7 @@ get_filename_component(PROBLEM_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 add_executable(${PROBLEM_NAME} main.cu)
 set_target_properties(${PROBLEM_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-target_link_libraries(${PROBLEM_NAME} rmhdlablib)
+target_link_libraries(${PROBLEM_NAME} MISOlib)
 
 target_compile_definitions(${PROBLEM_NAME} PRIVATE CONFIG_DIR="${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/")
 

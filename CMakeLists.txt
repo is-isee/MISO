@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.10)
-project(rmhdlab)
+cmake_minimum_required(VERSION 3.6)
+project(MISO)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -22,16 +22,25 @@ endif()
 
 # --- external libraries ---
 find_package(yaml-cpp REQUIRED)
+
+if(APPLE)
+  set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/opt/homebrew/include")
+  set(OpenMP_C_LIB_NAMES "omp")
+  set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/opt/homebrew/include")
+  set(OpenMP_CXX_LIB_NAMES "omp")
+  set(OpenMP_omp_LIBRARY /opt/homebrew/lib/libomp.dylib)
+endif()
+
 find_package(OpenMP REQUIRED)
 find_package(MPI REQUIRED)
 
 
 
 # --- shared library (src/*.cpp) ---
-add_library(rmhdlablib INTERFACE)
-target_include_directories(rmhdlablib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(MISOlib INTERFACE)
+target_include_directories(MISOlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(rmhdlablib
+target_link_libraries(MISOlib
     INTERFACE
     yaml-cpp
     OpenMP::OpenMP_CXX
@@ -39,7 +48,7 @@ target_link_libraries(rmhdlablib
 )
 
 add_custom_target(full_build
-    DEPENDS rmhdlablib tests all_problems
+    DEPENDS MISOlib tests all_problems
 )
 
 # --- tests ---
