@@ -4,11 +4,21 @@
 CMakeを用いたコンパイル。`CMakeLists.txt`に設定あり。
 
 ### problems/XXX/
+#### CPU版
 ```shell
-cmake -B build -S . -DUSE_CUDA=OFF # GPU版の時は-DUSE_CUDA=OFF
+cmake -B build -S . -DUSE_CUDA=OFF # GPU版の時は-DUSE_CUDA=ON
 cd build
 make mhd_shock_tube_1d # problems/以下にある課題名を指定
 ./mhd_shock_tube_1d # makeのtargetと同じ名前の実行ファイルが生成される
+```
+
+#### GPU版
+NVIDIA HPC SDKが必要
+```shell
+cmake -B build -S . -DUSE_CUDA=OFF # GPU版の時は-DUSE_CUDA=ON
+cd build
+make mhd_shock_tube_1d # problems/以下にある課題名を指定
+mpirun -n 1   --bind-to none   --mca pml ob1   --mca btl tcp,self,vader   --mca coll ^hcoll   --mca osc ^ucx   ./mhd_vortex_2d  # makeのtargetと同じ名前の実行ファイルが生成される
 ```
 
 ### unit_test
