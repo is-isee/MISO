@@ -439,12 +439,12 @@ struct TimeIntegrator {
           time_d(model_.time_d)
           {
 
-            if (config.yaml_obj["boundary_condition"]["boundary_type"].as<std::string>() == "standard") {
+            if (config.yaml_obj["boundary_condition"]["boundary_type"].template as<std::string>() == "standard") {
                 bc = std::make_unique< StandardBoundaryCondition<Real, MHDCoreDevice<Real>, GridDevice<Real> > >(model);
-            } else if (config.yaml_obj["boundary_condition"]["boundary_type"].as<std::string>() == "custom") {
+            } else if (config.yaml_obj["boundary_condition"]["boundary_type"].template as<std::string>() == "custom") {
                 bc = std::make_unique<CustomBoundaryCondition<Real, MHDCoreDevice<Real>, GridDevice<Real> > >(model);
             }
-            cfl_number = config.yaml_obj["time_integrator"]["cfl_number"].as<Real>();
+            cfl_number = config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
           }
         
     
@@ -570,7 +570,7 @@ struct TimeIntegrator {
         // Time integration loop
         this->time.dt = 0.1;
 
-        if (this->config.yaml_obj["base"]["continue"].as<bool>() && fs::exists(this->config.time_save_dir+"n_output.txt")) {
+        if (this->config.yaml_obj["base"]["continue"].template as<bool>() && fs::exists(this->config.time_save_dir+"n_output.txt")) {
             model.load_state();
         } 
 

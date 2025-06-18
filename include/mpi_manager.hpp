@@ -31,10 +31,10 @@ struct MPIManager {
     }
 
     void init_parameters(const YAML::Node& yaml_obj) {
-        n_procs_digits = yaml_obj["mpi"]["n_procs_digits"].as<int>();
-        x_procs = yaml_obj["mpi"]["x_procs"].as<int>();
-        y_procs = yaml_obj["mpi"]["y_procs"].as<int>();
-        z_procs = yaml_obj["mpi"]["z_procs"].as<int>();
+        n_procs_digits = yaml_obj["mpi"]["n_procs_digits"].template as<int>();
+        x_procs = yaml_obj["mpi"]["x_procs"].template as<int>();
+        y_procs = yaml_obj["mpi"]["y_procs"].template as<int>();
+        z_procs = yaml_obj["mpi"]["z_procs"].template as<int>();
         if (x_procs*y_procs*z_procs != n_procs) {
             if (myrank == 0) {
                 std::cerr << "####################################################" << std::endl;
@@ -54,9 +54,9 @@ struct MPIManager {
             periods[1] = 0;
             periods[2] = 0;
         } else {
-            periods[0] = yaml_obj["boundary_condition"]["periodic"]["x"].as<bool>() ? 1 : 0;
-            periods[1] = yaml_obj["boundary_condition"]["periodic"]["y"].as<bool>() ? 1 : 0;
-            periods[2] = yaml_obj["boundary_condition"]["periodic"]["z"].as<bool>() ? 1 : 0;
+            periods[0] = yaml_obj["boundary_condition"]["periodic"]["x"].template as<bool>() ? 1 : 0;
+            periods[1] = yaml_obj["boundary_condition"]["periodic"]["y"].template as<bool>() ? 1 : 0;
+            periods[2] = yaml_obj["boundary_condition"]["periodic"]["z"].template as<bool>() ? 1 : 0;
         }
 
         MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &cart_comm);

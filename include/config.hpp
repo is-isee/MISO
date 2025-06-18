@@ -66,10 +66,10 @@ struct Config {
             fs::path config_path = fs::absolute(load_filepath);
             fs::path config_dir  = config_path.parent_path();
 
-            save_dir = (config_dir / yaml_obj["base"]["save_dir"].as<std::string>()).string();
-            time_save_dir = save_dir + yaml_obj["time"]["time_save_dir"].as<std::string>();
-            mhd_save_dir  = save_dir + yaml_obj["mhd"]["mhd_save_dir"].as<std::string>();
-            mpi_save_dir  = save_dir + yaml_obj["mpi"]["mpi_save_dir"].as<std::string>();
+            save_dir = (config_dir / yaml_obj["base"]["save_dir"].template as<std::string>()).string();
+            time_save_dir = save_dir + yaml_obj["time"]["time_save_dir"].template as<std::string>();
+            mhd_save_dir  = save_dir + yaml_obj["mhd"]["mhd_save_dir"].template as<std::string>();
+            mpi_save_dir  = save_dir + yaml_obj["mpi"]["mpi_save_dir"].template as<std::string>();
         }
 
     void create_save_directory_core(const std::string& directory) const {

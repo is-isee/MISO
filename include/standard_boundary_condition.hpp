@@ -52,7 +52,7 @@ struct StandardBoundaryCondition : public BoundaryConditionBase<Real, MHDCoreTyp
         //   - `array` : a reference to the corresponding Array3D<Real> object
         for (const auto& [name, array] : variables) {
             for (const auto& direction : directions) {
-                bool is_periodic = periodic_flags[bnd::direction_to_string(direction)].as<bool>();
+                bool is_periodic = periodic_flags[bnd::direction_to_string(direction)].template as<bool>();
                 std::vector<std::string> conditions;
                 if (is_periodic) {
                     conditions = {"periodic", "periodic"};
