@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pyrmhdlab
+import pyMISO
 
 data_dir = '../problems/hd_kh_2d/data/'
-d = pyrmhdlab.Data(data_dir)
+d = pyMISO.Data(data_dir)
 
 plt.close('all')
 fig = plt.figure(figsize=(10, 10))

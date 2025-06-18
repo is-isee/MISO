@@ -4,25 +4,26 @@
 #include "model.hpp"
 #include "config.hpp"
 #include "grid_cpu.hpp"
+#include "types.hpp"
 
 
 TEST_CASE("Test Model constructor and accessors") {
     // Test the Model constructor and accessors
     
     // assuming current path is build/tests
-    MPIManager<double> mpi;
+    MPIManager<Real> mpi;
     std::string config_dir = CONFIG_DIR;
 
     Config config(config_dir + "config.yaml", mpi);
     mpi.setup_mpi(config.yaml_obj);
-    Time<double> time(config.yaml_obj);
-    Grid<double> grid_global(config.yaml_obj);
+    Time<Real> time(config.yaml_obj);
+    Grid<Real> grid_global(config.yaml_obj);
 
-    Grid<double> grid_local(grid_global, mpi);
-    EOS<double> eos = EOS<double>(config);
-    MHD<double> mhd = MHD<double>(grid_local);
+    Grid<Real> grid_local(grid_global, mpi);
+    EOS<Real> eos = EOS<Real>(config);
+    MHD<Real> mhd = MHD<Real>(grid_local);
 
-    Model<double> model(config, time, grid_global, grid_local, eos, mhd, mpi);
+    Model<Real> model(config, time, grid_global, grid_local, eos, mhd, mpi);
 
     // Check dimensions
     REQUIRE(model.grid_global.i_size == grid_global.i_size);

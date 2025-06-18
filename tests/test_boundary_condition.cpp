@@ -3,6 +3,7 @@
 #include <memory>
 #include "array3d_cpu.hpp"
 #include "grid_cpu.hpp"
+#include "boundary_condition_core.hpp"
 #ifdef USE_CUDA
 #include "boundary_condition_core_gpu.cuh"
 #else
@@ -19,10 +20,10 @@ TEST_CASE("Test BoundaryCondition class") {
 
     Grid<Real> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax, zmin, zmax);
 
-    // Test the bnd_range function
+    // Test the range_set function
     int i0_, i1_, j0_, j1_, k0_, k1_;
     
-    bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, "x", grid);
+    bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, bnd::Direction::X, grid);
     REQUIRE(i0_ == 0);
     REQUIRE(i1_ == grid.i_margin);
     REQUIRE(j0_ == 0);
@@ -30,7 +31,7 @@ TEST_CASE("Test BoundaryCondition class") {
     REQUIRE(k0_ == 0);
     REQUIRE(k1_ == grid.k_total);
 
-    bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, "y", grid);
+    bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, bnd::Direction::Y, grid);
     REQUIRE(i0_ == 0);
     REQUIRE(i1_ == grid.i_total);
     REQUIRE(j0_ == 0);
@@ -38,7 +39,7 @@ TEST_CASE("Test BoundaryCondition class") {
     REQUIRE(k0_ == 0);
     REQUIRE(k1_ == grid.k_total);
 
-    bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, "z", grid);
+    bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, bnd::Direction::Z, grid);
     REQUIRE(i0_ == 0);
     REQUIRE(i1_ == grid.i_total);
     REQUIRE(j0_ == 0);
@@ -67,7 +68,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, "x", "inner");
+    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, bnd::Direction::X, bnd::Side::INNER);
     for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(0, j, k) == arr(3, j, k));
@@ -75,7 +76,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, "x", "inner");
+    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, bnd::Direction::X, bnd::Side::INNER);
     for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(0, j, k) == -arr(3, j, k));
@@ -83,7 +84,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, "x", "outer");
+    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, bnd::Direction::X, bnd::Side::OUTER);
     for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(grid.i_total - 1, j, k) == arr(grid.i_total-4, j, k));
@@ -91,7 +92,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, "x", "outer");
+    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, bnd::Direction::X, bnd::Side::OUTER);
     for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(grid.i_total - 1, j, k) == -arr(grid.i_total-4, j, k));
@@ -117,7 +118,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, "y", "inner");
+    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, bnd::Direction::Y, bnd::Side::INNER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(i, 0, k) == arr(i, 3, k));
@@ -125,7 +126,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, "y", "inner");
+    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, bnd::Direction::Y, bnd::Side::INNER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(i, 0, k) == -arr(i, 3, k));
@@ -133,7 +134,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, "y", "outer");
+    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, bnd::Direction::Y, bnd::Side::OUTER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(i, grid.j_total - 1, k) == arr(i, grid.j_total-4, k));
@@ -141,7 +142,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, "y", "outer");
+    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, bnd::Direction::Y, bnd::Side::OUTER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int k = 0; k < grid.k_total; ++k) {
             REQUIRE(arr(i, grid.j_total - 1, k) == -arr(i, grid.j_total - 4, k));
@@ -167,7 +168,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, "z", "inner");
+    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, bnd::Direction::Z, bnd::Side::INNER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
             REQUIRE(arr(i, j, 0) == arr(i, j, 3));
@@ -175,7 +176,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, "z", "inner");
+    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, bnd::Direction::Z, bnd::Side::INNER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
             REQUIRE(arr(i, j, 0) == -arr(i, j, 3));
@@ -183,7 +184,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, "z", "outer");
+    bnd::symmetric<Real>(arr, grid, nullptr, 1.0, bnd::Direction::Z, bnd::Side::OUTER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
             REQUIRE(arr(i, j, grid.k_total - 1) == arr(i, j, grid.k_total-4));
@@ -191,7 +192,7 @@ TEST_CASE("Test BoundaryCondition class") {
         }
     }
 
-    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, "z", "outer");
+    bnd::symmetric<Real>(arr, grid, nullptr, -1.0, bnd::Direction::Z, bnd::Side::OUTER);
     for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
 
@@ -206,21 +207,20 @@ TEST_CASE("Test BoundaryCondition class") {
     int i_ghst, i_trgt;
 
     i = 0;
-    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, "inner");
+    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, bnd::Side::INNER);
     REQUIRE(i_ghst == 0);
     REQUIRE(i_trgt == 3);
 
-    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, "outer");
+    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, bnd::Side::OUTER);
     REQUIRE(i_ghst == 8);
     REQUIRE(i_trgt == 7);
 
     i = 1;
-    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, "inner");
+    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, bnd::Side::INNER);
     REQUIRE(i_ghst == 1);
     REQUIRE(i_trgt == 2);
 
-    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, "outer");
+    bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, bnd::Side::OUTER);
     REQUIRE(i_ghst == 9);
     REQUIRE(i_trgt == 6);
-
 }

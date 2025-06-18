@@ -1,17 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pyrmhdlab
+import pyMISO
 
 data_dir = '../problems/hd_shock_tube_1d/data_x/'
-dx = pyrmhdlab.Data(data_dir)
+dx = pyMISO.Data(data_dir)
 dx.load(dx.n_output)
 
 data_dir = '../problems/hd_shock_tube_1d/data_y/'
-dy = pyrmhdlab.Data(data_dir)
+dy = pyMISO.Data(data_dir)
 dy.load(dy.n_output)
 
 data_dir = '../problems/hd_shock_tube_1d/data_z/'
-dz = pyrmhdlab.Data(data_dir)
+dz = pyMISO.Data(data_dir)
 dz.load(dz.n_output)
 
 print('### x-y mean difference in density ###')

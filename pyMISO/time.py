@@ -1,11 +1,11 @@
 import numpy as np
 import struct
-import pyrmhdlab
+import pyMISO
 
 class Time:
     def __init__(self, conf):
         """
-        Initialize the pyrmhdlab.Time class instance
+        Initialize the pyMISO.Time class instance
         
         Parameters
         ----------
