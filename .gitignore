@@ -51,3 +51,7 @@ docs/doxygen
 
 # figure files
 figs/
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
