@@ -55,3 +55,6 @@ figs/
 # CMake files
 CMakeFiles/
 CMakeCache.txt
+
+# python version file
+pyMISO/_version.py

@@ -47,6 +47,7 @@ d = pyMISO.Data(data_dir) # pyMISO.Dataオブジェクト生成
 Doxygenを利用
 
 ```shell
+git submodule update --init --recursive
 mkdir -p docs/doxygen
 doxygen Doxyfile
 ```
