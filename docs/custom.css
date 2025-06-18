@@ -1,0 +1,30 @@
+:root {
+  /* 背景と文字色 */
+  --primary-background-color: #f8f9fa;
+  --primary-text-color: #2e3b4e;
+
+  /* リンクや強調色 */
+  --link-color: #0077cc;
+  --link-color-hover: #005fa3;
+
+  /* ナビゲーションメニューの背景 */
+  --nav-background-color: #e9ecef;
+  --nav-hover-color: #d0d7de;
+  --nav-active-color: #c2cad4;
+
+  /* フォントや罫線 */
+  --font-family: 'Helvetica Neue', sans-serif;
+  --border-color: #ccc;
+
+  /* セクションの背景やカード風の見た目 */
+  --section-background-color: #ffffff;
+  --section-border-radius: 6px;
+  --section-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  background-color: #f0f8ff !important;  /* 明るいブルー */
+  color: #222222 !important;             /* 濃いグレー文字 */
+  font-family: 'Helvetica Neue', sans-serif !important;
+  font-size: 16px !important;
+}
