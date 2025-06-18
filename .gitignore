@@ -47,7 +47,7 @@ data*/
 *.egg-info/
 
 # doxygen files
-docs/
+docs/doxygen
 
 # figure files
 figs/
