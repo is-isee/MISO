@@ -6,5 +6,5 @@ struct EOS {
     Real gm;
 
     EOS(const Config& config) : 
-        gm(config.yaml_obj["eos"]["gm"].as<Real>()) {}
+        gm(config.yaml_obj["eos"]["gm"].template as<Real>()) {}
 };

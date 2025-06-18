@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.10)
 project(MISO)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -24,11 +24,18 @@ endif()
 find_package(yaml-cpp REQUIRED)
 
 if(APPLE)
+  # Homebrew/OpenMP setting
   set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/opt/homebrew/include")
   set(OpenMP_C_LIB_NAMES "omp")
   set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/opt/homebrew/include")
   set(OpenMP_CXX_LIB_NAMES "omp")
   set(OpenMP_omp_LIBRARY /opt/homebrew/lib/libomp.dylib)
+
+  # link directories and rpath are explicitly defined
+  link_directories(/opt/homebrew/lib)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  set(CMAKE_INSTALL_RPATH "/opt/homebrew/lib")
 endif()
 
 find_package(OpenMP REQUIRED)

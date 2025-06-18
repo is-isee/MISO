@@ -91,16 +91,16 @@ struct Grid {
 
     // global settings
     Grid(const YAML::Node& yaml_obj) :
-        i_size(yaml_obj["grid"]["i_size"].as<int>()),
-        j_size(yaml_obj["grid"]["j_size"].as<int>()),
-        k_size(yaml_obj["grid"]["k_size"].as<int>()),
-        margin(yaml_obj["grid"]["margin"].as<int>()),
-        xmin(yaml_obj["grid"]["xmin"].as<Real>()),
-        xmax(yaml_obj["grid"]["xmax"].as<Real>()),
-        ymin(yaml_obj["grid"]["ymin"].as<Real>()),
-        ymax(yaml_obj["grid"]["ymax"].as<Real>()),
-        zmin(yaml_obj["grid"]["zmin"].as<Real>()),
-        zmax(yaml_obj["grid"]["zmax"].as<Real>()) {
+        i_size(yaml_obj["grid"]["i_size"].template as<int>()),
+        j_size(yaml_obj["grid"]["j_size"].template as<int>()),
+        k_size(yaml_obj["grid"]["k_size"].template as<int>()),
+        margin(yaml_obj["grid"]["margin"].template as<int>()),
+        xmin(yaml_obj["grid"]["xmin"].template as<Real>()),
+        xmax(yaml_obj["grid"]["xmax"].template as<Real>()),
+        ymin(yaml_obj["grid"]["ymin"].template as<Real>()),
+        ymax(yaml_obj["grid"]["ymax"].template as<Real>()),
+        zmin(yaml_obj["grid"]["zmin"].template as<Real>()),
+        zmax(yaml_obj["grid"]["zmax"].template as<Real>()) {
             global_initialize();
         }
 

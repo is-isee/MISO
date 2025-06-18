@@ -28,11 +28,11 @@ struct ArtificialViscosity {
           eos(model.eos),
           mhd(model.mhd),
           cc(grid.i_total, grid.j_total, grid.k_total) {
-        this->ep = config.yaml_obj["artificial_viscosity"]["ep"].as<Real>();
-        this->fh = config.yaml_obj["artificial_viscosity"]["fh"].as<Real>();
-        this->cs_fac = config.yaml_obj["artificial_viscosity"]["cs_fac"].as<Real>();
-        this->ca_fac = config.yaml_obj["artificial_viscosity"]["ca_fac"].as<Real>();
-        this->vv_fac = config.yaml_obj["artificial_viscosity"]["vv_fac"].as<Real>();
+        this->ep = config.yaml_obj["artificial_viscosity"]["ep"].template as<Real>();
+        this->fh = config.yaml_obj["artificial_viscosity"]["fh"].template as<Real>();
+        this->cs_fac = config.yaml_obj["artificial_viscosity"]["cs_fac"].template as<Real>();
+        this->ca_fac = config.yaml_obj["artificial_viscosity"]["ca_fac"].template as<Real>();
+        this->vv_fac = config.yaml_obj["artificial_viscosity"]["vv_fac"].template as<Real>();
         assert(ep >= 0);
         assert(fh >= 0);
     }

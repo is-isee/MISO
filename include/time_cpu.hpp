@@ -21,9 +21,9 @@ struct Time{
     }
 
     Time(const YAML::Node& yaml_obj) 
-        :tend(yaml_obj["time"]["tend"].as<Real>()),
-         dt_output(yaml_obj["time"]["dt_output"].as<Real>()),
-         n_output_digits(yaml_obj["time"]["n_output_digits"].as<int>()) {
+        :tend(yaml_obj["time"]["tend"].template as<Real>()),
+         dt_output(yaml_obj["time"]["dt_output"].template as<Real>()),
+         n_output_digits(yaml_obj["time"]["n_output_digits"].template as<int>()) {
         assert(tend > 0);
         assert(dt_output > 0);
 
