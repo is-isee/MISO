@@ -1,5 +1,5 @@
 """
-Package for dealing with rmhdlab data.
+Package for dealing with MISO data.
 """
 
 from .conf import Conf
