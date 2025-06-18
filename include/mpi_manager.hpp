@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <mpi.h>
 #include <cstdlib>
 #include <yaml-cpp/yaml.h>
