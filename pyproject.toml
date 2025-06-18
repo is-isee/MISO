@@ -5,4 +5,4 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
 local_scheme = "dirty-tag"
-write_to = 'pyrmhdlab/_version.py'
+write_to = 'pyMISO/_version.py'

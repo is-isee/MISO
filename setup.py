@@ -1,6 +1,6 @@
 from setuptools import setup
 
 setup(
-    name='pyrmhdlab',
-    packages=['pyrmhdlab'],
+    name='pyMISO',
+    packages=['pyMISO'],
 )

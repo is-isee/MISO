@@ -2,12 +2,12 @@ import numpy as np
 class Grid:    
     def __init__(self, conf):
         """
-        Initialize the pyrmhdlab.Grid class instance
+        Initialize the pyMISO.Grid class instance
         
         Parameters
         ----------
-        conf : pyrmhdlab.Conf
-            Instance of pyrmhdlab.Conf class
+        conf : pyMISO.Conf
+            Instance of pyMISO.Conf class
         """
         
         self.load(conf)

@@ -1,10 +1,10 @@
 import numpy as np
-import pyrmhdlab
+import pyMISO
 
 class Data:
     def __init__(self, data_dir):
         """
-        Initialize the pyrmhdlab.Data class instance
+        Initialize the pyMISO.Data class instance
         
         Parameters
         ----------
@@ -12,10 +12,10 @@ class Data:
             The directory where the config.nml file is located
         """
                 
-        self.conf = pyrmhdlab.Conf(data_dir)
-        self.mpi  = pyrmhdlab.MPI(self.conf)
-        self.grid = pyrmhdlab.Grid(self.conf)
-        self.time = pyrmhdlab.Time(self.conf)
+        self.conf = pyMISO.Conf(data_dir)
+        self.mpi  = pyMISO.MPI(self.conf)
+        self.grid = pyMISO.Grid(self.conf)
+        self.time = pyMISO.Time(self.conf)
             
     def load(self, n_output):
         """
@@ -83,7 +83,7 @@ class Data:
             
     def __getattr__(self, name):
         '''
-        When an attribute is not found in pyrmhdlab.Data, it is searched in pyrmhdlab.MHD.conf and pyrmhdlab.MHD.grid
+        When an attribute is not found in pyMISO.Data, it is searched in pyMISO.MHD.conf and pyMISO.MHD.grid
         '''
         for obj in [self.conf, self.grid, self.time]:
             if hasattr(obj, name):
