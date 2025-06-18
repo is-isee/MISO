@@ -1,0 +1,171 @@
+#pragma once
+#include <vector>
+#include <cassert>
+#include "config.hpp"
+
+template <typename Real>
+struct Grid {
+    int i_size, j_size, k_size;
+    int i_total, j_total, k_total;
+    int is, js, ks;
+    int margin;
+    int i_margin, j_margin, k_margin;
+    int i_stt, j_stt, k_stt;
+    Real xmin, xmax, ymin, ymax, zmin, zmax;
+    std::vector<Real> x, y, z, dx, dy, dz, dxi, dyi, dzi;
+    /// @brief global minimum value of dx, dy, dz
+    Real min_dxyz; 
+    
+    void global_initialize() {
+        assert(i_size > 0);
+        assert(j_size > 0);
+        assert(k_size > 0);
+        assert(margin >= 0);
+        assert(xmax > xmin);
+        assert(ymax > ymin);
+        assert(zmax > zmin);
+
+        is = i_size > 1 ? 1 : 0;
+        js = j_size > 1 ? 1 : 0;
+        ks = k_size > 1 ? 1 : 0;
+
+        i_margin = margin*is;
+        j_margin = margin*js;
+        k_margin = margin*ks;
+
+        i_total = i_size + 2*i_margin;
+        j_total = j_size + 2*j_margin;
+        k_total = k_size + 2*k_margin;
+
+        i_stt = 0;
+        j_stt = 0;
+        k_stt = 0;
+
+        auto set_coordinate = [](std::vector<Real>& x, std::vector<Real>& dx, std::vector<Real>& dxi, int i_size, int i_total, int i_margin, Real xmin, Real xmax) {
+            x.resize(i_total);
+            dx.resize(i_total);
+            dxi.resize(i_total);
+
+            Real dx0 = (xmax - xmin) / i_size;
+            for (int i = 0; i < i_total; ++i) {
+                // dx at i + 1/2
+                dx[i] = dx0;
+                dxi[i] = 1.0 / dx[i];
+                if (i_size == 1) {
+                    dx[i] = 1.e30;
+                    dxi[i] = 0.0;
+                }
+            }
+
+            x[i_margin] = xmin + 0.5*dx[i_margin];
+            for (int i = i_margin + 1; i < i_total; ++i) {
+                x[i] = x[i - 1] + dx[i - 1];
+            }
+            for (int i = i_margin - 1; i >= 0; --i) {
+                x[i] = x[i + 1] - dx[i];
+            }
+        };
+        set_coordinate(x, dx, dxi, i_size, i_total, i_margin, xmin, xmax);
+        set_coordinate(y, dy, dyi, j_size, j_total, j_margin, ymin, ymax);
+        set_coordinate(z, dz, dzi, k_size, k_total, k_margin, zmin, zmax);
+
+        Real min_dx = 1.e30, min_dy = 1.e30, min_dz = 1.e30;
+        /// TODO: additional communication is required for MPI version
+        for (int i = 0; i < i_total; ++i) {
+            min_dx = std::min<Real>(min_dx, dx[i]);
+        }
+        for (int j = 0; j < j_total; ++j) {
+            min_dy = std::min<Real>(min_dy, dy[j]);
+        }
+        for (int k = 0; k < k_total; ++k) {
+            min_dz = std::min<Real>(min_dz, dz[k]);
+        }
+        min_dxyz = std::min<Real>({min_dx, min_dy, min_dz});
+    }
+    // global settings    
+    Grid(int i_size_, int j_size_, int k_size_, int margin_, Real xmin_, Real xmax_, Real ymin_, Real ymax_, Real zmin_, Real zmax_) :
+        i_size(i_size_), j_size(j_size_), k_size(k_size_), margin(margin_),
+        xmin(xmin_), xmax(xmax_), ymin(ymin_), ymax(ymax_), zmin(zmin_), zmax(zmax_) {
+            global_initialize();
+        }
+
+    // global settings
+    Grid(const YAML::Node& yaml_obj) :
+        i_size(yaml_obj["grid"]["i_size"].as<int>()),
+        j_size(yaml_obj["grid"]["j_size"].as<int>()),
+        k_size(yaml_obj["grid"]["k_size"].as<int>()),
+        margin(yaml_obj["grid"]["margin"].as<int>()),
+        xmin(yaml_obj["grid"]["xmin"].as<Real>()),
+        xmax(yaml_obj["grid"]["xmax"].as<Real>()),
+        ymin(yaml_obj["grid"]["ymin"].as<Real>()),
+        ymax(yaml_obj["grid"]["ymax"].as<Real>()),
+        zmin(yaml_obj["grid"]["zmin"].as<Real>()),
+        zmax(yaml_obj["grid"]["zmax"].as<Real>()) {
+            global_initialize();
+        }
+
+    // local settings
+    Grid(const Grid<Real>& grid_global, const MPIManager<Real>& mpi){
+
+        i_size = grid_global.i_size/mpi.x_procs;
+        j_size = grid_global.j_size/mpi.y_procs;
+        k_size = grid_global.k_size/mpi.z_procs;
+
+        margin = grid_global.margin;
+
+        is = grid_global.is;
+        js = grid_global.js;
+        ks = grid_global.ks;
+
+        i_margin = grid_global.i_margin;
+        j_margin = grid_global.j_margin;
+        k_margin = grid_global.k_margin;
+
+        i_total = i_size + 2*i_margin;
+        j_total = j_size + 2*j_margin;
+        k_total = k_size + 2*k_margin;
+
+        i_stt = mpi.coord[0]*i_size;
+        j_stt = mpi.coord[1]*j_size;
+        k_stt = mpi.coord[2]*k_size;
+
+
+        x.resize(i_total); dx.resize(i_total); dxi.resize(i_total);
+        y.resize(j_total); dy.resize(j_total); dyi.resize(j_total);
+        z.resize(k_total); dz.resize(k_total); dzi.resize(k_total);
+
+        for (int i = 0; i < i_total; ++i) {
+            x[i] = grid_global.x[i_stt + i];
+            dx[i] = grid_global.dx[i_stt + i];
+            dxi[i] = grid_global.dxi[i_stt + i];
+        }
+
+        for (int j = 0; j < j_total; ++j) {
+            y[j] = grid_global.y[j_stt + j];
+            dy[j] = grid_global.dy[j_stt + j];
+            dyi[j] = grid_global.dyi[j_stt + j];
+        }
+
+        for (int k = 0; k < k_total; ++k) {
+            z[k] = grid_global.z[k_stt + k];
+            dz[k] = grid_global.dz[k_stt + k];
+            dzi[k] = grid_global.dzi[k_stt + k];
+        }
+        min_dxyz = grid_global.min_dxyz;
+
+    }   
+
+    void save(const Config& config) const {
+        if (config.mpi.myrank ==0) {
+            std::ofstream ofs_bin(config.save_dir + "/grid.bin", std::ios::binary);
+            assert(ofs_bin.is_open());
+
+            auto write_array = [&ofs_bin](const std::vector<Real>& x) {
+                ofs_bin.write(reinterpret_cast<const char*>(x.data()), sizeof(Real)*x.size());
+            };
+            write_array(x);
+            write_array(y);
+            write_array(z);
+        }
+    }
+};

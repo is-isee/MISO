@@ -1,0 +1,99 @@
+base:
+  save_dir: data_z/
+  continue: false
+
+time:
+  time_save_dir: time/
+  tend: 0.2
+  dt_output: 0.01
+  n_output_digits: 8
+
+grid:
+  i_size: 1
+  j_size: 1
+  k_size: 128
+  margin: 2
+  xmin: 0.0
+  xmax: 1.0
+  ymin: 0.0
+  ymax: 1.0
+  zmin: 0.0
+  zmax: 1.0
+
+mhd:
+  mhd_save_dir: mhd/
+
+eos:
+  gm: 1.4
+
+time_integrator:
+  cfl_number: 0.5
+
+mpi:
+  mpi_save_dir: mpi/
+  n_procs_digits: 8
+  x_procs: 1
+  y_procs: 1
+  z_procs: 1
+
+boundary_condition:
+  # please use "standard" or "custom" for boundary_type
+  boundary_type: standard
+
+  periodic:
+    x: false
+    y: false
+    z: false
+
+  ro:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  vx:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  vy:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  vz:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  bx:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  by:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  bz:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  ei:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+  ph:
+    x: [symmetric, symmetric]
+    y: [symmetric, symmetric]
+    z: [symmetric, symmetric]
+
+artificial_viscosity:
+  ep: 1.0
+  fh: 1.0
+  # for characteristic velocity
+  cs_fac: 0.5
+  ca_fac: 1.0
+  vv_fac: 1.0
