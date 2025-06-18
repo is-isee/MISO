@@ -7,7 +7,7 @@ else()
 endif()
 
 set_target_properties(${PROBLEM_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-target_link_libraries(${PROBLEM_NAME} rmhdlablib)
+target_link_libraries(${PROBLEM_NAME} MISOlib)
 
 target_compile_definitions(${PROBLEM_NAME} PRIVATE CONFIG_DIR="${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/")
 

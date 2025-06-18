@@ -4,7 +4,7 @@ include(FetchContent)
 FetchContent_Declare(
     doctest
     GIT_REPOSITORY https://github.com/doctest/doctest.git
-    GIT_TAG v2.4.11
+    GIT_TAG v2.4.12
 )
 FetchContent_MakeAvailable(doctest)
 
@@ -20,5 +20,5 @@ set_target_properties(unit_tests PROPERTIES
     )
 
 target_compile_definitions(unit_tests PRIVATE CONFIG_DIR="${CMAKE_SOURCE_DIR}/tests/")
-target_link_libraries(unit_tests PRIVATE rmhdlablib)
+target_link_libraries(unit_tests PRIVATE MISOlib)
 add_test(NAME run_doctest_tests COMMAND unit_tests)
