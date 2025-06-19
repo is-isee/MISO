@@ -1,30 +1,30 @@
-:root {
-  /* 背景と文字色 */
-  --primary-background-color: #f8f9fa;
-  --primary-text-color: #2e3b4e;
+/*
+ * Copyright (c) 2021 Nordic Semiconductor ASA
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-  /* リンクや強調色 */
-  --link-color: #0077cc;
-  --link-color-hover: #005fa3;
+/* This file contains color customizations that follow Zephyr's branding */
 
-  /* ナビゲーションメニューの背景 */
-  --nav-background-color: #e9ecef;
-  --nav-hover-color: #d0d7de;
-  --nav-active-color: #c2cad4;
+html {
+    --primary-color: #af7fe4;
+    --primary-dark-color: #7929d2;
+    --primary-light-color: #cb99f6;
+    --primary-lighter-color: #dfc8fa;
+    --primary-lightest-color: #efe4fc;
 
-  /* フォントや罫線 */
-  --font-family: 'Helvetica Neue', sans-serif;
-  --border-color: #ccc;
+    --side-nav-background: #482d5b;
+    --side-nav-foreground: #eac3ff;
 
-  /* セクションの背景やカード風の見た目 */
-  --section-background-color: #ffffff;
-  --section-border-radius: 6px;
-  --section-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --searchbar-background: var(--page-background-color);
+    --searchbar-foreground: var(--page-foreground-color);
+
+    --link-color: #2980b9;
+    --param-color: #b71c1c;
+
+    --side-nav-fixed-width: 300px;
+    --top-height: 220px;
 }
 
-body {
-  background-color: #f0f8ff !important;  /* 明るいブルー */
-  color: #222222 !important;             /* 濃いグレー文字 */
-  font-family: 'Helvetica Neue', sans-serif !important;
-  font-size: 16px !important;
+a:link, a:visited, a:hover, a:focus, a:active {
+    color: var(--link-color) !important;
 }
