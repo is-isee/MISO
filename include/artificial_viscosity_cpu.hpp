@@ -1,5 +1,6 @@
 #pragma once
 
+#ifndef USE_CUDA
 #include <algorithm>
 #include <initializer_list>
 #include <cassert>
@@ -280,3 +281,5 @@ struct ArtificialViscosity {
         }
     }    
 };
+
+#endif // USE_CUDA

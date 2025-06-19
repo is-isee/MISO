@@ -1,5 +1,6 @@
 #pragma once
 
+#ifdef USE_CUDA
 #include <string>
 #include "boundary_condition_core.hpp"
 
@@ -88,3 +89,5 @@ namespace bnd {
         CUDA_CHECK(cudaDeviceSynchronize());
     }
 };
+
+#endif // USE_CUDA
