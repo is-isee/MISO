@@ -12,8 +12,8 @@ time:
   n_output_digits: 8
 
 grid:
-  i_size: 1024
-  j_size: 1024
+  i_size: 3072
+  j_size: 3072
   k_size: 1
   margin: 2
   xmin: 0.0

@@ -1,4 +1,5 @@
 #pragma once
+#ifdef USE_CUDA
 #include <cuda_runtime.h>
 #include <cassert>
 
@@ -48,3 +49,5 @@ public:
     Array3DDevice(const Array3DDevice&) = default;
     Array3DDevice& operator=(const Array3DDevice&) = default;
 };
+
+#endif // USE_CUDA

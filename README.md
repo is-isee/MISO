@@ -49,7 +49,8 @@ Doxygenを利用
 ```shell
 git submodule update --init --recursive
 mkdir -p docs/doxygen
-doxygen Doxyfile
+doxygen Doxyfile_cpu # CPU版 -> docs/doxygen_cpuに生成
+doxygen Doxyfile_gpu # GPU版 -> docs/doxygen_gpuに生成
 ```
 
 `docs/doxygen/html/index.html`にHTMLが生成される。
