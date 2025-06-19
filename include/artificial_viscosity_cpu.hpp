@@ -9,6 +9,8 @@
 #include "constants.hpp"
 #include "artificial_viscosity_core.hpp"
 
+/// @brief Artificial viscosity class for mhd simulations
+/// @tparam T Type of the data (Real)
 template <typename Real>
 struct ArtificialViscosity {
     Config& config;
@@ -17,10 +19,18 @@ struct ArtificialViscosity {
     EOS<Real>& eos;
     MHD<Real>& mhd;
 
+    /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
     Array3D<Real> cc;
-    Real ep, fh;
-    Real cs_fac, ca_fac, vv_fac;
-
+    /// @brief Parameters for generalized minmod limiter
+    Real ep;
+    /// @brief Parameters for amplitude of artificial viscosity flux
+    Real fh;
+    /// @brief Characteristic velocity factor for sound speed
+    Real cs_fac;
+    /// @brief Characteristic velocity factor for Alfvén speed
+    Real ca_fac;
+    /// @brief Characteristic velocity factor for fluid velocity
+    Real vv_fac;
     ArtificialViscosity(Model<Real>& model)
         : config(model.config),
           time(model.time),

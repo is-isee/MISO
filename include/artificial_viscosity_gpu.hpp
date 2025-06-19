@@ -6,6 +6,7 @@
 #include <string>
 
 #include "model.hpp"
+#include "grid_gpu.cuh"
 #include "constants.hpp"
 #include "artificial_viscosity_core.hpp"
 
