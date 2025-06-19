@@ -8,11 +8,11 @@
 
 #include "utility.hpp"
 
-
+/// @brief Namespace for artificial viscosity calculations
 namespace artificial_viscosity {
+    ///@brief inline functions for generalized minmod limiter
     template<typename Real>
     HOST_DEVICE inline Real dqq_eval(Real qq_dw, Real qq_cn, Real qq_up, Real ep) {
-        // generalized minmod limiter
         Real dqq_dw =  qq_cn - qq_dw;
         Real dqq_up =  qq_up - qq_cn;
         Real dqq_cn = (qq_up - qq_dw)*0.5;
@@ -23,6 +23,7 @@ namespace artificial_viscosity {
         return util::min2(Real(0.0), dqq_max) + util::max2(Real(0.0), dqq_min);
     }
 
+    ///@brief inline function for flux core calculation
     template<typename Real>
     HOST_DEVICE inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw, Real dqq_up, Real cc, Real fh){
         Real qql = qq_dw + 0.5*dqq_dw;
