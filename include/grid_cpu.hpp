@@ -3,16 +3,72 @@
 #include <cassert>
 #include "config.hpp"
 
+/// @brief  Grid class for CPU version
+/// @tparam Real 
 template <typename Real>
 struct Grid {
-    int i_size, j_size, k_size;
-    int i_total, j_total, k_total;
-    int is, js, ks;
+    /// @brief  grid number in x direction without margin
+    int i_size;
+    /// @brief  grid number in y direction without margin
+    int j_size;
+    /// @brief  grid number in z direction without margin
+    int k_size;
+    /// @brief  grid number in x direction with margin
+    int i_total;
+    /// @brief  grid number in y direction with margin
+    int j_total;
+    /// @brief  grid number in z direction with margin
+    int k_total;
+    /// @brief  `is = 1` if `i_size > 1`, otherwise `0`
+    int is;
+    /// @brief `js = 1` if `j_size > 1`, otherwise `0`
+    int js;
+    /// @brief `ks = 1` if `k_size > 1`, otherwise `0`
+    int ks;
+    /// @brief  margin size for numerical scheme
     int margin;
-    int i_margin, j_margin, k_margin;
-    int i_stt, j_stt, k_stt;
-    Real xmin, xmax, ymin, ymax, zmin, zmax;
-    std::vector<Real> x, y, z, dx, dy, dz, dxi, dyi, dzi;
+    /// @brief  margin size in x direction
+    int i_margin;
+    /// @brief  margin size in y direction
+    int j_margin;
+    /// @brief  margin size in z direction
+    int k_margin;
+    /// @brief starting index in x direction (for MPI calculation)
+    int i_stt;
+    /// @brief starting index in y direction (for MPI calculation)
+    int j_stt;
+    /// @brief starting index in z direction (for MPI calculation)
+    int k_stt;
+    /// @brief  minimum value in x direction
+    Real xmin;
+    /// @brief  maximum value in x direction
+    Real xmax;
+    /// @brief minimum value in y direction
+    Real ymin;
+    /// @brief maximum value in y direction
+    Real ymax;
+    /// @brief minimum value in z direction
+    Real zmin;
+    /// @brief maximum value in z direction
+    Real zmax;
+    /// @brief  coordinate in x direction
+    std::vector<Real> x;
+    /// @brief  coordinate in y direction
+    std::vector<Real> y;
+    /// @brief  coordinate in z direction
+    std::vector<Real> z;
+    /// @brief  grid spacing in x direction
+    std::vector<Real> dx;
+    /// @brief  grid spacing in y direction
+    std::vector<Real> dy;
+    /// @brief  grid spacing in z direction
+    std::vector<Real> dz;
+    /// @brief  inverse grid spacing in x direction
+    std::vector<Real> dxi;
+    /// @brief  inverse grid spacing in y direction
+    std::vector<Real> dyi;
+    /// @brief  inverse grid spacing in z direction
+    std::vector<Real> dzi;
     /// @brief global minimum value of dx, dy, dz
     Real min_dxyz; 
     
@@ -89,7 +145,8 @@ struct Grid {
             global_initialize();
         }
 
-    // global settings
+    /// @brief Constructor to initialize the grid for MPI-GLOBAL geometry
+    /// @param yaml_obj 
     Grid(const YAML::Node& yaml_obj) :
         i_size(yaml_obj["grid"]["i_size"].template as<int>()),
         j_size(yaml_obj["grid"]["j_size"].template as<int>()),
@@ -104,7 +161,8 @@ struct Grid {
             global_initialize();
         }
 
-    // local settings
+    ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
+    /// @param grid_global Global grid object
     Grid(const Grid<Real>& grid_global, const MPIManager<Real>& mpi){
 
         i_size = grid_global.i_size/mpi.x_procs;
@@ -155,6 +213,8 @@ struct Grid {
 
     }   
 
+    /// @brief save grid data to a binary file
+    /// @param config 
     void save(const Config& config) const {
         if (config.mpi.myrank ==0) {
             std::ofstream ofs_bin(config.save_dir + "/grid.bin", std::ios::binary);

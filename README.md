@@ -1,4 +1,5 @@
 # MISO　(Mhd ISee Open source code)
+
 ## 実行方法
 
 CMakeを用いたコンパイル。`CMakeLists.txt`に設定あり。
@@ -53,4 +54,4 @@ doxygen Doxyfile_cpu # CPU版 -> docs/doxygen_cpuに生成
 doxygen Doxyfile_gpu # GPU版 -> docs/doxygen_gpuに生成
 ```
 
-`docs/doxygen/html/index.html`にHTMLが生成される。
+`docs/doxygen_[cpu,gpu]/html/index.html`にHTMLが生成される。

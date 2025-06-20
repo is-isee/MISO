@@ -13,17 +13,18 @@
 #include "artificial_viscosity_cpu.hpp"
 #include "mpi_types.hpp"
 
-/// @brief 
+/// @brief Calculate 4th order space-centered derivative for qq
+/// @relatedalso TimeIntegrator
 /// @tparam Real 
-/// @param qq 
-/// @param dxyzi 
-/// @param i 
-/// @param j 
-/// @param k 
-/// @param is 
-/// @param js 
-/// @param ks 
-/// @return 
+/// @param qq variables
+/// @param dxyzi grid spacing in x, y, z direction (grid.dx, grid.dy, grid.dz)
+/// @param i i index
+/// @param j j index
+/// @param k k index
+/// @param is i skip
+/// @param js j skip
+/// @param ks k skip
+/// @return Array3D<Real> derivative value
 template <typename Real>
 inline Real space_centered_4th (const Array3D<Real>& qq, Real dxyzi, int i, int j, int k, int is, int js, int ks) {
     return (
@@ -34,6 +35,19 @@ inline Real space_centered_4th (const Array3D<Real>& qq, Real dxyzi, int i, int 
     )*inv12<Real>*dxyzi;
 };
 
+/// @brief Calculate 4th order space-centered derivative for qq1*qq2
+/// @relatedalso TimeIntegrator
+/// @tparam Real 
+/// @param qq1 variables
+/// @param qq2 variables
+/// @param dxyzi grid spacing in x, y, z direction (grid.dx, grid.dy, grid.dz)
+/// @param i i index
+/// @param j j index
+/// @param k k index
+/// @param is i skip
+/// @param js j skip
+/// @param ks k skip
+/// @return Array3D<Real> derivative value
 template <typename Real>
 inline Real space_centered_4th (const Array3D<Real>& qq1, const Array3D<Real>& qq2, Real dxyzi, int i, int j, int k, int is, int js, int ks) {
     return (
@@ -44,6 +58,21 @@ inline Real space_centered_4th (const Array3D<Real>& qq1, const Array3D<Real>& q
     )*inv12<Real>*dxyzi;
 };
 
+/// @brief Calculate 4th order space-centered derivative for qq1*qq2*qq3
+/// @relatedalso TimeIntegrator
+/// @tparam Real 
+/// @param qq1 variables
+/// @param qq2 variables
+/// @param qq3 variables
+/// @param dxyzi grid spacing in x, y, z direction (grid.dx, grid.dy, grid.dz)
+/// @param i i index
+/// @param j j index
+/// @param k k index
+/// @param is i skip
+/// @param js j skip
+/// @param ks k skip
+/// @return Array3D<Real> derivative value
+template <typename Real>
 template <typename Real>
 inline Real space_centered_4th (const Array3D<Real>& qq1, const Array3D<Real>& qq2, const Array3D<Real>& qq3, Real dxyzi, int i, int j, int k, int is, int js, int ks) {
     return (
@@ -54,24 +83,43 @@ inline Real space_centered_4th (const Array3D<Real>& qq1, const Array3D<Real>& q
     )*inv12<Real>*dxyzi;
 };
 
+/// @brief Class for time integration of MHD equations
+/// @tparam Real 
 template <typename Real>
 struct TimeIntegrator {
-    // Disallow copying and assignment since this class manages resources
+    /// @brief Disallow copying and assignment
     TimeIntegrator(const TimeIntegrator&) = delete;
+    /// @brief Disallow copying and assignment
     TimeIntegrator& operator=(const TimeIntegrator&) = delete;
-
+    /// @brief Model class object
     Model<Real>& model;
+    /// @brief Config class object
     Config& config;
+    /// @brief Time class object
     Time<Real>& time;
+    /// @brief Grid class object
     Grid<Real>& grid;
+    /// @brief EOS class object
     EOS<Real>& eos;
+    /// @brief MHD class object
     MHD<Real>& mhd;
+    /// @brief MPIManager class object
     MPIManager<Real>& mpi;
 
+    /// @brief Boundary condition for MHD equations
     std::unique_ptr<BoundaryConditionBase<Real, MHDCore<Real>, Grid<Real> > >bc;
+    /// @brief Artificial viscosity for MHD equations
     ArtificialViscosity<Real> artdiff;
 
-    Array3D<Real> pr, bb, ht, vb;
+    /// @brief gas pressure
+    Array3D<Real> pr;
+    /// @brief magnetic field strength bx*bx + by*by + bz*bz
+    Array3D<Real> bb;
+    /// @brief enthalpy + 2*magnetic energy + kinetic energy      
+    Array3D<Real> ht;
+    /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
+    Array3D<Real> vb;
+    /// @brief CFL number
     Real cfl_number;
     /// @brief propagation speed fo divergence B
     Real ch_divb;
@@ -80,6 +128,8 @@ struct TimeIntegrator {
     /// @brief damping time scape for divergence B
     Real tau_divb;
     
+    /// @brief Constructor for TimeIntegrator
+    /// @param model_ 
     TimeIntegrator(Model<Real>& model_)
         : model(model_),
           config(model_.config),
@@ -102,7 +152,11 @@ struct TimeIntegrator {
             cfl_number = config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
           }
         
-    // core function for MHD time integration
+    /// @brief  Update MHD equations using 4th order space-centered scheme
+    /// @param qq_orgn original MHD core variables (n = n)
+    /// @param qq_argm argument MHD core variables (n = n + 1/2, n + 1/3, etc.)
+    /// @param qq_rslt resulting MHD core variables (n = n + 1)
+    /// @param dt time spacing (note that this is not the same as actual time spacing)
     void update_sc4(MHDCore<Real>& qq_orgn, MHDCore<Real>& qq_argm, MHDCore<Real>& qq_rslt, Real dt) {
         for (int i = 0; i < grid.i_total; ++i) {
             for (int j = 0; j < grid.j_total; ++j) {
@@ -113,7 +167,7 @@ struct TimeIntegrator {
                     bb(i, j, k) = qq_argm.bx(i,j,k)*qq_argm.bx(i,j,k) 
                                 + qq_argm.by(i,j,k)*qq_argm.by(i,j,k) 
                                 + qq_argm.bz(i,j,k)*qq_argm.bz(i,j,k);
-                    // enthalpy + 2*magnetic energy + kinetic energy      
+                    // enthalpy + 2*magnetic energy + kinetic energy
                     ht(i, j, k) = 
                         + qq_argm.ro(i,j,k)*qq_argm.ei(i,j,k) + pr(i,j,k)
                         + bb(i,j,k)*pii4<Real>
@@ -268,6 +322,7 @@ struct TimeIntegrator {
         }
     }
 
+    /// @brief Runge-Kutta 4th order time integration step    
     void runge_kutta_4step(){
         MHDCore<Real>& qq     = mhd.qq;
         MHDCore<Real>& qq_argm = mhd.qq_argm;
@@ -294,6 +349,7 @@ struct TimeIntegrator {
         mhd.mpi_exchange_halo(qq, grid, mpi);
     }
 
+    /// @brief  Calculate time spacing based on CFL condition
     void cfl_condition() {
 
         this->time.dt = 1.e10;
@@ -323,12 +379,14 @@ struct TimeIntegrator {
         this->time.dt = dt_global;
     }
 
+    /// @brief Set parameters for divergence B cleaning
     void divb_parameters_set() {
         this->ch_divb = 0.8*this->cfl_number*this->grid.min_dxyz/this->time.dt;
         this->ch_divb_square = this->ch_divb*this->ch_divb;
         this->tau_divb = 2.0*this->time.dt;
     }
 
+    /// @brief Main time integration loop
     void run() {
         // Time integration loop
         this->time.dt = 0.1;

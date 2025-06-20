@@ -1,3 +1,9 @@
+/** -------------------------------------------------------------------------
+ * @brief 3D Array Class
+ * 
+ * 
+ */
+
 #pragma once
 #include <vector>
 
@@ -30,21 +36,33 @@ class Array3D {
             assert(k >= 0 && k < k_total);
             return array[i * j_total * k_total + j * k_total + k];
         }
+        /// @brief overload function for accessing the 3D array elements (const version)
+        /// @param i i index
+        /// @param j j index
+        /// @param k k index
         const T& operator()(int i, int j, int k) const {
             assert(i >= 0 && i < i_total);
             assert(j >= 0 && j < j_total);
             assert(k >= 0 && k < k_total);
             return array[i * j_total * k_total + j * k_total + k];
         }
-
+        /// @brief overload function for accessing the 3D array elements
         T* data() { return array.data(); }
+        /// @brief overload function for accessing the 3D array elements (const version)
         const T* data() const { return array.data(); }
 
+        /// @brief Get size in x direction
         int size_x () const { return i_total; }
+        /// @brief Get size in y direction
         int size_y () const { return j_total; }
+        /// @brief Get size in z direction
         int size_z () const { return k_total; }
+        /// @brief Get total size of the array
         int size () const { return i_total * j_total * k_total; }
 
+        /// @brief  Copy elements from another Array3D object
+        /// @param other copy source array
+        /// @details The dimensions of the other array must match the current array.
         void copy_from(const Array3D& other) {
             assert(i_total == other.i_total);
             assert(j_total == other.j_total);

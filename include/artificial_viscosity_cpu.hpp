@@ -32,6 +32,9 @@ struct ArtificialViscosity {
     Real ca_fac;
     /// @brief Characteristic velocity factor for fluid velocity
     Real vv_fac;
+
+    /// @brief Constructor for ArtificialViscosity
+    /// @param model 
     ArtificialViscosity(Model<Real>& model)
         : config(model.config),
           time(model.time),
@@ -48,6 +51,7 @@ struct ArtificialViscosity {
         assert(fh >= 0);
     }
 
+    /// @brief Evaluate the characteristic velocity
     void characteristic_velocity_eval() {
         for(int i = 0; i < grid.i_total; ++i) {
             for(int j = 0; j < grid.j_total; ++j) {

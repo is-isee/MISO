@@ -1,5 +1,6 @@
 \page equations Equations
-In vector form:
+
+# Vector form
 
 \f[
 \begin{align}
@@ -26,7 +27,8 @@ We define the total energy per unit volume \f$E_\mathrm{total}\f$ and \f$H\f$ (e
     \end{align}
 \f]
 
-In fully explicit form:
+
+# Explicit form
 
 \f[
     \begin{align}

@@ -3,6 +3,7 @@
 #include <string>
 #include "boundary_condition_core.hpp"
 
+/// @brief Boundary condition functions for CPU implementation
 namespace bnd {
     template <typename Real>
     void symmetric(Array3D<Real>& arr, const Grid<Real>& grid, Array3D<Real>* fac, Real sign, Direction direction, Side side){

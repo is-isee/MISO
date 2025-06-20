@@ -5,14 +5,26 @@
 #include "config.hpp"
 #include "utility.hpp"
 
-
+/// @brief Class to manage time-related parameters and operations
+/// @tparam Real 
 template <typename Real>
 struct Time{
-    Real time, tend;
+    /// @brief current time
+    Real time;
+    /// @brief end time
+    Real tend;
+    /// @brief output time interval
     Real dt_output;
+    /// @brief time step size
     Real dt;
-    int n_step, n_output, n_output_digits;
+    /// @brief time step number
+    int n_step;
+    /// @brief time step number for output
+    int n_output;
+    /// @brief number of digits for output file naming
+    int n_output_digits;
 
+    /// @brief Initialize time parameters
     void initialize() {
         dt = 0;
         time = 0;
@@ -20,6 +32,8 @@ struct Time{
         n_output = 0;
     }
 
+    /// @brief Default constructor
+    /// @param yaml_obj YAML node read in Config class
     Time(const YAML::Node& yaml_obj) 
         :tend(yaml_obj["time"]["tend"].template as<Real>()),
          dt_output(yaml_obj["time"]["dt_output"].template as<Real>()),
@@ -30,6 +44,10 @@ struct Time{
         initialize();
     }
 
+    /// @brief Constructor with parameters
+    /// @param tend_ end time
+    /// @param dt_output_ output time interval
+    /// @param n_output_digits_ number of digits for output file naming
     Time(Real tend_, Real dt_output_, int n_output_digits_)
         :tend(tend_), dt_output(dt_output_), n_output_digits(n_output_digits_) {
             assert(tend > 0);
@@ -39,11 +57,14 @@ struct Time{
         }
             
     
+    /// @brief update time parameters
     void update() {
         time += dt;
         n_step++;
     };
     
+    /// @brief Save time parameters to file
+    /// @param config 
     void save(const Config& config) const {
         if (config.mpi.myrank == 0) {
             std::ostringstream fname;
@@ -60,6 +81,8 @@ struct Time{
         }
     }
 
+    /// @brief Load time parameters from file
+    /// @param config 
     void load(const Config& config) {
         if (config.mpi.myrank == 0) {
             std::ifstream ifs_step(config.time_save_dir + "/n_output.txt");
