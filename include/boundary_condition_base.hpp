@@ -1,8 +1,7 @@
 #pragma once
 
-// template <typename Real>
-// class MHDCore;
-
+/// @brief Base class for boundary conditions in MHD simulations
+/// @tparam Real Type of the data (Real)
 template <typename Real, typename MHDCoreType, typename GridType>
 class BoundaryConditionBase {
     public:

@@ -10,13 +10,22 @@
 #define HOST_DEVICE
 #endif
 
+/// @brief Utility functions
 namespace util {
+    /// @brief zero-fill integer to string
+    /// @param num target integer number
+    /// @param width width of the string
+    /// @return zero-filled string representation of the integer
     inline std::string zfill(int num, int width) {
         std::ostringstream oss;
         oss << std::setw(width) << std::setfill('0') << num;
         return oss.str();
     }
-
+    
+    /// @brief Calculate the square of a value 
+    /// @tparam T type of the value
+    /// @param x target value
+    /// @return squared value
     template <typename T>
     inline T pow2(T x) {
         return x * x;

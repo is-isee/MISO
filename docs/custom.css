@@ -6,14 +6,14 @@
 /* This file contains color customizations that follow Zephyr's branding */
 
 html {
-    --primary-color: #af7fe4;
+    --primary-color: #d7cae4;
     --primary-dark-color: #7929d2;
-    --primary-light-color: #cb99f6;
+    --primary-light-color: #e8d8f5;
     --primary-lighter-color: #dfc8fa;
     --primary-lightest-color: #efe4fc;
 
     --side-nav-background: #482d5b;
-    --side-nav-foreground: #eac3ff;
+    --side-nav-foreground: #f7e9ff;
 
     --searchbar-background: var(--page-background-color);
     --searchbar-foreground: var(--page-foreground-color);

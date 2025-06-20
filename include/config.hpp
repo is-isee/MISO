@@ -13,11 +13,20 @@
 
 namespace fs = std::filesystem;
 
+/// @brief Configuration class for MHD simulations
 struct Config {
-
+    /// @brief file path for YAML configuration file
     std::string load_filepath;
+    /// @brief YAML object to hold the configuration information
     YAML::Node yaml_obj;
-    std::string save_dir, time_save_dir, mhd_save_dir, mpi_save_dir;
+    /// @brief Directories for saving parent results
+    std::string save_dir;
+    /// @brief Directories for saving time information
+    std::string time_save_dir;
+    /// @brief Directories for saving MHD results
+    std::string mhd_save_dir;
+    /// @brief Directories for saving MPI-related information
+    std::string mpi_save_dir;
     MPIManager<Real>& mpi;
 
     Config(const std::string& load_filepath_, MPIManager<Real>& mpi_)
@@ -72,6 +81,8 @@ struct Config {
             mpi_save_dir  = save_dir + yaml_obj["mpi"]["mpi_save_dir"].template as<std::string>();
         }
 
+    /// @brief Create a save directory if they do not exist
+    /// @param directory Directory path to create
     void create_save_directory_core(const std::string& directory) const {
         fs::path directory_fs(directory);
         if (!fs::exists(directory_fs)) {
@@ -79,6 +90,7 @@ struct Config {
         }
     }
 
+    /// @brief Create save directories for the simulation
     void create_save_directory() const {
         if (mpi.myrank == 0) {
             create_save_directory_core(save_dir);
@@ -88,6 +100,7 @@ struct Config {
         }
     }
 
+    /// @brief  Save the configuration to a YAML file
     void save() const {
         if (mpi.myrank == 0) {
             std::string save_filepath = save_dir + "/config.yaml";
