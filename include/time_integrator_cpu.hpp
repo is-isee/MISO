@@ -73,7 +73,6 @@ inline Real space_centered_4th (const Array3D<Real>& qq1, const Array3D<Real>& q
 /// @param ks k skip
 /// @return Array3D<Real> derivative value
 template <typename Real>
-template <typename Real>
 inline Real space_centered_4th (const Array3D<Real>& qq1, const Array3D<Real>& qq2, const Array3D<Real>& qq3, Real dxyzi, int i, int j, int k, int is, int js, int ks) {
     return (
         -     qq1(i + 2*is, j + 2*js, k + 2*ks)*qq2(i + 2*is, j + 2*js, k + 2*ks)*qq3(i + 2*is, j + 2*js, k + 2*ks)
