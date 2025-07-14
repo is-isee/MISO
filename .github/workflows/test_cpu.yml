@@ -1,6 +1,6 @@
 name: Run tests on CPU
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   test:
@@ -8,6 +8,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nlohmann-json3-dev libyaml-cpp-dev
       - name: Generate build directory
         run: |
           cmake -B build -S . -DUSE_CUDA=OFF
