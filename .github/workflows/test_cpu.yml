@@ -20,7 +20,6 @@ jobs:
         working-directory: build
         run: make unit_test
       - name: Run unit tests
+        working-directory: build
         run: |
-          ls build
-          ls build/*
-          ./unit_test
+          ./unit_tests
