@@ -1,9 +1,5 @@
 # tests/CMakeLists.txt
 
-# set_target_properties(unit_tests PROPERTIES
-#     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-# )
-
 file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "*.cpp")
 
 add_executable(unit_tests ${TEST_SOURCES})
