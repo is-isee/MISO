@@ -12,14 +12,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y nlohmann-json3-dev libyaml-cpp-dev
-          sudo apt-get install -y libopenmpi-dev openmpi-bin
+          sudo apt-get install -y libopenmpi-dev
       - name: Generate build directory
-        run: |
-          cmake -B build -S . -DUSE_CUDA=OFF
+        run: cmake -B build -S . -DUSE_CUDA=OFF
       - name: Build unit tests
         working-directory: build
-        run: make unit_test
+        run: make unit_tests
       - name: Run unit tests
         working-directory: build
-        run: |
-          ./unit_tests
+        run: ./unit_tests
+

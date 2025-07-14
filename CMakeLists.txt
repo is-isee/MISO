@@ -60,7 +60,7 @@ add_custom_target(full_build
 
 # --- tests ---
 add_subdirectory(tests EXCLUDE_FROM_ALL)
-add_custom_target(unit_test DEPENDS unit_tests)
+add_custom_target(unit_tests DEPENDS unit_tests)
 
 # --- problems ---
 add_custom_target(problem DEPENDS all_problems)
