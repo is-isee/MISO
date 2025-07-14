@@ -1,5 +1,7 @@
 # MISO　(Mhd ISee Open source code)
 
+[![Run tests on CPU](https://github.com/is-isee/MISO/actions/workflows/test_cpu.yml/badge.svg)](https://github.com/is-isee/MISO/actions/workflows/test_cpu.yml)
+
 ## 実行方法
 
 CMakeを用いたコンパイル。`CMakeLists.txt`に設定あり。
