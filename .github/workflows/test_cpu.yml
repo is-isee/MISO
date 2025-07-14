@@ -1,0 +1,20 @@
+name: Run tests on CPU
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate build directory
+        run: |
+          cmake -B build -S . -DUSE_CUDA=OFF
+      - name: Build unit tests
+        working-directory: build
+        run: make unit_test
+      - name: Run unit tests
+        working-directory: build
+        run: ./unit_test
+
