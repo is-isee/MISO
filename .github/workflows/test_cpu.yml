@@ -20,6 +20,5 @@ jobs:
         working-directory: build
         run: make unit_test
       - name: Run unit tests
-        working-directory: build
         run: ./unit_test
 
