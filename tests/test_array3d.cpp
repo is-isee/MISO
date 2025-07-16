@@ -2,7 +2,8 @@
 #include <cassert>
 #include "array3d_cpu.hpp"
 
-TEST_CASE("Test Array3D constructor and access") {
+TEST_CASE("Test Array3D CPU" * doctest::test_suite("array3d"))
+{
     Array3D<double> arr(3, 4, 5);
 
     // Check dimensions
