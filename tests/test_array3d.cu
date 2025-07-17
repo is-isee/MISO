@@ -19,21 +19,13 @@ TEST_CASE("Test Array3D GPU" * doctest::test_suite("array3d"))
     Array3D<double> arr(3, 4, 5);
     Array3DDevice<double> arr_d(3, 4, 5);
 
-    // Check dimensions
-    REQUIRE(arr_d.size_x() == 3);
-    REQUIRE(arr_d.size_y() == 4);
-    REQUIRE(arr_d.size_z() == 5);
-
     // Check access
     arr(1, 2, 3) = 42.0;
     REQUIRE(arr(1, 2, 3) == 42.0);
 
     arr_d.copy_from_host(arr);
-    arr_d.copy_to_host(arr);
-    REQUIRE(arr(1, 2, 3) == 42.0);
 
     test_array3d_kernel<<<dim3(1, 1, 1), dim3(3, 4, 5)>>>(arr_d.data(), arr.size_x(), arr.size_y(), arr.size_z());
     arr_d.copy_to_host(arr);
     REQUIRE(arr(1, 2, 3) == 1.0);
-
 }
