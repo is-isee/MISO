@@ -2,7 +2,8 @@
 #include <cassert>
 #include "grid_cpu.hpp"
 
-TEST_CASE("Test Grid constructor and accessors" * doctest::test_suite("grid")) {
+TEST_CASE("Test Grid CPU" * doctest::test_suite("grid"))
+{
     // Test the Grid constructor and accessors
     int i_size = 3;
     int j_size = 4;
@@ -32,10 +33,10 @@ TEST_CASE("Test Grid constructor and accessors" * doctest::test_suite("grid")) {
     REQUIRE(grid.z.size() == grid.k_total);
 
     // Check dx values
-    for (int i = grid.i_margin; i < grid.i_total-grid.margin; ++i) {
+    for (int i = grid.i_margin; i < grid.i_total - grid.margin; ++i)
+    {
         REQUIRE(grid.dx[i] > 0);
-        REQUIRE(grid.x[i] >= grid.xmin); 
+        REQUIRE(grid.x[i] >= grid.xmin);
         REQUIRE(grid.x[i] <= grid.xmax);
     }
-
 }
