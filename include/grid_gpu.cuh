@@ -1,5 +1,6 @@
 #pragma once
 #include <cuda_runtime.h>
+#include "cuda_manager.cuh"
 
 template <typename Real>
 __host__ __device__ struct GridDevice {
