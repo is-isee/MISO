@@ -1,0 +1,17 @@
+name: Run tests of Python
+
+on: [push]
+
+jobs:
+  formatter-and-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Check format
+        run: ruff check pyMISO
+      - name: Lint code
+        run: ruff format pyMISO --check
+

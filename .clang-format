@@ -1,0 +1,19 @@
+---
+## Common config
+BasedOnStyle: LLVM
+IndentWidth: 2
+SpacesBeforeTrailingComments: 2
+ReflowComments: false
+ColumnLimit: 82
+InsertNewlineAtEOF: true
+
+---
+## For C++ (includes .cu/.cuh)
+Language: Cpp
+Standard: c++17
+AttributeMacros:
+  - __host__
+  - __device__
+  - __global__
+  - __forceinline__
+  - __launch_bounds__

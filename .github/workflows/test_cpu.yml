@@ -3,6 +3,17 @@ name: Run tests on CPU
 on: [push]
 
 jobs:
+  formatter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pip install clang-format
+          clang-format --version
+      - name: Check format
+        run: find src include problems -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format --dry-run --Werror -fallback-style=none
   run-cpu-tests:
     runs-on: ubuntu-latest
     steps:
@@ -11,8 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libyaml-cpp-dev
-          sudo apt-get install -y libopenmpi-dev openmpi-bin
+          sudo apt-get install -y libyaml-cpp-dev libopenmpi-dev openmpi-bin
       - name: Generate build directory
         run: cmake -B build -S . -DUSE_CUDA=OFF
       - name: Build project
