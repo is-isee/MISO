@@ -8,6 +8,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check format
+        run: |
+          files=$(find . -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh")
+          clang-format --dry-run --Werror $files
       - name: Install dependencies
         run: |
           sudo apt-get update
