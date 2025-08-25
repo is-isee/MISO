@@ -1,10 +1,11 @@
 /** -------------------------------------------------------------------------
  * @brief 3D Array Class
- * 
- * 
+ *
+ *
  */
 
 #pragma once
+#include <cassert>
 #include <vector>
 
 /// @brief  3D array class

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mpi_manager.hpp"
+
 #if defined(__CUDACC__)
 #define HOST_DEVICE __host__ __device__
 #else
