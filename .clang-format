@@ -1,0 +1,11 @@
+---
+## Common config
+BasedOnStyle: LLVM
+IndentWidth: 2
+SpacesBeforeTrailingComments: 2
+ReflowComments: false
+ColumnLimit: 82
+
+---
+## For C++
+Language: Cpp
