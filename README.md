@@ -75,17 +75,21 @@ d = pyMISO.Data(data_dir) # pyMISO.Dataオブジェクト生成
 ### リンター
 
 ```shell
-# 検証のみ
-ruff check pyMISO
-
 # 自動修正
 ruff check pyMISO --fix
+
+# 検証のみ
+ruff check pyMISO
 ```
 
 ### フォーマッター
 
 ```shell
+# 自動修正
 ruff format pyMISO
+
+# 検証のみ
+ruff format pyMISO --check
 ```
 
 ### 静的型解析
