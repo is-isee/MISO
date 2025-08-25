@@ -3,7 +3,7 @@ name: Run tests of Python
 on: [push]
 
 jobs:
-  run-cpu-tests:
+  formatter-and-linter:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
