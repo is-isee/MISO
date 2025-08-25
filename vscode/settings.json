@@ -2,14 +2,13 @@
   // Formatting > General
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
+  "editor.formatOnSave": true,
   // Formatting > C/C++
   "C_Cpp.formatting": "clangFormat", // Use .clang-format
   "C_Cpp.default.compileCommands": [
     "${workspaceFolder}/build/compile_commands.json"
   ],
-  // Formatting > Auto format
-  "editor.formatOnSave": false,
   "[cpp]": {
-    "editor.formatOnSave": false
+    "editor.formatOnSave": true
   }
 }
