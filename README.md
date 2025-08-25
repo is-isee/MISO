@@ -37,11 +37,11 @@ make mhd_shock_tube_1d # problems/以下にある課題名を指定
 mpirun -n 1   --bind-to none   --mca pml ob1   --mca btl tcp,self,vader   --mca coll ^hcoll   --mca osc ^ucx   ./mhd_shock_tube_1d  # makeのtargetと同じ名前の実行ファイルが生成される
 ```
 
-### フォーマット
+### フォーマッター
 
 ```shell
 # CLI
-find . -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format -i
+find src include problems -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format -i
 
 # VSCode上の設定 (上書き注意)
 mkdir -p .vscode && cp -i vscode/setting.json .vscode/setting.json
