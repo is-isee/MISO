@@ -45,6 +45,8 @@ data*/
 
 # python cach
 *.egg-info/
+*_cache/
+*_cache/
 
 # doxygen files
 docs/doxygen_cpu
