@@ -2,14 +2,13 @@
 
 #include <doctest/doctest.h>
 
-#include <filesystem>
-#include "model.hpp"
 #include "config.hpp"
 #include "grid_cpu.hpp"
+#include "model.hpp"
 #include "types.hpp"
+#include <filesystem>
 
-inline Model<Real> run_test_model()
-{
+inline Model<Real> run_test_model() {
   // Test the Model constructor and accessors
 
   // assuming current path is build/tests
