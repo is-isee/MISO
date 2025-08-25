@@ -1,8 +1,41 @@
 [build-system]
-requires = ["setuptools>=42", "setuptools_scm[toml]>=6.0"]
+requires = ["setuptools>=69", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "miso"
+description = "Python utilities for MISO"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Hideyuki Hotta" }, { name = "Haruhisa Iijima" }]
+dynamic = ["version"]
+dependencies = ["numpy>=2", "pyyaml>6"]
+
+[project.optional-dependencies]
+vis = ["matplotlib>=3"]
+dev = ["pytest>=7", "ruff>=0.10", "mypy>=1"]
+all = ["miso[vis]", "miso[dev]"]
 
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
 local_scheme = "dirty-tag"
 write_to = 'pyMISO/_version.py'
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "E", # pycodestyle
+  "F", # pyflakes
+  "B", # flake8-bugbear
+  "I", # isort
+]
+ignore = [
+  "E501", # line too long
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
