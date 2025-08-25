@@ -8,5 +8,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Format C++ code (includes .cu/.cuh)
-        run: find . -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format -i
+      - name: Check format of C++ files (includes .cu/.cuh)
+        run: |
+          files=$(find . -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh")
+          clang-format --dry-run --Werror $files
