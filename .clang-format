@@ -7,5 +7,12 @@ ReflowComments: false
 ColumnLimit: 82
 
 ---
-## For C++
+## For C++ (includes .cu/.cuh)
 Language: Cpp
+Standard: c++17
+AttributeMacros:
+  - __host__
+  - __device__
+  - __global__
+  - __forceinline__
+  - __launch_bounds__
