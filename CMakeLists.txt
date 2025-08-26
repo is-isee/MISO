@@ -10,7 +10,7 @@ set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose a type of build." FORCE)
 enable_testing()
 
 # --- CUDA オプションと条件付き有効化 ---
-option(USE_CUDA "Enable CUDA support" ON)
+option(USE_CUDA "Disable CUDA support" OFF)
 if(USE_CUDA)
   enable_language(CUDA)
   add_definitions(-DUSE_CUDA)
