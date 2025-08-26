@@ -18,8 +18,8 @@ template <class Real> struct AngularQuadrature {
   std::vector<Real> mu_x, mu_y, mu_z;
 
   AngularQuadrature(const int num_rays)
-      : num_rays(num_rays), weights(num_rays), mu_x(num_rays),
-        mu_y(num_rays), mu_z(num_rays) {
+      : num_rays(num_rays), weights(num_rays), mu_x(num_rays), mu_y(num_rays),
+        mu_z(num_rays) {
     switch (num_rays) {
     case 24:
       // Carlson's A4 quadrature

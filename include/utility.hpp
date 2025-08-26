@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
@@ -69,7 +70,8 @@ inline Endian get_endian() {
 // @brief Clear array (zero-fill)
 template <typename VectorLike>
 HOST_DEVICE inline void clear_array(VectorLike &arr) {
-  std::fill(arr.data(), arr.data() + arr.size(), 0.0);
+  using T = std::decay_t<decltype(*arr.data())>;
+  std::fill(arr.data(), arr.data() + arr.size(), T(0));
 }
 
 };  // namespace util
