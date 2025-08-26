@@ -121,14 +121,14 @@ bool is_physical_boundary(const Direction direction, const Side side,
                           const MPIManager<Real> &mpi) {
   switch (direction) {
   case Direction::X:
-    return (side == Side::INNER) ? (mpi.x_procs_mnus == MPI_PROC_NULL)
-                                 : (mpi.x_procs_plus == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi.x_procs_neg == MPI_PROC_NULL)
+                                 : (mpi.x_procs_pos == MPI_PROC_NULL);
   case Direction::Y:
-    return (side == Side::INNER) ? (mpi.y_procs_mnus == MPI_PROC_NULL)
-                                 : (mpi.y_procs_plus == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi.y_procs_neg == MPI_PROC_NULL)
+                                 : (mpi.y_procs_pos == MPI_PROC_NULL);
   case Direction::Z:
-    return (side == Side::INNER) ? (mpi.z_procs_mnus == MPI_PROC_NULL)
-                                 : (mpi.z_procs_plus == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi.z_procs_neg == MPI_PROC_NULL)
+                                 : (mpi.z_procs_pos == MPI_PROC_NULL);
   }
   return false;
 }
