@@ -1,3 +1,7 @@
+///
+/// @brief Radiative Transfer (RT) module for CPU
+///
+
 #pragma once
 
 #include <cassert>
@@ -8,19 +12,18 @@
 #include "grid_cpu.hpp"
 #include "mpi_manager.hpp"
 #include "mpi_types.hpp"
-#include "time_cpu.hpp"
 #include "utility.hpp"
 
-template <typename Real> struct MHDCore {
+template <typename Real> struct RTCore {
   Array3D<Real> ro, vx, vy, vz, bx, by, bz, ei, ph;
 
-  MHDCore(int i_size, int j_size, int k_size)
+  RTCore(int i_size, int j_size, int k_size)
       : ro(i_size, j_size, k_size), vx(i_size, j_size, k_size),
         vy(i_size, j_size, k_size), vz(i_size, j_size, k_size),
         bx(i_size, j_size, k_size), by(i_size, j_size, k_size),
         bz(i_size, j_size, k_size), ei(i_size, j_size, k_size),
         ph(i_size, j_size, k_size) {}
-  void copy_from(const MHDCore &other) {
+  void copy_from(const RTCore &other) {
     ro.copy_from(other.ro);
     vx.copy_from(other.vx);
     vy.copy_from(other.vy);
@@ -33,8 +36,8 @@ template <typename Real> struct MHDCore {
   }
 };
 
-template <typename Real> struct MHD {
-  MHDCore<Real> qq, qq_argm, qq_rslt;
+template <typename Real> struct RT {
+  RTCore<Real> qq, qq_argm, qq_rslt;
   Real cfl_number;
 
   /// @brief  MPI communication buffers
@@ -45,7 +48,7 @@ template <typename Real> struct MHD {
   Array4D<Real> send_buff_y_plus, send_buff_y_mnus;
   Array4D<Real> send_buff_z_plus, send_buff_z_mnus;
 
-  MHD(const Grid<Real> &grid)
+  RT(const Grid<Real> &grid)
       : qq(grid.i_total, grid.j_total, grid.k_total),
         qq_argm(grid.i_total, grid.j_total, grid.k_total),
         qq_rslt(grid.i_total, grid.j_total, grid.k_total),
@@ -64,7 +67,7 @@ template <typename Real> struct MHD {
 
   void save(const Config &config, const Time<Real> &time) const {
     std::string filename =
-        config.mhd_save_dir + "mhd." +
+        config.rt_save_dir + "rt." +
         util::zfill(time.n_output, time.n_output_digits) + "." +
         util::zfill(config.mpi.myrank, config.mpi.n_procs_digits) + ".bin";
     std::ofstream ofs(filename, std::ios::binary);
@@ -88,7 +91,7 @@ template <typename Real> struct MHD {
 
   void load(const Config &config, const Time<Real> &time) {
     std::string filename =
-        config.mhd_save_dir + "mhd." +
+        config.rt_save_dir + "rt." +
         util::zfill(time.n_output, time.n_output_digits) + "." +
         util::zfill(config.mpi.myrank, config.mpi.n_procs_digits) + ".bin";
     std::ifstream ifs(filename, std::ios::binary);
@@ -109,7 +112,7 @@ template <typename Real> struct MHD {
     ifs.close();
   };
 
-  void mpi_exchange_halo(MHDCore<Real> &qq_trgt, Grid<Real> &grid,
+  void mpi_exchange_halo(RTCore<Real> &qq_trgt, Grid<Real> &grid,
                          MPIManager<Real> &mpi) {
     std::array<Array3D<Real> *, 9> vars = {&qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy,
                                            &qq_trgt.vz, &qq_trgt.bx, &qq_trgt.by,
