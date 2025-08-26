@@ -58,3 +58,6 @@ add_subdirectory(tests)
 
 # --- problems ---
 add_subdirectory(problems)
+
+# --- src ---
+add_executable(MISO src/main.cpp)
