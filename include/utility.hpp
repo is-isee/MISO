@@ -66,4 +66,10 @@ inline Endian get_endian() {
   return (*reinterpret_cast<uint8_t *>(&num) == 1) ? Endian::Little : Endian::Big;
 }
 
+// @brief Clear array (zero-fill)
+template <typename VectorLike>
+HOST_DEVICE inline void clear_array(VectorLike &arr) {
+  std::fill(arr.data(), arr.data() + arr.size(), 0.0);
+}
+
 };  // namespace util
