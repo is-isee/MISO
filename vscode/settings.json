@@ -4,9 +4,7 @@
   "editor.tabSize": 2,
   // C/C++
   "C_Cpp.formatting": "clangFormat", // Use .clang-format
-  "C_Cpp.default.compileCommands": [
-    "${workspaceFolder}/build/compile_commands.json"
-  ],
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
   // Python (Requires "charliermarsh.ruff" extension)
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff"
