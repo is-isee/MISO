@@ -66,20 +66,29 @@ void impose_incoming_ray(RT<Real> &rt, const Grid<Real> &grid,
       for (j = jb0; j <= jb1; ++j) {
         for (k = kb0; k <= kb1; ++k) {
           const Real r = std::sqrt(grid.y[j] * grid.y[j] + grid.z[k] * grid.z[k]);
-          rint(i, j, k) = (r <= prm::rint_radius) ? prm::rint_incoming : 0.0;
+          rt.rint(i_ray, i, j, k) =
+              (r <= prm::rint_radius) ? prm::rint_incoming : 0.0;
         }
       }
     }
-  }
-  if (ang_quad.mu_x[i_ray] < 0.0) {
-    // To be implemented
+    if (ang_quad.mu_x[i_ray] < 0.0) {
+      // To be implemented
+    }
   }
 }
 
 struct SearchlightBoundaryCondition {
+  const Config config;
+
+  explicit SearchlightBoundaryCondition(const Config &config_)
+      : config(config_) {}
+
   template <typename Real>
   void operator()(RT<Real> &rt, const Grid<Real> &grid,
                   const MPIManager<Real> &mpi) const {
+    const auto &periodic_flags =
+        config.yaml_obj["boundary_condition"]["periodic"];
+
     constexpr std::array<bnd::Direction, 3> directions = {
         bnd::Direction::X, bnd::Direction::Y, bnd::Direction::Z};
     constexpr std::array<bnd::Side, 2> sides = {bnd::Side::INNER,
