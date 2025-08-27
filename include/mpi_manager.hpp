@@ -29,6 +29,8 @@ template <typename Real> struct MPIManager {
     MPI_Finalize();
   }
 
+  constexpr bool is_root() const noexcept { return myrank == 0; }
+
   void init_parameters(const YAML::Node &yaml_obj) {
     n_procs_digits = yaml_obj["mpi"]["n_procs_digits"].template as<int>();
     x_procs = yaml_obj["mpi"]["x_procs"].template as<int>();
