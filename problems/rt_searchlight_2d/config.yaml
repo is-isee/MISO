@@ -1,19 +1,16 @@
 base:
   save_dir: data/
-  # if save_dir exiests
-  # continue: true -> continue simulation
-  # continue: false -> start from scratch
-  continue: true
+  continue: false  # false: start from scratch
 
 time:
   time_save_dir: time/
-  tend: 10.0
-  dt_output: 0.005
+  tend: 1.0
+  dt_output: 0.1
   n_output_digits: 8
 
 grid:
-  i_size: 3072
-  j_size: 3072
+  i_size: 1024
+  j_size: 1024
   k_size: 1
   margin: 2
   xmin: -0.5
@@ -46,6 +43,7 @@ artificial_viscosity:
   cs_fac: 0.5
   ca_fac: 1.0
   vv_fac: 1.0
+
 boundary_condition:
   # please use "standard" or "custom" for boundary_type
   boundary_type: standard
