@@ -23,8 +23,9 @@ inline Model<Real> run_test_model() {
   Grid<Real> grid_local(grid_global, mpi);
   EOS<Real> eos = EOS<Real>(config);
   MHD<Real> mhd = MHD<Real>(grid_local);
+  RT<Real> rt(grid_local, 24);
 
-  Model<Real> model(config, time, grid_global, grid_local, eos, mhd, mpi);
+  Model<Real> model(config, time, grid_global, grid_local, eos, mhd, rt, mpi);
 
   // Check dimensions
   REQUIRE(model.grid_global.i_size == grid_global.i_size);

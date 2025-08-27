@@ -36,13 +36,20 @@ template <typename Real> struct RT {
   /// @brief Angular quadrature
   AngularQuadrature<Real> ang_quad;
 
-  /// @brief  MPI communication buffers
+  /// @brief MPI communication buffers
   Array3D<Real> recv_buff_x_pos, recv_buff_x_neg;
   Array3D<Real> recv_buff_y_pos, recv_buff_y_neg;
   Array3D<Real> recv_buff_z_pos, recv_buff_z_neg;
   Array3D<Real> send_buff_x_pos, send_buff_x_neg;
   Array3D<Real> send_buff_y_pos, send_buff_y_neg;
   Array3D<Real> send_buff_z_pos, send_buff_z_neg;
+
+  /// @brief Left/right indices
+  // * margin = 1; ks = 1; kb0 = 0;
+  // * k_size = k_total - margin*2;
+  // * kb1 = k_total - 2;
+  // * The right-most grid (i.e., k=k_total-1) is not used in RT.
+  const int ib0, ib1, jb0, jb1, kb0, kb1;
 
   /// TODO: `num_rays` of buffers can be reduced considering ray directions.
   RT(const Grid<Real> &grid, const int num_rays)
@@ -61,7 +68,14 @@ template <typename Real> struct RT {
         send_buff_y_pos(num_rays, grid.i_total, grid.k_total),
         send_buff_y_neg(num_rays, grid.i_total, grid.k_total),
         send_buff_z_pos(num_rays, grid.i_total, grid.j_total),
-        send_buff_z_neg(num_rays, grid.i_total, grid.j_total) {
+        send_buff_z_neg(num_rays, grid.i_total, grid.j_total),
+        ib0(grid.margin - grid.is), ib1(ib0 + grid.i_size),
+        jb0(grid.margin - grid.js), jb1(jb0 + grid.j_size),
+        kb0(grid.margin - grid.ks), kb1(kb0 + grid.k_size) {
+    util::clear_array(rint);
+    util::clear_array(rint_old);
+    util::clear_array(src_func);
+    util::clear_array(abs_coeff);
     util::clear_array(recv_buff_x_pos);
     util::clear_array(recv_buff_x_neg);
     util::clear_array(recv_buff_y_pos);
@@ -148,18 +162,6 @@ template <typename Real> struct RT {
     MPI_Request reqs[4];
     int req_count = 0;
 
-    // left/right indices
-    // * margin = 1; ks = 1; kb0 = 0;
-    // * k_size = k_total - margin*2;
-    // * kb1 = k_total - 2;
-    // * The right-most grid (i.e., k=k_total-1) is not used in RT.
-    const auto ib0 = grid.margin - grid.is;
-    const auto ib1 = grid.ib0 + grid.i_size;
-    // const auto jb0 = grid.margin - grid.js;
-    // const auto jb1 = grid.jb0 + grid.j_size;
-    // const auto kb0 = grid.margin - grid.ks;
-    // const auto kb1 = grid.kb0 + grid.k_size;
-
     if (mpi_manager.x_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_x[i_ray] >= 0.0) {
@@ -233,18 +235,6 @@ template <typename Real> struct RT {
     }
     MPI_Request reqs[4];
     int req_count = 0;
-
-    // left/right indices
-    // * margin = 1; ks = 1; kb0 = 0;
-    // * k_size = k_total - margin*2;
-    // * kb1 = k_total - 2;
-    // * The right-most grid (i.e., k=k_total-1) is not used in RT.
-    // const auto ib0 = grid.margin - grid.is;
-    // const auto ib1 = grid.ib0 + grid.i_size;
-    const auto jb0 = grid.margin - grid.js;
-    const auto jb1 = grid.jb0 + grid.j_size;
-    // const auto kb0 = grid.margin - grid.ks;
-    // const auto kb1 = grid.kb0 + grid.k_size;
 
     if (mpi_manager.y_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
@@ -320,18 +310,6 @@ template <typename Real> struct RT {
     MPI_Request reqs[4];
     int req_count = 0;
 
-    // left/right indices
-    // * margin = 1; ks = 1; kb0 = 0;
-    // * k_size = k_total - margin*2;
-    // * kb1 = k_total - 2;
-    // * The right-most grid (i.e., k=k_total-1) is not used in RT.
-    // const auto ib0 = grid.margin - grid.is;
-    // const auto ib1 = grid.ib0 + grid.i_size;
-    // const auto jb0 = grid.margin - grid.js;
-    // const auto jb1 = grid.jb0 + grid.j_size;
-    const auto kb0 = grid.margin - grid.ks;
-    const auto kb1 = grid.kb0 + grid.k_size;
-
     if (mpi_manager.z_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_z[i_ray] >= 0.0) {
@@ -400,18 +378,6 @@ template <typename Real> struct RT {
   /// @brief Sweep over the local grid by short characteristic method.
   /// @note  Currently, only uniform grid is supported.
   void single_sweep(const Grid<Real> &grid) {
-    // left/right indices
-    // * margin = 1; ks = 1; kb0 = 0;
-    // * k_size = k_total - margin*2;
-    // * kb1 = k_total - 2;
-    // * The right-most grid (i.e., k=k_total-1) is not used in RT.
-    const auto ib0 = grid.margin - grid.is;
-    const auto ib1 = grid.ib0 + grid.i_size;
-    const auto jb0 = grid.margin - grid.js;
-    const auto jb1 = grid.jb0 + grid.j_size;
-    const auto kb0 = grid.margin - grid.ks;
-    const auto kb1 = grid.kb0 + grid.k_size;
-
     for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
       const Real mu_x = ang_quad.mu_x[i_ray];
       const Real mu_y = ang_quad.mu_y[i_ray];
@@ -564,18 +530,6 @@ template <typename Real> struct RT {
   /// @brief Get maximum difference from previous state
   /// TODO: Reduce the number of evaluation (evaluate only at boundaries).
   Real get_max_diff(const Grid<Real> &grid) const {
-    // left/right indices
-    // * margin = 1; ks = 1; kb0 = 0;
-    // * k_size = k_total - margin*2;
-    // * kb1 = k_total - 2;
-    // * The right-most grid (i.e., k=k_total-1) is not used in RT.
-    const auto ib0 = grid.margin - grid.is;
-    const auto ib1 = grid.ib0 + grid.i_size;
-    const auto jb0 = grid.margin - grid.js;
-    const auto jb1 = grid.jb0 + grid.j_size;
-    const auto kb0 = grid.margin - grid.ks;
-    const auto kb1 = grid.kb0 + grid.k_size;
-
     Real max_diff = 0.0;
     for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
       for (int i = ib0; i <= ib1; ++i) {
@@ -593,27 +547,25 @@ template <typename Real> struct RT {
 
   /// @brief Solve radiative transfer equation
   /// @details All necessary information should be stored in the `rte_t` object.
+  template <typename BoundaryCondition>
   void solve(const Grid<Real> &grid, const MPIManager<Real> &mpi_manager,
-             const Real tolerance, const int max_iters) {
+             const Real tolerance, const int max_iters, BoundaryCondition &&bc) {
     for (int iter = 0; iter < max_iters; ++iter) {
-      rint_old = rint;
-
+      rint_old.copy_from(rint);
       mpi_exchange_halo(grid, mpi_manager);
+      std::forward<BoundaryCondition>(bc)(*this, grid, mpi_manager);
       single_sweep(grid);
 
       const Real max_diff = get_max_diff(grid);
       Real global_max_diff = 0.0;
       MPI_Allreduce(&max_diff, &global_max_diff, 1, mpi_type<Real>(), MPI_MAX,
                     mpi_manager.cart_comm);
-      if (global_max_diff < tolerance) {
-        break;
-      }
-      if (iter == max_iters - 1) {
-        if (mpi_manager.is_root()) {
-          std::printf("  RT did not converge in %d iterations.\n", max_iters);
-        }
-      }
+      if (global_max_diff < tolerance)
+        return;
     }
+
+    if (mpi_manager.is_root())
+      std::printf("  RT did not converge in %d iterations.\n", max_iters);
   }
 
   /// @brief Integrate the optical thickness along a ray segment.
