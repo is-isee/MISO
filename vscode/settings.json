@@ -5,7 +5,7 @@
   "C_Cpp.formatting": "clangFormat", // Use .clang-format
   "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
   "[c]": {
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
   },
   // Python (Requires "charliermarsh.ruff" extension)
   "[python]": {
