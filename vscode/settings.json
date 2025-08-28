@@ -1,14 +1,16 @@
 {
   // General
   "editor.insertSpaces": true,
-  "editor.tabSize": 2,
-  // C/C++
+  // C/C++ (Format details are specified in .clang-format.)
   "C_Cpp.formatting": "clangFormat", // Use .clang-format
-  "C_Cpp.default.compileCommands": [
-    "${workspaceFolder}/build/compile_commands.json"
-  ],
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "[cpp]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  },
   // Python (Requires "charliermarsh.ruff" extension)
   "[python]": {
+    "editor.tabSize": 4,
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
   "ruff.configuration": "pyproject.toml"
