@@ -3,6 +3,7 @@
 ////
 
 #include <cmath>
+#include <cstdio>
 // #include <cstdlib>
 // #include <filesystem>
 // #include <iostream>
@@ -22,7 +23,7 @@ namespace prm {
 static constexpr Real abs_coeff = 1.0;
 static constexpr Real src_func = 0.5;
 static constexpr Real rint_incoming = 1.0;
-static constexpr Real rint_radius = 0.1;
+static constexpr Real rint_radius = 0.2;
 }  // namespace prm
 
 template <typename Real> void setup(Model<Real> &model) {
@@ -35,6 +36,17 @@ template <typename Real> void setup(Model<Real> &model) {
       for (int k = 0; k < grid.k_total; ++k) {
         rt.abs_coeff(i, j, k) = prm::abs_coeff;
         rt.src_func(i, j, k) = prm::src_func;
+      }
+    }
+  }
+
+  for (int i_ray = 0; i_ray < rt.ang_quad.num_rays; ++i_ray) {
+    for (int i = 0; i < grid.i_total; ++i) {
+      for (int j = 0; j < grid.j_total; ++j) {
+        for (int k = 0; k < grid.k_total; ++k) {
+          rt.rint(i_ray, i, j, k) = 0.0;
+          rt.rint_old(i_ray, i, j, k) = 0.0;
+        }
       }
     }
   }
@@ -117,5 +129,5 @@ int main() {
   const int max_iters = 100;
   model.rt.solve(model.grid_local, model.mpi, tolerance, max_iters, bc);
 
-  return 0;
+  /// TODO: Implement data output
 }

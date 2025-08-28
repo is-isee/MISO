@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -385,14 +386,20 @@ template <typename Real> struct RT {
 
       // Coefficients for bilinear interpolation
       /// TODO: Assuming uniform grid. Should be generalized.
-      constexpr Real eps_mu = 1.e-30;
-      const Real ds_x = grid.dx[0] / util::max2(std::abs(mu_x), eps_mu);
-      const Real ds_y = grid.dy[0] / util::max2(std::abs(mu_y), eps_mu);
-      const Real ds_z = grid.dz[0] / util::max2(std::abs(mu_z), eps_mu);
+      static constexpr Real eps_mu = 1.e-30;
+      const Real abs_mu_x = util::max2(std::abs(mu_x), eps_mu);
+      const Real abs_mu_y = util::max2(std::abs(mu_y), eps_mu);
+      const Real abs_mu_z = util::max2(std::abs(mu_z), eps_mu);
+      const Real dx = (grid.i_size > 1) ? grid.dx[0] : 1.e30;
+      const Real dy = (grid.j_size > 1) ? grid.dy[0] : 1.e30;
+      const Real dz = (grid.k_size > 1) ? grid.dz[0] : 1.e30;
+      const Real ds_x = dx / abs_mu_x;
+      const Real ds_y = dy / abs_mu_y;
+      const Real ds_z = dz / abs_mu_z;
       const Real ds = util::min3(ds_x, ds_y, ds_z);
-      const Real cc_x = std::abs(mu_x) * ds / grid.dx[0];
-      const Real cc_y = std::abs(mu_y) * ds / grid.dy[0];
-      const Real cc_z = std::abs(mu_z) * ds / grid.dz[0];
+      const Real cc_x = abs_mu_x * ds / dx;
+      const Real cc_y = abs_mu_y * ds / dy;
+      const Real cc_z = abs_mu_z * ds / dz;
 
       // Determine sweep order
       int ib, ie, it;
@@ -430,7 +437,7 @@ template <typename Real> struct RT {
       int kst = kt * grid.ks;
 
       // Sweep over the local grid
-      if ((ds_x < ds_y) && (ds_x < ds_z)) {  // yz-plane
+      if ((ds_x <= ds_y) && (ds_x <= ds_z)) {  // yz-plane
         for (int i = ib; i != ie + it; i += it) {
           for (int j = util::min2(jb, je); j <= util::max2(jb, je); ++j) {
             for (int k = util::min2(kb, ke); k <= util::max2(kb, ke); ++k) {
@@ -461,23 +468,23 @@ template <typename Real> struct RT {
             }
           }
         }
-      } else if ((ds_y < ds_x) && (ds_y < ds_z)) {  // xz-plane
+      } else if ((ds_y <= ds_x) && (ds_y <= ds_z)) {  // xz-plane
         for (int j = jb; j != je + jt; j += jt) {
           for (int i = util::min2(ib, ie); i <= util::max2(ib, ie); ++i) {
             for (int k = util::min2(kb, ke); k <= util::max2(kb, ke); ++k) {
               // Interpolate upwind values
               // clang-format off
-              const Real rint_u = bilinear_interpolation(cc_y, cc_z,
+              const Real rint_u = bilinear_interpolation(cc_x, cc_z,
                   rint(i_ray, i      , j - jst, k      ),
                   rint(i_ray, i - ist, j - jst, k      ),
                   rint(i_ray, i      , j - jst, k - kst),
                   rint(i_ray, i - ist, j - jst, k - kst));
-              const Real src_func_u = bilinear_interpolation(cc_y, cc_z,
+              const Real src_func_u = bilinear_interpolation(cc_x, cc_z,
                   src_func(i      , j - jst, k      ),
                   src_func(i - ist, j - jst, k      ),
                   src_func(i      , j - jst, k - kst),
                   src_func(i - ist, j - jst, k - kst));
-              const Real abs_coeff_u = bilinear_interpolation(cc_y, cc_z,
+              const Real abs_coeff_u = bilinear_interpolation(cc_x, cc_z,
                   abs_coeff(i      , j - jst, k      ),
                   abs_coeff(i - ist, j - jst, k      ),
                   abs_coeff(i      , j - jst, k - kst),
@@ -498,17 +505,17 @@ template <typename Real> struct RT {
             for (int j = util::min2(jb, je); j <= util::max2(jb, je); ++j) {
               // Interpolate upwind values
               // clang-format off
-              const Real rint_u = bilinear_interpolation(cc_y, cc_z,
+              const Real rint_u = bilinear_interpolation(cc_x, cc_y,
                   rint(i_ray, i      , j      , k - kst),
                   rint(i_ray, i - ist, j      , k - kst),
                   rint(i_ray, i      , j - jst, k - kst),
                   rint(i_ray, i - ist, j - jst, k - kst));
-              const Real src_func_u = bilinear_interpolation(cc_y, cc_z,
+              const Real src_func_u = bilinear_interpolation(cc_x, cc_y,
                   src_func(i      , j      , k - kst),
                   src_func(i - ist, j      , k - kst),
                   src_func(i      , j - jst, k - kst),
                   src_func(i - ist, j - jst, k - kst));
-              const Real abs_coeff_u = bilinear_interpolation(cc_y, cc_z,
+              const Real abs_coeff_u = bilinear_interpolation(cc_x, cc_y,
                   abs_coeff(i      , j      , k - kst),
                   abs_coeff(i - ist, j      , k - kst),
                   abs_coeff(i      , j - jst, k - kst),
@@ -560,6 +567,8 @@ template <typename Real> struct RT {
       Real global_max_diff = 0.0;
       MPI_Allreduce(&max_diff, &global_max_diff, 1, mpi_type<Real>(), MPI_MAX,
                     mpi_manager.cart_comm);
+      std::printf("%f %f\n", static_cast<double>(max_diff),
+                  static_cast<double>(global_max_diff));
       if (global_max_diff < tolerance)
         return;
     }

@@ -9,8 +9,8 @@ time:
   n_output_digits: 8
 
 grid:
-  i_size: 1024
-  j_size: 1024
+  i_size: 64
+  j_size: 64
   k_size: 1
   margin: 2
   xmin: -0.5
@@ -49,7 +49,7 @@ boundary_condition:
   boundary_type: standard
 
   periodic:
-    x: true
+    x: false
     y: true
     z: true
 

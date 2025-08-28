@@ -42,15 +42,15 @@ template <class Real> struct AngularQuadrature {
 
     weights = {ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0,
                ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0, ww0};
-    mu_x = {-mu0, +mu0, -mu0, +mu0, -mu0, +mu0, -mu0, +mu0,
+    mu_x = {-mu1, +mu1, -mu1, +mu1, -mu1, +mu1, -mu1, +mu1,
             -mu0, +mu0, -mu0, +mu0, -mu0, +mu0, -mu0, +mu0,
-            -mu1, +mu1, -mu1, +mu1, -mu1, +mu1, -mu1, +mu1};
+            -mu0, +mu0, -mu0, +mu0, -mu0, +mu0, -mu0, +mu0};
     mu_y = {-mu0, -mu0, +mu0, +mu0, -mu0, -mu0, +mu0, +mu0,
             -mu1, -mu1, +mu1, +mu1, -mu1, -mu1, +mu1, +mu1,
             -mu0, -mu0, +mu0, +mu0, -mu0, -mu0, +mu0, +mu0};
-    mu_z = {-mu1, -mu1, -mu1, -mu1, +mu1, +mu1, +mu1, +mu1,
+    mu_z = {-mu0, -mu0, -mu0, -mu0, +mu0, +mu0, +mu0, +mu0,
             -mu0, -mu0, -mu0, -mu0, +mu0, +mu0, +mu0, +mu0,
-            -mu0, -mu0, -mu0, -mu0, +mu0, +mu0, +mu0, +mu0};
+            -mu1, -mu1, -mu1, -mu1, +mu1, +mu1, +mu1, +mu1};
   };
 
   void compute_quadrature_single_positive_z() {
