@@ -2,7 +2,7 @@
 //// Searchlight problem of radiative transfer equation
 ////
 
-// #include <cmath>
+#include <cmath>
 // #include <cstdlib>
 // #include <filesystem>
 // #include <iostream>
@@ -70,9 +70,6 @@ void impose_incoming_ray(RT<Real> &rt, const Grid<Real> &grid,
               (r <= prm::rint_radius) ? prm::rint_incoming : 0.0;
         }
       }
-    }
-    if (ang_quad.mu_x[i_ray] < 0.0) {
-      // To be implemented
     }
   }
 }
