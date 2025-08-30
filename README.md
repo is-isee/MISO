@@ -48,6 +48,23 @@ find src include problems -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -nam
 mkdir -p .vscode && cp -i vscode/setting.json .vscode/setting.json
 ```
 
+自動フォーマットしたくない範囲は `// clang-format off` と `// clang-format on` で囲む。
+
+```c++
+template <typename Real>
+inline Real space_centered_4th(const Array3D<Real> &qq, Real dxyzi, int i, int j,
+                               int k, int is, int js, int ks) {
+  // clang-format off
+  return (
+        - qq(i + 2 * is, j + 2 * js, k + 2 * ks)
+        + 8.0 * qq(i + is, j + js, k + ks)
+        - 8.0 * qq(i - is, j - js, k - ks)
+        + qq(i - 2 * is, j - 2 * js, k - 2 * ks)
+      ) * inv12<Real> * dxyzi;
+  // clang-format on
+};
+```
+
 ## python
 
 シミュレーションデータ読み込みのためのpythonライブラリ`pyMISO`。

@@ -1,23 +1,31 @@
 base:
-  save_dir: data_x/
+  save_dir: data/
+  continue: false  # false: start from scratch
 
 time:
   time_save_dir: time/
-  tend: 0.2
-  dt_output: 0.01
+  tend: 1.0
+  dt_output: 0.1
   n_output_digits: 8
 
 grid:
-  i_size: 4
-  j_size: 5
-  k_size: 6
+  i_size: 64
+  j_size: 64
+  k_size: 1
   margin: 2
-  xmin: 0.0
-  xmax: 1.0
-  ymin: 0.0
-  ymax: 1.0
-  zmin: 0.0
-  zmax: 1.0
+  xmin: -0.5
+  xmax:  0.5
+  ymin: -0.5
+  ymax:  0.5
+  zmin: -0.5
+  zmax:  0.5
+
+mpi:
+  mpi_save_dir: mpi/
+  n_procs_digits: 8
+  x_procs: 1
+  y_procs: 1
+  z_procs: 1
 
 mhd:
   mhd_save_dir: mhd/
@@ -28,12 +36,13 @@ eos:
 time_integrator:
   cfl_number: 0.5
 
-mpi:
-  mpi_save_dir: mpi/
-  n_procs_digits: 8
-  x_procs: 1
-  y_procs: 1
-  z_procs: 1
+artificial_viscosity:
+  ep: 2.0
+  fh: 2.0
+  # for characteristic velocity
+  cs_fac: 0.5
+  ca_fac: 1.0
+  vv_fac: 1.0
 
 boundary_condition:
   # please use "standard" or "custom" for boundary_type
@@ -41,8 +50,8 @@ boundary_condition:
 
   periodic:
     x: false
-    y: false
-    z: false
+    y: true
+    z: true
 
   ro:
     x: [symmetric, symmetric]
@@ -88,7 +97,3 @@ boundary_condition:
     x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
-
-artificial_viscosity:
-  ep: 1.0
-  fh: 1.0

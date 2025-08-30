@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "array3d_cpu.hpp"
-#include "array4d.hpp"
+#include "array4d_cpu.hpp"
 #include "grid_cpu.hpp"
 #include "mpi_manager.hpp"
 #include "mpi_types.hpp"
@@ -38,29 +38,29 @@ template <typename Real> struct MHD {
   Real cfl_number;
 
   /// @brief  MPI communication buffers
-  Array4D<Real> recv_buff_x_plus, recv_buff_x_mnus;
-  Array4D<Real> recv_buff_y_plus, recv_buff_y_mnus;
-  Array4D<Real> recv_buff_z_plus, recv_buff_z_mnus;
-  Array4D<Real> send_buff_x_plus, send_buff_x_mnus;
-  Array4D<Real> send_buff_y_plus, send_buff_y_mnus;
-  Array4D<Real> send_buff_z_plus, send_buff_z_mnus;
+  Array4D<Real> recv_buff_x_pos, recv_buff_x_neg;
+  Array4D<Real> recv_buff_y_pos, recv_buff_y_neg;
+  Array4D<Real> recv_buff_z_pos, recv_buff_z_neg;
+  Array4D<Real> send_buff_x_pos, send_buff_x_neg;
+  Array4D<Real> send_buff_y_pos, send_buff_y_neg;
+  Array4D<Real> send_buff_z_pos, send_buff_z_neg;
 
   MHD(const Grid<Real> &grid)
       : qq(grid.i_total, grid.j_total, grid.k_total),
         qq_argm(grid.i_total, grid.j_total, grid.k_total),
         qq_rslt(grid.i_total, grid.j_total, grid.k_total),
-        recv_buff_x_plus(grid.i_margin, grid.j_total, grid.k_total, 9),
-        recv_buff_x_mnus(grid.i_margin, grid.j_total, grid.k_total, 9),
-        recv_buff_y_plus(grid.i_total, grid.j_margin, grid.k_total, 9),
-        recv_buff_y_mnus(grid.i_total, grid.j_margin, grid.k_total, 9),
-        recv_buff_z_plus(grid.i_total, grid.j_total, grid.k_margin, 9),
-        recv_buff_z_mnus(grid.i_total, grid.j_total, grid.k_margin, 9),
-        send_buff_x_plus(grid.i_margin, grid.j_total, grid.k_total, 9),
-        send_buff_x_mnus(grid.i_margin, grid.j_total, grid.k_total, 9),
-        send_buff_y_plus(grid.i_total, grid.j_margin, grid.k_total, 9),
-        send_buff_y_mnus(grid.i_total, grid.j_margin, grid.k_total, 9),
-        send_buff_z_plus(grid.i_total, grid.j_total, grid.k_margin, 9),
-        send_buff_z_mnus(grid.i_total, grid.j_total, grid.k_margin, 9) {}
+        recv_buff_x_pos(grid.i_margin, grid.j_total, grid.k_total, 9),
+        recv_buff_x_neg(grid.i_margin, grid.j_total, grid.k_total, 9),
+        recv_buff_y_pos(grid.i_total, grid.j_margin, grid.k_total, 9),
+        recv_buff_y_neg(grid.i_total, grid.j_margin, grid.k_total, 9),
+        recv_buff_z_pos(grid.i_total, grid.j_total, grid.k_margin, 9),
+        recv_buff_z_neg(grid.i_total, grid.j_total, grid.k_margin, 9),
+        send_buff_x_pos(grid.i_margin, grid.j_total, grid.k_total, 9),
+        send_buff_x_neg(grid.i_margin, grid.j_total, grid.k_total, 9),
+        send_buff_y_pos(grid.i_total, grid.j_margin, grid.k_total, 9),
+        send_buff_y_neg(grid.i_total, grid.j_margin, grid.k_total, 9),
+        send_buff_z_pos(grid.i_total, grid.j_total, grid.k_margin, 9),
+        send_buff_z_neg(grid.i_total, grid.j_total, grid.k_margin, 9) {}
 
   void save(const Config &config, const Time<Real> &time) const {
     std::string filename =
@@ -119,123 +119,111 @@ template <typename Real> struct MHD {
     int req_count = 0;
 
     // ################
-    // x_plus direction
-    if (mpi.x_procs_plus != MPI_PROC_NULL && grid.i_size > 1) {
+    // positive x-direction
+    if (mpi.x_procs_pos != MPI_PROC_NULL && grid.i_size > 1) {
       for (int i = 0; i < grid.i_margin; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
           for (int k = 0; k < grid.k_total; ++k) {
             for (int v = 0; v < 9; ++v) {
-              send_buff_x_plus(i, j, k, v) =
+              send_buff_x_pos(i, j, k, v) =
                   (*vars[v])(grid.i_total - 2 * grid.i_margin + i, j, k);
             }
           }
         }
       }
-      MPI_Isend(send_buff_x_plus.data(), send_buff_x_plus.size(),
-                mpi_type<Real>(), mpi.x_procs_plus, 100, mpi.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_x_plus.data(), recv_buff_x_plus.size(),
-                mpi_type<Real>(), mpi.x_procs_plus, 200, mpi.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_x_pos.data(), send_buff_x_pos.size(), mpi_type<Real>(),
+                mpi.x_procs_pos, 100, mpi.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_x_pos.data(), recv_buff_x_pos.size(), mpi_type<Real>(),
+                mpi.x_procs_pos, 200, mpi.cart_comm, &reqs[req_count++]);
     }
 
-    // x_mnus direction
-    if (mpi.x_procs_mnus != MPI_PROC_NULL && grid.i_size > 1) {
+    // negative x-direction
+    if (mpi.x_procs_neg != MPI_PROC_NULL && grid.i_size > 1) {
       for (int i = 0; i < grid.i_margin; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
           for (int k = 0; k < grid.k_total; ++k) {
             for (int v = 0; v < 9; ++v) {
-              send_buff_x_mnus(i, j, k, v) = (*vars[v])(grid.i_margin + i, j, k);
+              send_buff_x_neg(i, j, k, v) = (*vars[v])(grid.i_margin + i, j, k);
             }
           }
         }
       }
-      MPI_Isend(send_buff_x_mnus.data(), send_buff_x_mnus.size(),
-                mpi_type<Real>(), mpi.x_procs_mnus, 200, mpi.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_x_mnus.data(), recv_buff_x_mnus.size(),
-                mpi_type<Real>(), mpi.x_procs_mnus, 100, mpi.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_x_neg.data(), send_buff_x_neg.size(), mpi_type<Real>(),
+                mpi.x_procs_neg, 200, mpi.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_x_neg.data(), recv_buff_x_neg.size(), mpi_type<Real>(),
+                mpi.x_procs_neg, 100, mpi.cart_comm, &reqs[req_count++]);
     }
 
     // ################
-    // y_plus direction
-    if (mpi.y_procs_plus != MPI_PROC_NULL && grid.j_size > 1) {
+    // positive y-direction
+    if (mpi.y_procs_pos != MPI_PROC_NULL && grid.j_size > 1) {
       for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_margin; ++j) {
           for (int k = 0; k < grid.k_total; ++k) {
             for (int v = 0; v < 9; ++v) {
-              send_buff_y_plus(i, j, k, v) =
+              send_buff_y_pos(i, j, k, v) =
                   (*vars[v])(i, grid.j_total - 2 * grid.j_margin + j, k);
             }
           }
         }
       }
-      MPI_Isend(send_buff_y_plus.data(), send_buff_y_plus.size(),
-                mpi_type<Real>(), mpi.y_procs_plus, 300, mpi.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_y_plus.data(), recv_buff_y_plus.size(),
-                mpi_type<Real>(), mpi.y_procs_plus, 400, mpi.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_y_pos.data(), send_buff_y_pos.size(), mpi_type<Real>(),
+                mpi.y_procs_pos, 300, mpi.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_y_pos.data(), recv_buff_y_pos.size(), mpi_type<Real>(),
+                mpi.y_procs_pos, 400, mpi.cart_comm, &reqs[req_count++]);
     }
 
-    // y_mnus direction
-    if (mpi.y_procs_mnus != MPI_PROC_NULL && grid.j_size > 1) {
+    // negative y-direction
+    if (mpi.y_procs_neg != MPI_PROC_NULL && grid.j_size > 1) {
       for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_margin; ++j) {
           for (int k = 0; k < grid.k_total; ++k) {
             for (int v = 0; v < 9; ++v) {
-              send_buff_y_mnus(i, j, k, v) = (*vars[v])(i, grid.j_margin + j, k);
+              send_buff_y_neg(i, j, k, v) = (*vars[v])(i, grid.j_margin + j, k);
             }
           }
         }
       }
-      MPI_Isend(send_buff_y_mnus.data(), send_buff_y_mnus.size(),
-                mpi_type<Real>(), mpi.y_procs_mnus, 400, mpi.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_y_mnus.data(), recv_buff_y_mnus.size(),
-                mpi_type<Real>(), mpi.y_procs_mnus, 300, mpi.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_y_neg.data(), send_buff_y_neg.size(), mpi_type<Real>(),
+                mpi.y_procs_neg, 400, mpi.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_y_neg.data(), recv_buff_y_neg.size(), mpi_type<Real>(),
+                mpi.y_procs_neg, 300, mpi.cart_comm, &reqs[req_count++]);
     }
 
     // ################
-    // z_plus direction
-    if (mpi.z_procs_plus != MPI_PROC_NULL && grid.k_size > 1) {
+    // positive z-direction
+    if (mpi.z_procs_pos != MPI_PROC_NULL && grid.k_size > 1) {
       for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
           for (int k = 0; k < grid.k_margin; ++k) {
             for (int v = 0; v < 9; ++v) {
-              send_buff_z_plus(i, j, k, v) =
+              send_buff_z_pos(i, j, k, v) =
                   (*vars[v])(i, j, grid.k_total - 2 * grid.k_margin + k);
             }
           }
         }
       }
-      MPI_Isend(send_buff_z_plus.data(), send_buff_z_plus.size(),
-                mpi_type<Real>(), mpi.z_procs_plus, 500, mpi.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_z_plus.data(), recv_buff_z_plus.size(),
-                mpi_type<Real>(), mpi.z_procs_plus, 600, mpi.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_z_pos.data(), send_buff_z_pos.size(), mpi_type<Real>(),
+                mpi.z_procs_pos, 500, mpi.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_z_pos.data(), recv_buff_z_pos.size(), mpi_type<Real>(),
+                mpi.z_procs_pos, 600, mpi.cart_comm, &reqs[req_count++]);
     }
 
-    // z_mnus direction
-    if (mpi.z_procs_mnus != MPI_PROC_NULL && grid.k_size > 1) {
+    // negative z-direction
+    if (mpi.z_procs_neg != MPI_PROC_NULL && grid.k_size > 1) {
       for (int i = 0; i < grid.i_total; ++i) {
         for (int j = 0; j < grid.j_total; ++j) {
           for (int k = 0; k < grid.k_margin; ++k) {
             for (int v = 0; v < 9; ++v) {
-              send_buff_z_mnus(i, j, k, v) = (*vars[v])(i, j, grid.k_margin + k);
+              send_buff_z_neg(i, j, k, v) = (*vars[v])(i, j, grid.k_margin + k);
             }
           }
         }
       }
-      MPI_Isend(send_buff_z_mnus.data(), send_buff_z_mnus.size(),
-                mpi_type<Real>(), mpi.z_procs_mnus, 600, mpi.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_z_mnus.data(), recv_buff_z_mnus.size(),
-                mpi_type<Real>(), mpi.z_procs_mnus, 500, mpi.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_z_neg.data(), send_buff_z_neg.size(), mpi_type<Real>(),
+                mpi.z_procs_neg, 600, mpi.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_z_neg.data(), recv_buff_z_neg.size(), mpi_type<Real>(),
+                mpi.z_procs_neg, 500, mpi.cart_comm, &reqs[req_count++]);
     }
 
     if (req_count > 0) {
@@ -243,27 +231,27 @@ template <typename Real> struct MHD {
     }
 
     // ################
-    // x_plus direction
-    if (mpi.x_procs_plus != MPI_PROC_NULL && grid.i_size > 1) {
+    // positive x-direction
+    if (mpi.x_procs_pos != MPI_PROC_NULL && grid.i_size > 1) {
       for (int v = 0; v < 9; ++v) {
         for (int i = 0; i < grid.i_margin; ++i) {
           for (int j = 0; j < grid.j_total; ++j) {
             for (int k = 0; k < grid.k_total; ++k) {
               (*vars[v])(grid.i_total - grid.i_margin + i, j, k) =
-                  recv_buff_x_plus(i, j, k, v);
+                  recv_buff_x_pos(i, j, k, v);
             }
           }
         }
       }
     }
 
-    // x_mnus direction
-    if (mpi.x_procs_mnus != MPI_PROC_NULL && grid.i_size > 1) {
+    // negative x-direction
+    if (mpi.x_procs_neg != MPI_PROC_NULL && grid.i_size > 1) {
       for (int v = 0; v < 9; ++v) {
         for (int i = 0; i < grid.i_margin; ++i) {
           for (int j = 0; j < grid.j_total; ++j) {
             for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, j, k) = recv_buff_x_mnus(i, j, k, v);
+              (*vars[v])(i, j, k) = recv_buff_x_neg(i, j, k, v);
             }
           }
         }
@@ -271,27 +259,27 @@ template <typename Real> struct MHD {
     }
 
     // ################
-    // y_plus direction
-    if (mpi.y_procs_plus != MPI_PROC_NULL && grid.j_size > 1) {
+    // positive y-direction
+    if (mpi.y_procs_pos != MPI_PROC_NULL && grid.j_size > 1) {
       for (int v = 0; v < 9; ++v) {
         for (int i = 0; i < grid.i_total; ++i) {
           for (int j = 0; j < grid.j_margin; ++j) {
             for (int k = 0; k < grid.k_total; ++k) {
               (*vars[v])(i, grid.j_total - grid.j_margin + j, k) =
-                  recv_buff_y_plus(i, j, k, v);
+                  recv_buff_y_pos(i, j, k, v);
             }
           }
         }
       }
     }
 
-    // y_mnus direction
-    if (mpi.y_procs_mnus != MPI_PROC_NULL && grid.j_size > 1) {
+    // negative y-direction
+    if (mpi.y_procs_neg != MPI_PROC_NULL && grid.j_size > 1) {
       for (int v = 0; v < 9; ++v) {
         for (int i = 0; i < grid.i_total; ++i) {
           for (int j = 0; j < grid.j_margin; ++j) {
             for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, j, k) = recv_buff_y_mnus(i, j, k, v);
+              (*vars[v])(i, j, k) = recv_buff_y_neg(i, j, k, v);
             }
           }
         }
@@ -299,27 +287,27 @@ template <typename Real> struct MHD {
     }
 
     // ################
-    // z_plus direction
-    if (mpi.z_procs_plus != MPI_PROC_NULL && grid.k_size > 1) {
+    // positive z-direction
+    if (mpi.z_procs_pos != MPI_PROC_NULL && grid.k_size > 1) {
       for (int v = 0; v < 9; ++v) {
         for (int i = 0; i < grid.i_total; ++i) {
           for (int j = 0; j < grid.j_total; ++j) {
             for (int k = 0; k < grid.k_margin; ++k) {
               (*vars[v])(i, j, grid.k_total - grid.k_margin + k) =
-                  recv_buff_z_plus(i, j, k, v);
+                  recv_buff_z_pos(i, j, k, v);
             }
           }
         }
       }
     }
 
-    // z_mnus direction
-    if (mpi.z_procs_mnus != MPI_PROC_NULL && grid.k_size > 1) {
+    // negative z-direction
+    if (mpi.z_procs_neg != MPI_PROC_NULL && grid.k_size > 1) {
       for (int v = 0; v < 9; ++v) {
         for (int i = 0; i < grid.i_total; ++i) {
           for (int j = 0; j < grid.j_total; ++j) {
             for (int k = 0; k < grid.k_margin; ++k) {
-              (*vars[v])(i, j, k) = recv_buff_z_mnus(i, j, k, v);
+              (*vars[v])(i, j, k) = recv_buff_z_neg(i, j, k, v);
             }
           }
         }

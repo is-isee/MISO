@@ -28,6 +28,7 @@ public:
     return array[i * j_total * k_total * l_total + j * k_total * l_total +
                  k * l_total + l];
   }
+
   /// @brief overload function for accessing the 4D array elements (const version)
   /// @param i i index
   /// @param j j index
@@ -41,17 +42,22 @@ public:
 
   /// @brief overload function for accessing the 4D array elements
   T *data() { return array.data(); }
+
   /// @brief overload function for accessing the 4D array elements (const version)
   const T *data() const { return array.data(); }
 
   /// @brief Get size in x direction
   int size_x() const { return i_total; }
+
   /// @brief Get size in y direction
   int size_y() const { return j_total; }
+
   /// @brief Get size in z direction
   int size_z() const { return k_total; }
+
   /// @brief Get size in type direction
   int size_w() const { return l_total; }
+
   /// @brief Get total size of the array
   int size() const { return i_total * j_total * k_total * l_total; }
 

@@ -13,6 +13,7 @@
 #include "time_cpu.hpp"
 
 #include "mhd_cpu.hpp"
+#include "radiative_transfer_cpu.hpp"
 #ifdef USE_CUDA
 #include "cuda_manager.cuh"
 #include "grid_gpu.cuh"
@@ -28,6 +29,11 @@ template <typename Real> struct Model {
   Grid<Real> grid_local;
   EOS<Real> eos;
   MHD<Real> mhd;
+
+  /// TODO: make num_rays configurable
+  static constexpr int num_rays = 24;
+  RT<Real> rt;
+
 #ifdef USE_CUDA
   GridDevice<Real> grid_d;
   MHDDevice<Real> mhd_d;
@@ -42,11 +48,11 @@ template <typename Real> struct Model {
         mhd_d(grid_local, mhd), grid_d(grid_local), cuda(grid_local),
         time_d(cuda),
 #endif
-        mhd(grid_local) {
+        mhd(grid_local), rt(grid_local, num_rays) {
   }
 
   Model(Config &config_, Time<Real> &time_, Grid<Real> &grid_global_,
-        Grid<Real> &grid_local_, EOS<Real> &eos_, MHD<Real> &mhd_,
+        Grid<Real> &grid_local_, EOS<Real> &eos_, MHD<Real> &mhd_, RT<Real> &rt_,
         MPIManager<Real> &mpi_)
       : config(config_), time(time_), grid_global(grid_global_),
         grid_local(grid_local_), eos(eos_), mpi(mpi_),
@@ -54,7 +60,7 @@ template <typename Real> struct Model {
         mhd_d(grid_local, mhd_), grid_d(grid_local), cuda(grid_local),
         time_d(cuda),
 #endif
-        mhd(mhd_) {
+        mhd(mhd_), rt(rt_) {
   }
 
   void save_metadata() {
