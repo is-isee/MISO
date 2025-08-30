@@ -12,8 +12,8 @@ template <typename Real> struct MPIManager {
   static constexpr int ndims = 3;
   int coord[ndims];
   int x_procs, y_procs, z_procs;
-  int x_procs_plus, y_procs_plus, z_procs_plus;
-  int x_procs_mnus, y_procs_mnus, z_procs_mnus;
+  int x_procs_pos, y_procs_pos, z_procs_pos;
+  int x_procs_neg, y_procs_neg, z_procs_neg;
   int n_procs_digits;
 
   MPIManager() {
@@ -28,6 +28,8 @@ template <typename Real> struct MPIManager {
     }
     MPI_Finalize();
   }
+
+  constexpr bool is_root() const noexcept { return myrank == 0; }
 
   void init_parameters(const YAML::Node &yaml_obj) {
     n_procs_digits = yaml_obj["mpi"]["n_procs_digits"].template as<int>();
@@ -73,9 +75,9 @@ template <typename Real> struct MPIManager {
 
     MPI_Cart_coords(cart_comm, myrank, ndims, coord);
     int merr;
-    merr = MPI_Cart_shift(cart_comm, 0, 1, &x_procs_mnus, &x_procs_plus);
-    merr = MPI_Cart_shift(cart_comm, 1, 1, &y_procs_mnus, &y_procs_plus);
-    merr = MPI_Cart_shift(cart_comm, 2, 1, &z_procs_mnus, &z_procs_plus);
+    merr = MPI_Cart_shift(cart_comm, 0, 1, &x_procs_neg, &x_procs_pos);
+    merr = MPI_Cart_shift(cart_comm, 1, 1, &y_procs_neg, &y_procs_pos);
+    merr = MPI_Cart_shift(cart_comm, 2, 1, &z_procs_neg, &z_procs_pos);
   }
 
   void setup_mpi(YAML::Node &yaml_obj) {

@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
@@ -12,6 +13,7 @@
 
 /// @brief Utility functions
 namespace util {
+
 /// @brief zero-fill integer to string
 /// @param num target integer number
 /// @param width width of the string
@@ -27,7 +29,6 @@ inline std::string zfill(int num, int width) {
 /// @param x target value
 /// @return squared value
 template <typename T> inline T pow2(T x) { return x * x; }
-
 template <typename T> inline T pow3(T x) { return x * x * x; }
 template <typename T> inline T pow4(T x) { return x * x * x * x; }
 
@@ -65,4 +66,12 @@ inline Endian get_endian() {
   uint32_t num = 1;
   return (*reinterpret_cast<uint8_t *>(&num) == 1) ? Endian::Little : Endian::Big;
 }
+
+// @brief Clear array (zero-fill)
+template <typename VectorLike>
+HOST_DEVICE inline void clear_array(VectorLike &arr) {
+  using T = std::decay_t<decltype(*arr.data())>;
+  std::fill(arr.data(), arr.data() + arr.size(), T(0));
+}
+
 };  // namespace util
