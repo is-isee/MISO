@@ -24,14 +24,16 @@ __global__ void characteristic_velocity_eval_kernel(Array3DDevice<Real> cc_d,
   int k = blockIdx.z * blockDim.z + threadIdx.z;
 
   if (i <= grid.i_total - 1 && j <= grid.j_total - 1 && k <= grid.k_total - 1) {
+    // clang-format off
     Real cs = std::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei[grid.idx(i, j, k)]);
-    Real vv = std::sqrt(+qq.vx[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)] +
+    Real vv = std::sqrt(qq.vx[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)] +
                         qq.vy[grid.idx(i, j, k)] * qq.vy[grid.idx(i, j, k)] +
                         qq.vz[grid.idx(i, j, k)] * qq.vz[grid.idx(i, j, k)]);
-    Real ca = std::sqrt((+qq.bx[grid.idx(i, j, k)] * qq.bx[grid.idx(i, j, k)] +
+    Real ca = std::sqrt((qq.bx[grid.idx(i, j, k)] * qq.bx[grid.idx(i, j, k)] +
                          qq.by[grid.idx(i, j, k)] * qq.by[grid.idx(i, j, k)] +
                          qq.bz[grid.idx(i, j, k)] * qq.bz[grid.idx(i, j, k)]) /
-                        qq.ro[grid.idx(i, j, k)] * pii4<Real>);
+                         qq.ro[grid.idx(i, j, k)] * pii4<Real>);
+    // clang-format on
     cc_d[grid.idx(i, j, k)] = cs * cs_fac + vv * vv_fac + ca * ca_fac;
   }
 }
@@ -49,16 +51,18 @@ update_ro_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     // density
     Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.ro[grid.idx(i, j, k)];
-    Real qqr1 = qq.ro[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.ro[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
 
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
@@ -90,20 +94,23 @@ update_vx_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     // x momentum
     Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
                 qq.vx[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i - is, j - js, k - ks)] *
-                qq.vx[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.ro[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)];
-    Real qqr1 = qq.ro[grid.idx(i + is, j + js, k + ks)] *
-                qq.vx[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
+                qq.vx[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] *
+                qq.vx[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
+                qq.vx[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
                 qq.vx[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
@@ -135,20 +142,23 @@ update_vy_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     // x momentum
     Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
                 qq.vy[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i - is, j - js, k - ks)] *
-                qq.vy[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.ro[grid.idx(i, j, k)] * qq.vy[grid.idx(i, j, k)];
-    Real qqr1 = qq.ro[grid.idx(i + is, j + js, k + ks)] *
-                qq.vy[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
+                qq.vy[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] *
+                qq.vy[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
+                qq.vy[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
                 qq.vy[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
@@ -180,20 +190,23 @@ update_vz_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     // x momentum
     Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
                 qq.vz[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i - is, j - js, k - ks)] *
-                qq.vz[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.ro[grid.idx(i, j, k)] * qq.vz[grid.idx(i, j, k)];
-    Real qqr1 = qq.ro[grid.idx(i + is, j + js, k + ks)] *
-                qq.vz[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
+                qq.vz[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] * 
+                qq.vz[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
+                qq.vz[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
                 qq.vz[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
@@ -225,15 +238,17 @@ update_bx_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     Real qql2 = qq.bx[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.bx[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.bx[grid.idx(i, j, k)];
-    Real qqr1 = qq.bx[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.bx[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.bx[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.bx[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.bx[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
@@ -264,15 +279,18 @@ update_by_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     Real qql2 = qq.by[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.by[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.by[grid.idx(i, j, k)];
-    Real qqr1 = qq.by[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.by[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.by[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.by[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.by[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
+
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
@@ -303,15 +321,18 @@ update_bz_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     Real qql2 = qq.bz[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.bz[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.bz[grid.idx(i, j, k)];
-    Real qqr1 = qq.bz[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.bz[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.bz[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.bz[grid.idx(i +     is, j +     js, k +      ks)];
     Real qqr2 = qq.bz[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
+
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
@@ -342,15 +363,17 @@ update_ph_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     Real qql2 = qq.ph[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ph[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.ph[grid.idx(i, j, k)];
-    Real qqr1 = qq.ph[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.ph[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.ph[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.ph[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.ph[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
@@ -381,20 +404,23 @@ update_ei_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
+    // clang-format off
     Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i, j, k)];
+    Real ccc = cc[grid.idx(i     , j     , k     )];
     Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
 
     // total energy
     Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
                 qq.ei[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i - is, j - js, k - ks)] *
-                qq.ei[grid.idx(i - is, j - js, k - ks)];
-    Real qqc = qq.ro[grid.idx(i, j, k)] * qq.ei[grid.idx(i, j, k)];
-    Real qqr1 = qq.ro[grid.idx(i + is, j + js, k + ks)] *
-                qq.ei[grid.idx(i + is, j + js, k + ks)];
+    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
+                qq.ei[grid.idx(i -     is, j -     js, k -     ks)];
+    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] * 
+                qq.ei[grid.idx(i         , j         , k         )];
+    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
+                qq.ei[grid.idx(i +     is, j +     js, k +     ks)];
     Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
                 qq.ei[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k

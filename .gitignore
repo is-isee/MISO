@@ -61,3 +61,6 @@ CMakeCache.txt
 
 # python version file
 pyMISO/_version.py
+
+# vs code settings
+.vscode/
