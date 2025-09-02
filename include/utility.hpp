@@ -68,8 +68,7 @@ inline Endian get_endian() {
 }
 
 // @brief Clear array (zero-fill)
-template <typename VectorLike>
-HOST_DEVICE inline void clear_array(VectorLike &arr) {
+template <typename VectorLike> __host__ inline void clear_array(VectorLike &arr) {
   using T = std::decay_t<decltype(*arr.data())>;
   std::fill(arr.data(), arr.data() + arr.size(), T(0));
 }
