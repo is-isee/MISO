@@ -7,8 +7,10 @@
 
 #if defined(__CUDACC__)
 #define HOST_DEVICE __host__ __device__
+#define HOST __host__
 #else
 #define HOST_DEVICE
+#define HOST
 #endif
 
 /// @brief Utility functions
@@ -68,8 +70,7 @@ inline Endian get_endian() {
 }
 
 // @brief Clear array (zero-fill)
-template <typename VectorLike>
-HOST_DEVICE inline void clear_array(VectorLike &arr) {
+template <typename VectorLike> HOST inline void clear_array(VectorLike &arr) {
   using T = std::decay_t<decltype(*arr.data())>;
   std::fill(arr.data(), arr.data() + arr.size(), T(0));
 }

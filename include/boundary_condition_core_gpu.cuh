@@ -2,6 +2,7 @@
 
 #ifdef USE_CUDA
 #include "boundary_condition_core.hpp"
+#include "grid_gpu.cuh"
 #include <string>
 
 namespace bnd {
