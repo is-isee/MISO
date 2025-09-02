@@ -48,7 +48,7 @@ find src include problems -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -nam
 mkdir -p .vscode && cp -i vscode/setting.json .vscode/setting.json
 ```
 
-自動フォーマットしたくない範囲は `// clang-format off` と `// clang-format on` で囲む。
+自動フォーマットしたくない範囲は `// clang-format off` と `// clang-format on` で囲む(`off`や`on`の後にスペースが挿入されていると動かないので注意)。
 
 ```c++
 template <typename Real>

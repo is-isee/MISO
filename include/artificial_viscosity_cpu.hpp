@@ -108,16 +108,19 @@ template <typename Real> struct ArtificialViscosity {
       for (int j = j0_; j < j1_; ++j) {
         for (int k = k0_; k < k1_; ++k) {
           // chracteristic velocity
+
+          // clang-format off
           ccl = cc(i - is, j - js, k - ks);
-          ccc = cc(i, j, k);
+          ccc = cc(i     , j     , k     );
           ccr = cc(i + is, j + js, k + ks);
 
           // density
           qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks);
-          qql1 = qq.ro(i - is, j - js, k - ks);
-          qqc = qq.ro(i, j, k);
-          qqr1 = qq.ro(i + is, j + js, k + ks);
+          qql1 = qq.ro(i -     is, j -     js, k -     ks);
+          qqc  = qq.ro(i         , j         , k         );
+          qqr1 = qq.ro(i +     is, j +     js, k +     ks);
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks);
+          // clang-format on
           // dqq at i-is, j-js, k-2ks
           dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, this->ep);
           // dqq at i, j, k
@@ -134,13 +137,18 @@ template <typename Real> struct ArtificialViscosity {
               (fro_up - fro_dw) * dxyzi[i * is + j * js + k * ks] * time.dt;
 
           // x momentum
+          // clang-format off
           qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
                  qq.vx(i - 2 * is, j - 2 * js, k - 2 * ks);
-          qql1 = qq.ro(i - is, j - js, k - ks) * qq.vx(i - is, j - js, k - ks);
-          qqc = qq.ro(i, j, k) * qq.vx(i, j, k);
-          qqr1 = qq.ro(i + is, j + js, k + ks) * qq.vx(i + is, j + js, k + ks);
+          qql1 = qq.ro(i -     is, j -     js, k -     ks) * 
+                 qq.vx(i -     is, j -     js, k -     ks);
+          qqc  = qq.ro(i         , j         , k         ) *
+                 qq.vx(i         , j         , k         );
+          qqr1 = qq.ro(i +     is, j +     js, k +     ks) * 
+                 qq.vx(i +     is, j +     js, k +     ks);
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
                  qq.vx(i + 2 * is, j + 2 * js, k + 2 * ks);
+          // clang-format on
           // dqq at i-is, j-js, k-2ks
           dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, this->ep);
           // dqq at i, j, k
@@ -158,13 +166,18 @@ template <typename Real> struct ArtificialViscosity {
               qq_rslt.ro(i, j, k);
 
           // y momentum
+          // clang-format off
           qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
                  qq.vy(i - 2 * is, j - 2 * js, k - 2 * ks);
-          qql1 = qq.ro(i - is, j - js, k - ks) * qq.vy(i - is, j - js, k - ks);
-          qqc = qq.ro(i, j, k) * qq.vy(i, j, k);
-          qqr1 = qq.ro(i + is, j + js, k + ks) * qq.vy(i + is, j + js, k + ks);
+          qql1 = qq.ro(i -     is, j -     js, k -     ks) *
+                 qq.vy(i -     is, j -     js, k -     ks);
+          qqc  = qq.ro(i         , j         , k         ) *
+                 qq.vy(i         , j         , k         );
+          qqr1 = qq.ro(i +     is, j +     js, k +     ks) *
+                 qq.vy(i +     is, j +     js, k +     ks);
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
                  qq.vy(i + 2 * is, j + 2 * js, k + 2 * ks);
+          // clang-format on
           // dqq at i-is, j-js, k-2ks
           dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, this->ep);
           // dqq at i, j, k
@@ -182,11 +195,15 @@ template <typename Real> struct ArtificialViscosity {
               qq_rslt.ro(i, j, k);
 
           // z momentum
+          // clang-format off
           qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
                  qq.vz(i - 2 * is, j - 2 * js, k - 2 * ks);
-          qql1 = qq.ro(i - is, j - js, k - ks) * qq.vz(i - is, j - js, k - ks);
-          qqc = qq.ro(i, j, k) * qq.vz(i, j, k);
-          qqr1 = qq.ro(i + is, j + js, k + ks) * qq.vz(i + is, j + js, k + ks);
+          qql1 = qq.ro(i -     is, j -     js, k -     ks) *
+                 qq.vz(i -     is, j -     js, k -     ks);
+          qqc  = qq.ro(i         , j         , k         ) *
+                 qq.vz(i         , j         , k         );
+          qqr1 = qq.ro(i +     is, j +     js, k +     ks) *
+                 qq.vz(i + is, j + js, k + ks);
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
                  qq.vz(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
