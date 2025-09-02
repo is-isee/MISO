@@ -203,7 +203,7 @@ template <typename Real> struct ArtificialViscosity {
           qqc  = qq.ro(i         , j         , k         ) *
                  qq.vz(i         , j         , k         );
           qqr1 = qq.ro(i +     is, j +     js, k +     ks) *
-                 qq.vz(i + is, j + js, k + ks);
+                 qq.vz(i +     is, j +     js, k +     ks);
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
                  qq.vz(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
