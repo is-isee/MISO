@@ -1,0 +1,37 @@
+{
+    "name": "cpp-cuda (NVHPC)",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": [
+        "--gpus",
+        "all"
+    ],
+    // "remoteUser": "vscode",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "nvidia.nsight-cuda"
+            ],
+            "settings": {
+                "editor.insertSpaces": true,
+                "editor.formatOnSave": true,
+                "C_Cpp.formatting": "clangFormat",
+                "C_Cpp.clang_format_style": "file",
+                "C_Cpp.default.defines": [
+                    "USE_CUDA"
+                ],
+                "files.associations": {
+                    "*.cu": "cuda-cpp",
+                    "*.cuh": "cuda-cpp"
+                },
+                "[cuda-cpp]": {
+                    "editor.tabSize": 2,
+                    "editor.defaultFormatter": "ms-vscode.cpptools"
+                }
+            }
+        }
+    }
+}
