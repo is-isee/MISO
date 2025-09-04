@@ -1,0 +1,26 @@
+{
+    "name": "cpp-cuda (NVHPC)",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": [
+        "--gpus",
+        "all"
+    ],
+    // "remoteUser": "vscode",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "nvidia.nsight-cuda",
+                "charliermarsh.ruff"
+            ],
+            "settings": {
+                "C_Cpp.default.defines": [
+                    "USE_CUDA"
+                ]
+            }
+        }
+    }
+}
