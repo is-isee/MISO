@@ -5,6 +5,10 @@
 #include <mpi.h>
 #include <yaml-cpp/yaml.h>
 
+#ifdef USE_CUDA
+#include <cuda_runtime.h>
+#endif
+
 template <typename Real> struct MPIManager {
   MPI_Comm cart_comm = MPI_COMM_NULL;
   int myrank = -1;
@@ -83,5 +87,9 @@ template <typename Real> struct MPIManager {
   void setup_mpi(YAML::Node &yaml_obj) {
     init_parameters(yaml_obj);
     set_cart_comm(yaml_obj);
+
+#ifdef USE_CUDA
+    cudaSetDevice(myrank);
+#endif
   }
 };
