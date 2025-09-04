@@ -136,7 +136,7 @@ ctrl + shift + P (Win)/cmd + shift + P (Mac)でコマンドパレットを開き
 
 `.devcontainer/devcontainer.json`に設定あり。
 
-- Dovker
+- Docker
 - NVIDIA Driver
 - NVIDIA Container Toolkit
 が必要。
