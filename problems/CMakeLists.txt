@@ -1,6 +1,7 @@
 set(PROBLEM_EXECUTABLES)
 
 foreach(PROBLEM_DIR
+        cuda_test
         hd_shock_tube_1d
         mhd_shock_tube_1d
         mhd_vortex_2d
