@@ -1,7 +1,6 @@
 set(PROBLEM_EXECUTABLES)
 
 foreach(PROBLEM_DIR
-        cuda_test
         hd_shock_tube_1d
         mhd_shock_tube_1d
         mhd_vortex_2d
@@ -11,5 +10,10 @@ foreach(PROBLEM_DIR
     add_subdirectory(${PROBLEM_DIR})
     list(APPEND PROBLEM_EXECUTABLES ${PROBLEM_DIR})
 endforeach()
+
+if(USE_CUDA)
+    add_subdirectory(cuda_test)
+    list(APPEND PROBLEM_EXECUTABLES cuda_test)
+endif()
 
 add_custom_target(all_problems DEPENDS ${PROBLEM_EXECUTABLES})
