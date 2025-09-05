@@ -58,7 +58,7 @@ __global__ void pack_y_send(MHDCoreDevice<Real> qq_trgt,
   const int j_src = (face == Face::Pos) ? (grid.j_total - 2 * grid.j_margin + j)
                                         : (grid.j_margin + j);
   const size_t src_idx = grid.idx(i, j_src, k);
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_var;
+  const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_var;
 
   const Real *__restrict__ var[n_var] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
                                          qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
@@ -87,7 +87,7 @@ __global__ void pack_z_send(MHDCoreDevice<Real> qq_trgt,
   const int k_src = (face == Face::Pos) ? (grid.k_total - 2 * grid.k_margin + k)
                                         : (grid.k_margin + k);
   const size_t src_idx = grid.idx(i, j, k_src);
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_var;
+  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_var;
 
   const Real *__restrict__ var[n_var] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
                                          qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
@@ -142,7 +142,7 @@ __global__ void unpack_y_recv(MHDCoreDevice<Real> qq_trgt,
   const int j_tgt = (face == Face::Pos) ? grid.j_total - grid.j_margin + j : j;
 
   const size_t tgt_idx = grid.idx(i, j_tgt, k);
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_var;
+  const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_var;
 
   Real *__restrict__ var[n_var] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
                                    qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
@@ -169,7 +169,7 @@ __global__ void unpack_z_recv(MHDCoreDevice<Real> qq_trgt,
   const int k_tgt = (face == Face::Pos) ? grid.k_total - grid.k_margin + k : k;
 
   const size_t tgt_idx = grid.idx(i, j, k_tgt);
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_var;
+  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_var;
 
   Real *__restrict__ var[n_var] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
                                    qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
