@@ -11,4 +11,9 @@ foreach(PROBLEM_DIR
     list(APPEND PROBLEM_EXECUTABLES ${PROBLEM_DIR})
 endforeach()
 
+if(USE_CUDA)
+    add_subdirectory(cuda_test)
+    list(APPEND PROBLEM_EXECUTABLES cuda_test)
+endif()
+
 add_custom_target(all_problems DEPENDS ${PROBLEM_EXECUTABLES})
