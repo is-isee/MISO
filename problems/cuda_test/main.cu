@@ -1,3 +1,9 @@
+#ifdef USE_CUDA
+#include "config.hpp"
+#include "model.hpp"
+#include "types.hpp"
+#include "utility.hpp"
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -6,18 +12,9 @@
 #include <string>
 #include <vector>
 
-#include "config.hpp"
-#include "model.hpp"
-#include "types.hpp"
-#include "utility.hpp"
-
-#ifdef USE_CUDA
 #include "cuda_manager.cuh"
 #include "cuda_runtime.h"
 #include "time_integrator_gpu.cuh"
-#else
-#include "time_integrator_cpu.hpp"
-#endif
 
 __global__ void initialize_density(MHDDevice<Real> mhd, int i_total, int j_total,
                                    int k_total) {
@@ -32,7 +29,7 @@ __global__ void initialize_density(MHDDevice<Real> mhd, int i_total, int j_total
 }
 
 int main() {
-  std::vector<std::string> directions = {"y"};
+  std::vector<std::string> directions = {"x", "y"};
 
   std::string config_dir = CONFIG_DIR;
   MPIManager<Real> mpi;
@@ -73,8 +70,6 @@ int main() {
             if (direction == "x") {
               if (mpi.myrank == 0 &&
                   i >= model.grid_local.i_total - model.grid_local.i_margin) {
-                std::cout << "i=" << i << ", j=" << j << ", k=" << k
-                          << ", ro=" << model.mhd.qq.ro(i, j, k) << std::endl;
                 assert(model.mhd.qq.ro(i, j, k) == 1);
               }
               if (mpi.myrank == 1 && i < model.grid_local.i_margin) {
@@ -83,11 +78,17 @@ int main() {
             } else if (direction == "y") {
               if (mpi.myrank == 0 &&
                   j >= model.grid_local.j_total - model.grid_local.j_margin) {
-                std::cout << "i=" << i << ", j=" << j << ", k=" << k
-                          << ", ro=" << model.mhd.qq.ro(i, j, k) << std::endl;
                 assert(model.mhd.qq.ro(i, j, k) == 1);
               }
               if (mpi.myrank == 1 && j < model.grid_local.j_margin) {
+                assert(model.mhd.qq.ro(i, j, k) == 0);
+              }
+            } else if (direction == "z") {
+              if (mpi.myrank == 0 &&
+                  k >= model.grid_local.k_total - model.grid_local.k_margin) {
+                assert(model.mhd.qq.ro(i, j, k) == 1);
+              }
+              if (mpi.myrank == 1 && k < model.grid_local.k_margin) {
                 assert(model.mhd.qq.ro(i, j, k) == 0);
               }
             }
@@ -100,3 +101,4 @@ int main() {
   }
   return 0;
 }
+#endif
