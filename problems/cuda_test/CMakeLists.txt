@@ -16,3 +16,16 @@ add_custom_target(clean_data_${PROBLEM_NAME}
   COMMAND /bin/sh -c "rm -rf ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/data*"
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}
 )
+
+function(enable_always_assert_for target)
+  # C/C++
+  target_compile_options(${target} PRIVATE
+    $<$<COMPILE_LANGUAGE:C>:-UNDEBUG>
+    $<$<COMPILE_LANGUAGE:CXX>:-UNDEBUG>
+  )
+  # CUDA（デバイス側にも、ホスト側コンパイラにも伝える）
+  target_compile_options(${target} PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:-UNDEBUG;-Xcompiler=-UNDEBUG>
+  )
+endfunction()
+enable_always_assert_for(${PROBLEM_NAME})
