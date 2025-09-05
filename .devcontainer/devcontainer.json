@@ -3,11 +3,20 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "username": "vscode", // create a non-root user
+            "uid": "auto", // automatically adjust to host
+            "gid": "auto",
+            "non-root": true
+        }
+    },
     "runArgs": [
         "--gpus",
         "all"
     ],
-    // "remoteUser": "vscode",
+    "remoteUser": "vscode",
+    "updateRemoteUserUID": true, // overwrite UID/GID with host UID/GID
     "customizations": {
         "vscode": {
             "extensions": [
