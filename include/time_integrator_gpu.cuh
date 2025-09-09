@@ -497,35 +497,29 @@ template <typename Real> struct TimeIntegrator {
   }
 
   void runge_kutta_4step() {
-    MHDCore<Real> &qq = mhd.qq;
-    MHDCore<Real> &qq_argm = mhd.qq_argm;
-    MHDCore<Real> &qq_rslt = mhd.qq_rslt;
-
     // Runge-Kutta 1st step
     update_sc4(mhd_d.qq, mhd_d.qq, mhd_d.qq_rslt, time.dt / 4.0);
     mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq_argm);
-    // mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
 
-    // Runge-Kutta 2nd step
+    // // Runge-Kutta 2nd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 3.0);
     mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq_argm);
-    // mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
 
-    // Runge-Kutta 3rd step
+    // // Runge-Kutta 3rd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 2.0);
     mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq_argm);
-    // mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
 
     // Runge-Kutta 4th step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt);
     mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq);
-    // mhd.mpi_exchange_halo(qq, grid, mpi);
-
-    mhd_d.qq.copy_to_host(mhd.qq, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
   }
 
   void cfl_condition() {
@@ -578,16 +572,19 @@ template <typename Real> struct TimeIntegrator {
       artdiff.update(grid.dxi, grid_d.dxi, "x");
       mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
       bc->apply(mhd_d.qq);
+      mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
 
       // y direction
       artdiff.update(grid.dyi, grid_d.dyi, "y");
       mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
       bc->apply(mhd_d.qq);
+      mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
 
       // z direction
       artdiff.update(grid.dzi, grid_d.dzi, "z");
       mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
       bc->apply(mhd_d.qq);
+      mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
 
       // Time is update after all procedures
       this->time.update();
