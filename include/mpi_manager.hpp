@@ -89,7 +89,11 @@ template <typename Real> struct MPIManager {
     set_cart_comm(yaml_obj);
 
 #ifdef USE_CUDA
-    cudaSetDevice(myrank);
+    // TODO: この部分はcuda_manager.cuhに移したいが、設定の順序でうまく行っていない
+    // TODO: 複数ノードを使う場合は、ここを修正する必要
+    int device_count;
+    cudaGetDeviceCount(&device_count);
+    cudaSetDevice(myrank % device_count);
 #endif
   }
 };
