@@ -21,7 +21,7 @@ make test
 #### CPU版
 
 ```shell
-cmake -B build -S . -DUSE_CUDA=OFF # CPU版
+cmake -B build -S . -DUSE_CUDA=OFF
 cd build
 make mhd_shock_tube_1d # problems/以下にある課題名を指定
 ./mhd_shock_tube_1d # makeのtargetと同じ名前の実行ファイルが生成される
@@ -32,11 +32,22 @@ make mhd_shock_tube_1d # problems/以下にある課題名を指定
 NVIDIA HPC SDKが必要。
 
 ```shell
-cmake -B build -S . -DUSE_CUDA=ON # GPU版
+cmake -B build -S . -DUSE_CUDA=ON
 cd build
 make mhd_shock_tube_1d # problems/以下にある課題名を指定
 mpirun -n 1   --bind-to none   --mca pml ob1   --mca btl tcp,self,vader   --mca coll ^hcoll   --mca osc ^ucx   ./mhd_shock_tube_1d  # makeのtargetと同じ名前の実行ファイルが生成される
 ```
+
+複数MPIを使う場合
+
+```shell
+cmake -B build -S . -DUSE_CUDA=ON
+cd build
+make hd_kh_2d # problems/以下にある課題名を指定
+mpirun -n 2   --map-by ppr:2:node --bind-to none   -x CUDA_DEVICE_ORDER=PCI_BUS_ID   -x CUDA_VISIBLE_DEVICES=0,1   --mca pml ob1 --mca btl tcp,self,vader --mca coll ^hcoll --mca osc ^ucx   ./hd_kh_2d
+```
+
+上記は2MPIプロセスの場合。4プロセスにする場合は `-n 4` と `--map-by ppr:4:node` に変更。
 
 ### フォーマッター
 
