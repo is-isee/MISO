@@ -1,0 +1,36 @@
+{
+    "name": "cpp-cuda (NVHPC)",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.12",
+            "installTools": false
+        },
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            // // Should be uncommented if using rootfull Docker
+            // "username": "vscode", // create a non-root user
+            // "uid": "auto", // automatically adjust to host
+            // "gid": "auto",
+            // "non-root": true
+        }
+    },
+    // "remoteUser": "vscode", // Should be uncommented if using rootfull Docker
+    // "updateRemoteUserUID": true, // Should be uncommented if using rootfull Docker
+    "runArgs": [
+        "--gpus",
+        "all"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "nvidia.nsight-cuda",
+                "charliermarsh.ruff"
+            ]
+        }
+    }
+}
