@@ -1,3 +1,6 @@
+# backup files
+*~
+
 # Prerequisites
 *.d
 
@@ -64,3 +67,6 @@ pyMISO/_version.py
 
 # vs code settings
 .vscode/
+
+# DevContainer settings
+.devcontainer/
