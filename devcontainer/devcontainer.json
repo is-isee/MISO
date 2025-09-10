@@ -4,19 +4,25 @@
         "dockerfile": "Dockerfile"
     },
     "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.12",
+            "installTools": false
+        },
         "ghcr.io/devcontainers/features/common-utils:2": {
-            "username": "vscode", // create a non-root user
-            "uid": "auto", // automatically adjust to host
-            "gid": "auto",
-            "non-root": true
+            // // Should be uncommented if using rootfull Docker
+            // "username": "vscode", // create a non-root user
+            // "uid": "auto", // automatically adjust to host
+            // "gid": "auto",
+            // "non-root": true
         }
     },
+    // "remoteUser": "vscode", // Should be uncommented if using rootfull Docker
+    // "updateRemoteUserUID": true, // Should be uncommented if using rootfull Docker
     "runArgs": [
         "--gpus",
         "all"
     ],
-    "remoteUser": "vscode",
-    "updateRemoteUserUID": true, // overwrite UID/GID with host UID/GID
     "customizations": {
         "vscode": {
             "extensions": [
@@ -24,12 +30,7 @@
                 "ms-vscode.cmake-tools",
                 "nvidia.nsight-cuda",
                 "charliermarsh.ruff"
-            ],
-            "settings": {
-                "C_Cpp.default.defines": [
-                    "USE_CUDA"
-                ]
-            }
+            ]
         }
     }
 }
