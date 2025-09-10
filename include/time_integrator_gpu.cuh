@@ -233,12 +233,12 @@ update_vy_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
        // clang-format off
        dt *
            (- space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
-            - space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
-            - space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
-            - space_centered_4th(pr.data(), grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
-            - space_centered_4th(bb.data(), grid.dyi[j], i, j, k, 0, grid.js, 0, grid) * pii8<Real> 
-            + pii4<Real> * (+ space_centered_4th(qq_argm.by, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid) 
-                            + space_centered_4th(qq_argm.by, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
+            - space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+            - space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
+            - space_centered_4th(pr.data(), grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+            - space_centered_4th(bb.data(), grid.dyi[j], i, j, k, 0, grid.js, 0, grid) * pii8<Real>
+            + pii4<Real> * (+ space_centered_4th(qq_argm.by, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+                            + space_centered_4th(qq_argm.by, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                             + space_centered_4th(qq_argm.by, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)))) /
                               qq_rslt.ro[grid.idx(i, j, k)];
   // clang-format on
@@ -258,13 +258,13 @@ update_vz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
   qq_rslt.vz[grid.idx(i, j, k)] =
       (qq_orgn.ro[grid.idx(i, j, k)] * qq_orgn.vz[grid.idx(i, j, k)] +
        dt *
-           ( - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid) 
-             - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
-             - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
-             - space_centered_4th(pr.data(), grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
-             - space_centered_4th(bb.data(), grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) * pii8<Real> 
-             + pii4<Real> * (+ space_centered_4th(qq_argm.bz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid) 
-                             + space_centered_4th(qq_argm.bz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
+           ( - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+             - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+             - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
+             - space_centered_4th(pr.data(), grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
+             - space_centered_4th(bb.data(), grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) * pii8<Real>
+             + pii4<Real> * (+ space_centered_4th(qq_argm.bz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+                             + space_centered_4th(qq_argm.bz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                              + space_centered_4th(qq_argm.bz, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)))) /
                              qq_rslt.ro[grid.idx(i, j, k)];
 }
@@ -283,9 +283,9 @@ update_bx_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
   qq_rslt.bx[grid.idx(i, j, k)] =
       qq_orgn.bx[grid.idx(i, j, k)] +
       dt * (- space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-            - space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
-            + space_centered_4th(qq_argm.vx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
-            + space_centered_4th(qq_argm.vx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
+            - space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
+            + space_centered_4th(qq_argm.vx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+            + space_centered_4th(qq_argm.vx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
             - space_centered_4th(qq_argm.ph, grid.dxi[i], i, j, k, grid.is, 0, 0, grid));
 }
 // clang-format on
@@ -302,10 +302,10 @@ update_by_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
   // clang-format off
   qq_rslt.by[grid.idx(i, j, k)] =
       qq_orgn.by[grid.idx(i, j, k)] +
-      dt * (- space_centered_4th(qq_argm.vx, qq_argm.by, grid.dxi[i], i, j, k, grid.is, 0, 0, grid) 
-            - space_centered_4th(qq_argm.vz, qq_argm.by, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
-            + space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid) 
-            + space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
+      dt * (- space_centered_4th(qq_argm.vx, qq_argm.by, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+            - space_centered_4th(qq_argm.vz, qq_argm.by, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
+            + space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+            + space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
             - space_centered_4th(qq_argm.ph, grid.dyi[j], i, j, k, 0, grid.js, 0, grid));
 }
 // clang-format on
@@ -323,9 +323,9 @@ update_bz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
   qq_rslt.bz[grid.idx(i, j, k)] =
       qq_orgn.bz[grid.idx(i, j, k)] +
       dt * (- space_centered_4th(qq_argm.vx, qq_argm.bz, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
-            - space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
-            + space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid) 
-            + space_centered_4th(qq_argm.vz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) 
+            - space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+            + space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+            + space_centered_4th(qq_argm.vz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
             - space_centered_4th(qq_argm.ph, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid));
   // clang-format on
 }
@@ -379,7 +379,7 @@ update_ei_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
       (Et +
        dt * (- space_centered_4th(ht.data(), qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
              - space_centered_4th(ht.data(), qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-             - space_centered_4th(ht.data(), qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) 
+             - space_centered_4th(ht.data(), qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
              + pii4<Real> * (+ space_centered_4th(vb.data(), qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                              + space_centered_4th(vb.data(), qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                              + space_centered_4th(vb.data(), qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))) -
@@ -497,35 +497,51 @@ template <typename Real> struct TimeIntegrator {
   }
 
   void runge_kutta_4step() {
-    MHDCore<Real> &qq = mhd.qq;
-    MHDCore<Real> &qq_argm = mhd.qq_argm;
-    MHDCore<Real> &qq_rslt = mhd.qq_rslt;
-
     // Runge-Kutta 1st step
     update_sc4(mhd_d.qq, mhd_d.qq, mhd_d.qq_rslt, time.dt / 4.0);
     mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq_argm);
-    // mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
 
     // Runge-Kutta 2nd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 3.0);
     mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq_argm);
-    // mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
 
     // Runge-Kutta 3rd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 2.0);
     mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq_argm);
-    // mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
 
     // Runge-Kutta 4th step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt);
     mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
     bc->apply(mhd_d.qq);
-    // mhd.mpi_exchange_halo(qq, grid, mpi);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
+  }
 
-    mhd_d.qq.copy_to_host(mhd.qq, cuda);
+  void apply_artificial_viscosity() {
+    artdiff.characteristic_velocity_eval();
+
+    // x direction
+    artdiff.update(grid.dxi, grid_d.dxi, "x");
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
+    bc->apply(mhd_d.qq);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
+
+    // y direction
+    artdiff.update(grid.dyi, grid_d.dyi, "y");
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
+    bc->apply(mhd_d.qq);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
+
+    // z direction
+    artdiff.update(grid.dzi, grid_d.dzi, "z");
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
+    bc->apply(mhd_d.qq);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
   }
 
   void cfl_condition() {
@@ -570,24 +586,7 @@ template <typename Real> struct TimeIntegrator {
 
       divb_parameters_set();
       runge_kutta_4step();
-
-      // artificial vicosities
-      artdiff.characteristic_velocity_eval();
-
-      // x direction
-      artdiff.update(grid.dxi, grid_d.dxi, "x");
-      mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
-      bc->apply(mhd_d.qq);
-
-      // y direction
-      artdiff.update(grid.dyi, grid_d.dyi, "y");
-      mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
-      bc->apply(mhd_d.qq);
-
-      // z direction
-      artdiff.update(grid.dzi, grid_d.dzi, "z");
-      mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
-      bc->apply(mhd_d.qq);
+      apply_artificial_viscosity();
 
       // Time is update after all procedures
       this->time.update();

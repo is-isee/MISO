@@ -43,6 +43,10 @@ build/
 # Data directories
 data*/
 
+# python virtual environment
+.venv/
+venv/
+
 # python compiled files
 *.pyc
 
