@@ -379,6 +379,7 @@ template <typename Real> struct TimeIntegrator {
     bc->apply(mhd.qq);
     mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
 
+    // z direction
     artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dzi, "z");
     mhd.qq.copy_from(mhd.qq_rslt);
     bc->apply(mhd.qq);
