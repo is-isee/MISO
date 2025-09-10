@@ -127,17 +127,18 @@ doxygen Doxyfile_cpu # CPU版 -> docs/doxygen_cpuに生成
 doxygen Doxyfile_gpu # GPU版 -> docs/doxygen_gpuに生成
 ```
 
-`docs/doxygen_[cpu,gpu]/html/index.html`にHTMLが生成される。
+`docs/doxygen_{cpu,gpu}/html/index.html`にHTMLが生成される。
 
 ## Dev Container
 
 CUDA対応のコードを開発する場合は、Dev Containerを利用することを推奨。
-ctrl + shift + P (Win)/cmd + shift + P (Mac)でコマンドパレットを開き、"Dev Containers: Reopen in Container"を選択。
+コマンドパレットから `Dev Containers: Reopen in Container` を選択。
 
-`.devcontainer/devcontainer.json`に設定あり。
+`devcontainer`ディレクトリの`devcontainer.json`、`Dockerfile`に設定例あり。
+コンテナ実行環境の違いにより微妙に設定が変わるので注意。
+
+ホスト側の要件 (Docker on Linuxの場合):
 
 - Docker
 - NVIDIA Driver
 - NVIDIA Container Toolkit
-が必要。
-
