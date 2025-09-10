@@ -46,6 +46,10 @@ template <typename Real> struct MPIManager {
                   << std::endl;
         std::cerr << "Error: # of mpi procs != x_procs * y_procs * z_procs"
                   << std::endl;
+        std::cerr << "mpi procs = " << n_procs << std::endl;
+        std::cerr << "x_procs = " << x_procs << std::endl;
+        std::cerr << "y_procs = " << y_procs << std::endl;
+        std::cerr << "z_procs = " << z_procs << std::endl;
         std::cerr << "####################################################"
                   << std::endl;
       }
