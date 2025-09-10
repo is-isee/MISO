@@ -363,7 +363,30 @@ template <typename Real> struct TimeIntegrator {
     mhd.mpi_exchange_halo(qq, grid, mpi);
   }
 
-  /// @brief  Calculate time spacing based on CFL condition
+  /// @brief Apply artificial viscosity
+  void apply_artificial_viscosity() {
+    artdiff.characteristic_velocity_eval();
+
+    // x direction
+    artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dxi, "x");
+    mhd.qq.copy_from(mhd.qq_rslt);
+    bc->apply(mhd.qq);
+    mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
+
+    // y direction
+    artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dyi, "y");
+    mhd.qq.copy_from(mhd.qq_rslt);
+    bc->apply(mhd.qq);
+    mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
+
+    // z direction
+    artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dzi, "z");
+    mhd.qq.copy_from(mhd.qq_rslt);
+    bc->apply(mhd.qq);
+    mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
+  }
+
+  /// @brief Calculate time spacing based on CFL condition
   void cfl_condition() {
 
     this->time.dt = 1.e10;
@@ -420,26 +443,7 @@ template <typename Real> struct TimeIntegrator {
       cfl_condition();
       divb_parameters_set();
       runge_kutta_4step();
-
-      // artificial vicosities
-      artdiff.characteristic_velocity_eval();
-
-      // x direction
-      artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dxi, "x");
-      mhd.qq.copy_from(mhd.qq_rslt);
-      bc->apply(mhd.qq);
-      mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
-
-      // y direction
-      artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dyi, "y");
-      mhd.qq.copy_from(mhd.qq_rslt);
-      bc->apply(mhd.qq);
-      mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
-
-      artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dzi, "z");
-      mhd.qq.copy_from(mhd.qq_rslt);
-      bc->apply(mhd.qq);
-      mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
+      apply_artificial_viscosity();
 
       // Time is update after all procedures
       this->time.update();
