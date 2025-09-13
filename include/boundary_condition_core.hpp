@@ -1,5 +1,6 @@
 #pragma once
 
+#include "grid_cpu.hpp"
 #include "mpi_manager.hpp"
 
 #if defined(__CUDACC__)

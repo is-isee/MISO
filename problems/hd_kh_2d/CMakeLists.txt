@@ -6,12 +6,26 @@ else()
   add_executable(${PROBLEM_NAME} main.cpp)
 endif()
 
-
 set_target_properties(${PROBLEM_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 target_link_libraries(${PROBLEM_NAME} MISOlib)
 
-target_compile_definitions(${PROBLEM_NAME} PRIVATE CONFIG_DIR="${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/")
+if(USE_CUDA)
+target_sources(${PROBLEM_NAME}
+  PRIVATE
+  ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/custom_boundary_condition.cu
+)
+else()
+target_sources(${PROBLEM_NAME}
+  PRIVATE
+  ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/custom_boundary_condition.cpp
+)
+endif()
 
+target_compile_definitions(${PROBLEM_NAME}
+  PRIVATE
+  CONFIG_DIR="${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/")
+
+# run program
 add_custom_target(run_${PROBLEM_NAME}
   COMMAND ${CMAKE_BINARY_DIR}/${PROBLEM_NAME}
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}
