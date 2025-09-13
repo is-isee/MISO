@@ -1,5 +1,5 @@
 base:
-  save_dir: data_x/
+  save_dir: data/
 
 time:
   time_save_dir: time/
