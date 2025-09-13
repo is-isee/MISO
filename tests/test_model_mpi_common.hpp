@@ -15,7 +15,7 @@ inline Model<Real> run_test_model() {
   MPIManager<Real> mpi;
   std::string config_dir = CONFIG_DIR;
 
-  Config config(config_dir + "config.yaml", mpi);
+  Config config(config_dir + "config_model.yaml", mpi);
   mpi.setup_mpi(config.yaml_obj);
   Time<Real> time(config.yaml_obj);
   Grid<Real> grid_global(config.yaml_obj);
