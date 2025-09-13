@@ -8,10 +8,6 @@
 #include "model.hpp"
 #include <memory>
 
-//////////////////////////////////////////////
-// Users do not need to modify the code below
-//////////////////////////////////////////////
-
 // Strong declaration of the user-defined function.
 // Weak declaration is in include/custom_boundary_condition.hpp
 template <typename Real>
