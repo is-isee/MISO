@@ -30,4 +30,7 @@ jobs:
         run: make
       - name: Run unit tests
         working-directory: build
-        run: ctest
+        run: |
+          OMPI_MCA_btl_vader_single_copy_mechanism=none \
+          OMPI_MCA_rmaps_base_oversubscribe=yes \
+          ctest
