@@ -4,7 +4,7 @@
 #include "model.hpp"
 
 // This is a weak declaration of the user-defined function.
-// An actual implementation should be provided in the problem-specific code. at problems/XXX/custom_boundary_condition.cpp
+// An actual implementation should be provided in the problem-specific code. at problems/XXX/custom_boundary_condition_impl.hpp
 
 #ifdef USE_CUDA
 template <typename Real>
