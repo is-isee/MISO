@@ -12,14 +12,20 @@ target_link_libraries(${PROBLEM_NAME} MISOlib)
 if(USE_CUDA)
 target_sources(${PROBLEM_NAME}
   PRIVATE
-  ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/custom_boundary_condition.cu
+  ${CMAKE_SOURCE_DIR}/src/custom_boundary_condition.cu
 )
 else()
 target_sources(${PROBLEM_NAME}
   PRIVATE
-  ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/custom_boundary_condition.cpp
+  ${CMAKE_SOURCE_DIR}/src/custom_boundary_condition.cpp
 )
 endif()
+
+target_include_directories(${PROBLEM_NAME}
+  PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 target_compile_definitions(${PROBLEM_NAME}
   PRIVATE

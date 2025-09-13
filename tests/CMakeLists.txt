@@ -16,8 +16,10 @@ list(APPEND NON_MPI_TEST_SOURCES ${TEST_MAIN})
 
 
 add_executable(non_mpi_unit_tests ${NON_MPI_TEST_SOURCES})
-target_include_directories(non_mpi_unit_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(non_mpi_unit_tests
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    )
 target_compile_definitions(non_mpi_unit_tests
     PRIVATE CONFIG_DIR="${CMAKE_SOURCE_DIR}/tests/config/"
 )
@@ -72,12 +74,22 @@ foreach(src ${MPI_TEST_SOURCES})
     set(target_name ${test_name})
 
     if(USE_CUDA)
-        add_executable(${target_name} ${src} ${TEST_MAIN} custom_boundary_condition.cu)
+        add_executable(${target_name} 
+        ${src}
+        ${TEST_MAIN}
+        ${CMAKE_SOURCE_DIR}/src/custom_boundary_condition.cu
+        )
     else()
-        add_executable(${target_name} ${src} ${TEST_MAIN} custom_boundary_condition.cpp)
+        add_executable(${target_name}
+        ${src}
+        ${TEST_MAIN}
+        ${CMAKE_SOURCE_DIR}/src/custom_boundary_condition.cpp)
     endif()
-    target_include_directories(${target_name} PRIVATE
-        ${CMAKE_SOURCE_DIR}/include)
+    target_include_directories(${target_name}
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        )
     target_compile_definitions(${target_name}
         PRIVATE CONFIG_DIR="${CMAKE_SOURCE_DIR}/tests/config/"
     )
@@ -86,16 +98,6 @@ foreach(src ${MPI_TEST_SOURCES})
         doctest::doctest)
 
     add_cuda_safe_mpi_test(${target_name} ${test_name} 2)
-
-    # add_test(NAME ${test_name}
-    #   COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2
-    #           $<TARGET_FILE:${target_name}> --no-skip
-    # )
-    # set_tests_properties(${test_name} PROPERTIES
-    #   ENVIRONMENT "RUN_MPI=1"
-    #   RUN_SERIAL TRUE
-    #   LABELS "mpi"
-    # )
 
     add_dependencies(mpi_unit_tests ${target_name})
 endforeach()
