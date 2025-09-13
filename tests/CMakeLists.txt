@@ -38,12 +38,12 @@ if(USE_CUDA)
     list(FILTER MPI_TEST_SOURCES INCLUDE REGEX ".*_mpi\\.cu$")
 else()
     list(FILTER MPI_TEST_SOURCES INCLUDE REGEX ".*_mpi\\.cpp$")
-endif()    
+endif()
 # list(APPEND MPI_TEST_SOURCES ${TEST_MAIN})
 
-add_custom_target(mpi_unit_tests)  # まとめ用ダミー
+add_custom_target(mpi_unit_tests)  # Umbrella target for MPI test
 
-# ---- CUDA のときだけ mpirun に追加フラグを付けるヘルパー ----
+# Helper function to add CUDA-safe MPI flags when using CUDA
 function(add_cuda_safe_mpi_test target test_name np)
   set(mpi_cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${np})
   if(USE_CUDA)
@@ -60,7 +60,6 @@ function(add_cuda_safe_mpi_test target test_name np)
     COMMAND ${mpi_cmd} $<TARGET_FILE:${target}> --no-skip
   )
 
-  # 必要なら環境変数も付与
   set_tests_properties(${test_name} PROPERTIES
     ENVIRONMENT "RUN_MPI=1"
     RUN_SERIAL TRUE
@@ -69,7 +68,7 @@ function(add_cuda_safe_mpi_test target test_name np)
 endfunction()
 
 foreach(src ${MPI_TEST_SOURCES})
-    get_filename_component(test_name ${src} NAME_WE)  # ファイル名ベース
+    get_filename_component(test_name ${src} NAME_WE)  # based on filename
     set(target_name ${test_name})
 
     if(USE_CUDA)
