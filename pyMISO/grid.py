@@ -41,9 +41,9 @@ class Grid:
             ]
 
             # geometry at cell edge
-            self.x_edge = np.zeros(conf.i_size + 1, dtype=conf.dtype)
-            self.y_edge = np.zeros(conf.j_size + 1, dtype=conf.dtype)
-            self.z_edge = np.zeros(conf.k_size + 1, dtype=conf.dtype)
+            self.x_edge = np.empty(conf.i_size + 1, dtype=conf.dtype)
+            self.y_edge = np.empty(conf.j_size + 1, dtype=conf.dtype)
+            self.z_edge = np.empty(conf.k_size + 1, dtype=conf.dtype)
 
             self.x_edge[1:-1] = 0.5 * (self.x[1:] + self.x[:-1])
             self.y_edge[1:-1] = 0.5 * (self.y[1:] + self.y[:-1])
