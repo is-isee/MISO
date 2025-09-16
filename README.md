@@ -53,7 +53,7 @@ mpirun -n 2   --map-by ppr:2:node --bind-to none   -x CUDA_DEVICE_ORDER=PCI_BUS_
 
 ```shell
 # CLI
-find src include problems -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format -i
+find src include problems tests -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format -i
 
 # VSCode上の設定 (上書き注意)
 mkdir -p .vscode && cp -i vscode/setting.json .vscode/setting.json

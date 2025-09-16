@@ -1,6 +1,7 @@
 #pragma once
 
 #include "boundary_condition_core.hpp"
+#include "grid_cpu.hpp"
 #include <string>
 
 /// @brief Boundary condition functions for CPU implementation

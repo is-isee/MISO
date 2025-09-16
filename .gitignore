@@ -74,3 +74,6 @@ pyMISO/_version.py
 
 # DevContainer settings
 .devcontainer/
+
+# test temporal files
+tests/Testing

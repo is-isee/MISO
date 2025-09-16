@@ -444,9 +444,7 @@ template <typename Real> struct TimeIntegrator {
           model);
     } else if (config.yaml_obj["boundary_condition"]["boundary_type"]
                    .template as<std::string>() == "custom") {
-      bc = std::make_unique<
-          CustomBoundaryCondition<Real, MHDCoreDevice<Real>, GridDevice<Real>>>(
-          model);
+      bc = create_custom_boundary_condition<Real>(model);
     }
     cfl_number =
         config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();

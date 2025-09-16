@@ -22,7 +22,7 @@ struct StandardBoundaryCondition
 #ifdef USE_CUDA
         grid(model.grid_d),
 #else
-        grid(model.grid_global),
+        grid(model.grid_local),
 #endif
         eos(model.eos), mpi(model.mpi) {
   }
