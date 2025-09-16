@@ -1,26 +1,18 @@
 #pragma once
-
 #include "boundary_condition_base.hpp"
+#include "mhd_cpu.hpp"
 #include "model.hpp"
+
+// This is a weak declaration of the user-defined function.
+// An actual implementation should be provided in the problem-specific code. at problems/XXX/custom_boundary_condition_impl.hpp
+
 #ifdef USE_CUDA
-#include "boundary_condition_core_gpu.cuh"
+template <typename Real>
+std::unique_ptr<
+    BoundaryConditionBase<Real, MHDCoreDevice<Real>, GridDevice<Real>>>
+create_custom_boundary_condition(Model<Real> &model);
 #else
-#include "boundary_condition_core_cpu.hpp"
+template <typename Real>
+std::unique_ptr<BoundaryConditionBase<Real, MHDCore<Real>, Grid<Real>>>
+create_custom_boundary_condition(Model<Real> &model);
 #endif
-
-template <typename Real, typename MHDCoreType, typename GridType>
-struct CustomBoundaryCondition
-    : public BoundaryConditionBase<Real, MHDCoreType, GridType> {
-  Config &config;
-  Grid<Real> &grid;
-  EOS<Real> &eos;
-  MHD<Real> &mhd;
-
-  CustomBoundaryCondition(Model<Real> &model)
-      : config(model.config), grid(model.grid_local), eos(model.eos),
-        mhd(model.mhd) {}
-
-  void apply(MHDCoreType &qq) override {
-    // Customized boundary conditions
-  }
-};

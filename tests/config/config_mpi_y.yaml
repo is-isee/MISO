@@ -1,5 +1,5 @@
 base:
-  save_dir: data_x/
+  save_dir: data/
 
 time:
   time_save_dir: time/
@@ -32,7 +32,7 @@ mpi:
   mpi_save_dir: mpi/
   n_procs_digits: 8
   x_procs: 1
-  y_procs: 1
+  y_procs: 2
   z_procs: 1
 
 boundary_condition:
