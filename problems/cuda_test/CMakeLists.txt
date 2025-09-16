@@ -28,4 +28,11 @@ function(enable_always_assert_for target)
     $<$<COMPILE_LANGUAGE:CUDA>:-UNDEBUG;-Xcompiler=-UNDEBUG>
   )
 endfunction()
+
 enable_always_assert_for(${PROBLEM_NAME})
+
+target_include_directories(${PROBLEM_NAME} 
+  PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}
+  )
