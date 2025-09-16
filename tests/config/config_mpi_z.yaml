@@ -31,9 +31,9 @@ time_integrator:
 mpi:
   mpi_save_dir: mpi/
   n_procs_digits: 8
-  x_procs: 2
+  x_procs: 1
   y_procs: 1
-  z_procs: 1
+  z_procs: 2
 
 boundary_condition:
   # please use "standard" or "custom" for boundary_type
