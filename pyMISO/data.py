@@ -24,6 +24,7 @@ class Data:
         Load the config.json file in the data_dir and set the parameters as attributes
         using np.memmap for efficient access to large binary data.
         """
+
         self.ro = np.zeros((self.i_size, self.j_size, self.k_size), dtype=self.dtype)
         self.vx = np.zeros_like(self.ro)
         self.vy = np.zeros_like(self.ro)
@@ -116,6 +117,8 @@ class Data:
         self.bz = np.squeeze(self.bz)
         self.ei = np.squeeze(self.ei)
         self.ph = np.squeeze(self.ph)
+
+        self.n_output = n_output
 
     def __getattr__(self, name):
         """
