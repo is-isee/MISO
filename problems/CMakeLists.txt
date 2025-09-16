@@ -5,6 +5,7 @@ foreach(PROBLEM_DIR
         mhd_shock_tube_1d
         mhd_vortex_2d
         hd_kh_2d
+        mhd_kh_3d
         rt_searchlight_2d
         )
     add_subdirectory(${PROBLEM_DIR})
