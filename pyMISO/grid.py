@@ -13,6 +13,13 @@ class Grid:
         """
 
         self.load(conf)
+        self.i_size = conf.i_size
+        self.j_size = conf.j_size
+        self.k_size = conf.k_size
+
+        self.i_margin = conf.i_margin
+        self.j_margin = conf.j_margin
+        self.k_margin = conf.k_margin
 
     def load(self, conf):
         """
