@@ -139,12 +139,9 @@ class Data:
         var : str
             The variable name to write (e.g., 'ro', 'vx', 'vy', 'vz', 'bx', 'by', 'bz', 'ei', 'ph').
         output_path : str
-            The path to save the VTK file.p
+            The path to save the VTK file.
         """
         import pyvista as pv
-
-        if not isinstance(self, pyMISO.Data):
-            raise TypeError("data must be an instance of pyMISO.Data")
 
         if not isinstance(n_output, int):
             raise TypeError("n_output must be an integer")
@@ -164,7 +161,9 @@ class Data:
         if read_flag:
             self.load(n_output)
 
-        pv_grid = pv.RectilinearGrid(self.x_edge, self.y_edge, self.z_edge)
+        pv_grid = pv.RectilinearGrid(
+            self.grid.x_edge, self.grid.y_edge, self.grid.z_edge
+        )
         pv_grid.cell_data["scalar"] = getattr(self, var).flatten(order="F")
 
         pv_grid.save(output_path)
