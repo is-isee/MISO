@@ -13,6 +13,13 @@ class Grid:
         """
 
         self.load(conf)
+        self.i_size = conf.i_size
+        self.j_size = conf.j_size
+        self.k_size = conf.k_size
+
+        self.i_margin = conf.i_margin
+        self.j_margin = conf.j_margin
+        self.k_margin = conf.k_margin
 
     def load(self, conf):
         """
@@ -28,6 +35,30 @@ class Grid:
         )
         with open(conf.data_dir + "grid.bin", "rb") as f:
             data = np.fromfile(f, dtype=dtype)
-            self.x = data["x"].reshape((conf.i_total), order="C")
-            self.y = data["y"].reshape((conf.j_total), order="C")
-            self.z = data["z"].reshape((conf.k_total), order="C")
+
+            # geometry is defined at cell center
+            self.x = data["x"].reshape((conf.i_total), order="C")[
+                conf.margin : -conf.margin
+            ]
+            self.y = data["y"].reshape((conf.j_total), order="C")[
+                conf.margin : -conf.margin
+            ]
+            self.z = data["z"].reshape((conf.k_total), order="C")[
+                conf.margin : -conf.margin
+            ]
+
+            # geometry at cell edge
+            self.x_edge = np.empty(conf.i_size + 1, dtype=conf.dtype)
+            self.y_edge = np.empty(conf.j_size + 1, dtype=conf.dtype)
+            self.z_edge = np.empty(conf.k_size + 1, dtype=conf.dtype)
+
+            self.x_edge[1:-1] = 0.5 * (self.x[1:] + self.x[:-1])
+            self.y_edge[1:-1] = 0.5 * (self.y[1:] + self.y[:-1])
+            self.z_edge[1:-1] = 0.5 * (self.z[1:] + self.z[:-1])
+
+            self.x_edge[0] = conf.xmin
+            self.x_edge[-1] = conf.xmax
+            self.y_edge[0] = conf.ymin
+            self.y_edge[-1] = conf.ymax
+            self.z_edge[0] = conf.zmin
+            self.z_edge[-1] = conf.zmax
