@@ -63,7 +63,7 @@ template <typename Real> void initial_condition(Model<Real> &model) {
         Real pr = pr0 - g_grav * qq.ro(i, j, k) * grid.y[j];
 
         qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
-        qq.vx(i, j, k) = qq.vx(i, j, k) + v_amp * dist(engine);
+        qq.vx(i, j, k) = v_amp * dist(engine);
         qq.vy(i, j, k) = v_amp * dist(engine);
         qq.vz(i, j, k) = 0.0;
 
