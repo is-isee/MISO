@@ -9,7 +9,7 @@
 #endif
 
 template <typename Real, typename MHDCoreType, typename GridType> struct Force {
-  GridType &grid;
+  GridType grid;
 
   explicit Force(Model<Real> &model)
       :
