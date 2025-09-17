@@ -145,7 +145,7 @@ template <typename Real> struct TimeIntegrator {
   TimeIntegrator(Model<Real> &model_)
       : model(model_), config(model_.config), time(model_.time),
         grid(model_.grid_local), eos(model_.eos), mhd(model_.mhd),
-        artdiff(model_), mpi(model_.mpi), force(model_),
+        mpi(model_.mpi), force(model_), artdiff(model_),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),

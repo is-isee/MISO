@@ -421,11 +421,11 @@ template <typename Real> struct TimeIntegrator {
   MPIManager<Real> &mpi;
   CudaManager<Real> &cuda;
   TimeDevice<Real> &time_d;
-  Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force;
 
   std::unique_ptr<
       BoundaryConditionBase<Real, MHDCoreDevice<Real>, GridDevice<Real>>>
       bc;
+  Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force;
   ArtificialViscosity<Real> artdiff;
 
   // Array3D<Real> pr, bb, ht, vb;
@@ -441,8 +441,8 @@ template <typename Real> struct TimeIntegrator {
   TimeIntegrator(Model<Real> &model_)
       : model(model_), config(model_.config), time(model_.time),
         grid(model_.grid_local), grid_d(model_.grid_d), eos(model_.eos),
-        mhd(model_.mhd), mhd_d(model_.mhd_d), artdiff(model_), mpi(model_.mpi),
-        force(model_), pr_d(grid.i_total, grid.j_total, grid.k_total),
+        mhd(model_.mhd), mhd_d(model_.mhd_d), force(model_), artdiff(model_),
+        mpi(model_.mpi), pr_d(grid.i_total, grid.j_total, grid.k_total),
         bb_d(grid.i_total, grid.j_total, grid.k_total),
         ht_d(grid.i_total, grid.j_total, grid.k_total),
         vb_d(grid.i_total, grid.j_total, grid.k_total), cuda(model_.cuda),
