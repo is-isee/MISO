@@ -44,47 +44,47 @@ class Data:
         self.time.load(n_output)
 
         shape = (
-            self.conf.i_total_local,
-            self.conf.j_total_local,
-            self.conf.k_total_local,
+            self.grid.i_total_local,
+            self.grid.j_total_local,
+            self.grid.k_total_local,
         )
         count = np.prod(shape)
 
         for rank in range(self.mpi.n_procs):
             filename = self.conf.mhd_data_dir / (
                 "mhd."
-                + str(n_output).zfill(self.conf.n_output_digits)
+                + str(n_output).zfill(self.time.n_output_digits)
                 + "."
-                + str(rank).zfill(self.conf.n_procs_digits)
+                + str(rank).zfill(self.mpi.n_procs_digits)
                 + ".bin"
             )
 
             if self.mpi.n_procs > 1:
                 ijk_global = [
                     slice(
-                        self.mpi.coords["x"][rank] * self.conf.i_size_local,
-                        (self.mpi.coords["x"][rank] + 1) * self.conf.i_size_local,
+                        self.mpi.coords["x"][rank] * self.grid.i_size_local,
+                        (self.mpi.coords["x"][rank] + 1) * self.grid.i_size_local,
                     ),
                     slice(
-                        self.mpi.coords["y"][rank] * self.conf.j_size_local,
-                        (self.mpi.coords["y"][rank] + 1) * self.conf.j_size_local,
+                        self.mpi.coords["y"][rank] * self.grid.j_size_local,
+                        (self.mpi.coords["y"][rank] + 1) * self.grid.j_size_local,
                     ),
                     slice(
-                        self.mpi.coords["z"][rank] * self.conf.k_size_local,
-                        (self.mpi.coords["z"][rank] + 1) * self.conf.k_size_local,
+                        self.mpi.coords["z"][rank] * self.grid.k_size_local,
+                        (self.mpi.coords["z"][rank] + 1) * self.grid.k_size_local,
                     ),
                 ]
             else:
                 ijk_global = [
-                    slice(0, self.conf.i_size_local),
-                    slice(0, self.conf.j_size_local),
-                    slice(0, self.conf.k_size_local),
+                    slice(0, self.grid.i_size_local),
+                    slice(0, self.grid.j_size_local),
+                    slice(0, self.grid.k_size_local),
                 ]
 
             ijk_local = [
-                slice(self.i_margin, self.conf.i_total_local - self.i_margin),
-                slice(self.j_margin, self.conf.j_total_local - self.j_margin),
-                slice(self.k_margin, self.conf.k_total_local - self.k_margin),
+                slice(self.grid.i_margin, self.grid.i_total_local - self.grid.i_margin),
+                slice(self.grid.j_margin, self.grid.j_total_local - self.grid.j_margin),
+                slice(self.grid.k_margin, self.grid.k_total_local - self.grid.k_margin),
             ]
 
             with open(filename, "rb") as f:
