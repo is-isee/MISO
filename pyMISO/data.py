@@ -173,6 +173,7 @@ class Data:
             self.grid.y[1] - self.grid.y[0],
             self.grid.z[1] - self.grid.z[0],
         )
+        # TODO: Retain the following alternative implementation for future support of non-uniform grids.
         # pv_grid = pv.RectilinearGrid(
         #     self.grid.x_edge, self.grid.y_edge, self.grid.z_edge
         # )
