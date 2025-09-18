@@ -51,7 +51,7 @@ class Data:
         count = np.prod(shape)
 
         for rank in range(self.mpi.n_procs):
-            filename = self.conf.mhd_data_dir / (
+            filename = self.mpi.mhd_data_dir / (
                 "mhd."
                 + str(n_output).zfill(self.time.n_output_digits)
                 + "."
