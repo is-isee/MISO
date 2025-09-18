@@ -9,6 +9,13 @@
 #include <cuda_runtime.h>
 #endif
 
+inline void check_mpi_error(int merr, const char *msg, MPI_Comm comm) {
+  if (merr != MPI_SUCCESS) {
+    std::cerr << "Error in " << msg << std::endl;
+    MPI_Abort(comm, merr);
+  }
+}
+
 struct MPIManager {
   MPI_Comm cart_comm = MPI_COMM_NULL;
   int myrank = -1;
@@ -75,13 +82,6 @@ struct MPIManager {
       periods[2] =
           yaml_obj["boundary_condition"]["periodic"]["z"].template as<bool>() ? 1
                                                                               : 0;
-    }
-
-    void check_mpi_error(int err, const char *msg, MPI_Comm comm) {
-      if (err != MPI_SUCCESS) {
-        std::cerr << "Error in " << msg << std::endl;
-        MPI_Abort(comm, err);
-      }
     }
 
     MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &cart_comm);
