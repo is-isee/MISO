@@ -77,6 +77,13 @@ struct MPIManager {
                                                                               : 0;
     }
 
+    void check_mpi_error(int err, const char *msg, MPI_Comm comm) {
+      if (err != MPI_SUCCESS) {
+        std::cerr << "Error in " << msg << std::endl;
+        MPI_Abort(comm, err);
+      }
+    }
+
     MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &cart_comm);
     MPI_Comm_rank(cart_comm, &myrank);
     MPI_Comm_size(cart_comm, &n_procs);
@@ -84,20 +91,11 @@ struct MPIManager {
     MPI_Cart_coords(cart_comm, myrank, ndims, coord);
     int merr;
     merr = MPI_Cart_shift(cart_comm, 0, 1, &x_procs_neg, &x_procs_pos);
-    if (merr != MPI_SUCCESS) {
-      std::cerr << "Error in MPI_Cart_shift (x direction)" << std::endl;
-      MPI_Abort(cart_comm, merr);
-    }
+    check_mpi_error(merr, "MPI_Cart_shift x", cart_comm);
     merr = MPI_Cart_shift(cart_comm, 1, 1, &y_procs_neg, &y_procs_pos);
-    if (merr != MPI_SUCCESS) {
-      std::cerr << "Error in MPI_Cart_shift (y direction)" << std::endl;
-      MPI_Abort(cart_comm, merr);
-    }
+    check_mpi_error(merr, "MPI_Cart_shift y", cart_comm);
     merr = MPI_Cart_shift(cart_comm, 2, 1, &z_procs_neg, &z_procs_pos);
-    if (merr != MPI_SUCCESS) {
-      std::cerr << "Error in MPI_Cart_shift (z direction)" << std::endl;
-      MPI_Abort(cart_comm, merr);
-    }
+    check_mpi_error(merr, "MPI_Cart_shift z", cart_comm);
   }
 
   void setup_mpi(YAML::Node &yaml_obj) {
