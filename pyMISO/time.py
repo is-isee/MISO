@@ -36,4 +36,3 @@ class Time:
             self.time = float(f.readline())
             self.n_output = int(f.readline())
             self.n_step = int(f.readline())
-            self.n_step = int(f.readline())

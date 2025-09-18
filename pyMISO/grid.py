@@ -94,6 +94,3 @@ class Grid:
         self.i_total_local = self.i_size_local + 2 * self.i_margin
         self.j_total_local = self.j_size_local + 2 * self.j_margin
         self.k_total_local = self.k_size_local + 2 * self.k_margin
-        self.k_total_local = self.k_size_local + 2 * self.k_margin
-        self.k_total_local = self.k_size_local + 2 * self.k_margin
-        self.k_total_local = self.k_size_local + 2 * self.k_margin
