@@ -9,7 +9,7 @@
 #include "config.hpp"
 #include "model.hpp"
 #include "mpi_manager.hpp"
-#include "time_integrator_cpu.hpp"
+#include "time_integrator_gpu.cuh"
 #include "types.hpp"
 #include "utility.hpp"
 
@@ -47,16 +47,16 @@ template <typename Real> void initial_condition(Model<Real> &model) {
       for (int k = 0; k < grid.k_total; ++k) {
 
         // initial condition
-        if (std::abs(grid.y[j]) > 0.25) {
-          qq.ro(i, j, k) = 1.0;
-          qq.vx(i, j, k) = -0.5;
-        } else {
+        if (grid.y[j] > 0.0) {
           qq.ro(i, j, k) = 2.0;
-          qq.vx(i, j, k) = 0.5;
+        } else {
+          qq.ro(i, j, k) = 1.0;
         }
-        Real pr = 2.5;
+        Real pr0 = 2.5;
+        Real pr = pr0 - force::g_grav * qq.ro(i, j, k) * grid.y[j];
+
         qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
-        qq.vx(i, j, k) = qq.vx(i, j, k) + v_amp * dist(engine);
+        qq.vx(i, j, k) = v_amp * dist(engine);
         qq.vy(i, j, k) = v_amp * dist(engine);
         qq.vz(i, j, k) = 0.0;
 

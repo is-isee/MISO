@@ -8,7 +8,7 @@
 
 TEST_CASE("Test MPI" * doctest::test_suite("mpi")) {
   // Test MPI initialization and finalization
-  MPIManager<Real> mpi;
+  MPIManager mpi;
   std::string config_dir = CONFIG_DIR;
   std::vector<std::string> directions = {"x", "y", "z"};
 

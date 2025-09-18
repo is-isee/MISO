@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import yaml
 
 
@@ -11,7 +13,7 @@ class Conf:
         data_dir : str
             The directory where the config.json file is located
         """
-        self.data_dir = data_dir
+        self.data_dir = Path(data_dir)
 
         self.load()
         self.set_ijk_params()
@@ -20,16 +22,16 @@ class Conf:
         """
         Load the config.json file in the save_dir and set the parameters as attributes
         """
-        with open(self.data_dir + "config.yaml", "r") as f:
+        with (self.data_dir / "config.yaml").open(mode="r") as f:
             config = yaml.safe_load(f)
 
         for group in config.keys():
             for key in config[group].keys():
                 setattr(self, key, config[group][key])
 
-        self.time_data_dir = self.data_dir + self.time_save_dir
-        self.mhd_data_dir = self.data_dir + self.mhd_save_dir
-        self.mpi_data_dir = self.data_dir + self.mpi_save_dir
+        self.time_data_dir = self.data_dir / self.time_save_dir
+        self.mhd_data_dir = self.data_dir / self.mhd_save_dir
+        self.mpi_data_dir = self.data_dir / self.mpi_save_dir
 
         self.endian = "<" if self.Endian == "little" else ">"
         self.dtype = "d" if self.Real == "double" else "f"

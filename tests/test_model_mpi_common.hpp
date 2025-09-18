@@ -12,7 +12,7 @@ inline Model<Real> run_test_model() {
   // Test the Model constructor and accessors
 
   // assuming current path is build/tests
-  MPIManager<Real> mpi;
+  MPIManager mpi;
   std::string config_dir = CONFIG_DIR;
 
   Config config(config_dir + "config_model.yaml", mpi);

@@ -13,7 +13,7 @@
 #include "types.hpp"
 
 inline void run_custom_boundary_condition_mpi_tests() {
-  MPIManager<Real> mpi;
+  MPIManager mpi;
   const std::string config_dir = CONFIG_DIR;
   Config config(config_dir + "config_custom_boundary_condition.yaml", mpi);
   mpi.setup_mpi(config.yaml_obj);

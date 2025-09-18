@@ -94,7 +94,7 @@ struct SearchlightBoundaryCondition {
 
   template <typename Real>
   void operator()(RT<Real> &rt, const Grid<Real> &grid,
-                  const MPIManager<Real> &mpi) const {
+                  const MPIManager &mpi) const {
     const auto &periodic_flags =
         config.yaml_obj["boundary_condition"]["periodic"];
 
@@ -117,9 +117,9 @@ struct SearchlightBoundaryCondition {
 int main() {
   std::string config_dir = CONFIG_DIR;
 
-  MPIManager<Real> mpi_manager;
-  Config config(config_dir + "config.yaml", mpi_manager);
-  mpi_manager.setup_mpi(config.yaml_obj);
+  MPIManager mpi;
+  Config config(config_dir + "config.yaml", mpi);
+  mpi.setup_mpi(config.yaml_obj);
   Model<Real> model(config);
   model.save_metadata();
 

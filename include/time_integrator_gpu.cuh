@@ -12,6 +12,7 @@
 #include "constants.hpp"
 #include "cuda_manager.cuh"
 #include "custom_boundary_condition.hpp"
+#include "force.hpp"
 #include "grid_gpu.cuh"
 #include "model.hpp"
 #include "mpi_types.hpp"
@@ -196,7 +197,9 @@ template <typename Real>
 __global__ void
 update_vx_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
                  MHDCoreDevice<Real> qq_rslt, Array3DDevice<Real> pr,
-                 Array3DDevice<Real> bb, GridDevice<Real> grid, Real dt) {
+                 Array3DDevice<Real> bb,
+                 Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force,
+                 GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -213,8 +216,9 @@ update_vx_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
             - space_centered_4th(bb.data(), grid.dxi[i], i, j, k, grid.is, 0, 0, grid) * pii8<Real>
             + pii4<Real> * (+ space_centered_4th(qq_argm.bx, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                             + space_centered_4th(qq_argm.bx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-                            + space_centered_4th(qq_argm.bx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)))) /
-      qq_rslt.ro[grid.idx(i, j, k)];
+                            + space_centered_4th(qq_argm.bx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
+            + force.x(qq_argm, i, j, k)
+            )) / qq_rslt.ro[grid.idx(i, j, k)];
   // clang-format on
 }
 
@@ -222,7 +226,9 @@ template <typename Real>
 __global__ void
 update_vy_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
                  MHDCoreDevice<Real> qq_rslt, Array3DDevice<Real> pr,
-                 Array3DDevice<Real> bb, GridDevice<Real> grid, Real dt) {
+                 Array3DDevice<Real> bb,
+                 Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force,
+                 GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -239,8 +245,9 @@ update_vy_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
             - space_centered_4th(bb.data(), grid.dyi[j], i, j, k, 0, grid.js, 0, grid) * pii8<Real>
             + pii4<Real> * (+ space_centered_4th(qq_argm.by, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                             + space_centered_4th(qq_argm.by, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-                            + space_centered_4th(qq_argm.by, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)))) /
-                              qq_rslt.ro[grid.idx(i, j, k)];
+                            + space_centered_4th(qq_argm.by, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
+            + force.y(qq_argm, i, j, k)
+            )) / qq_rslt.ro[grid.idx(i, j, k)];
   // clang-format on
 }
 
@@ -248,7 +255,9 @@ template <typename Real>
 __global__ void
 update_vz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
                  MHDCoreDevice<Real> qq_rslt, Array3DDevice<Real> pr,
-                 Array3DDevice<Real> bb, GridDevice<Real> grid, Real dt) {
+                 Array3DDevice<Real> bb,
+                 Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force,
+                 GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -265,8 +274,9 @@ update_vz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
              - space_centered_4th(bb.data(), grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) * pii8<Real>
              + pii4<Real> * (+ space_centered_4th(qq_argm.bz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                              + space_centered_4th(qq_argm.bz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-                             + space_centered_4th(qq_argm.bz, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)))) /
-                             qq_rslt.ro[grid.idx(i, j, k)];
+                             + space_centered_4th(qq_argm.bz, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
+             + force.z(qq_argm, i, j, k)
+          )) / qq_rslt.ro[grid.idx(i, j, k)];
 }
 // clang-format on
 
@@ -408,13 +418,14 @@ template <typename Real> struct TimeIntegrator {
   EOS<Real> &eos;
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
-  MPIManager<Real> &mpi;
+  MPIManager &mpi;
   CudaManager<Real> &cuda;
   TimeDevice<Real> &time_d;
 
   std::unique_ptr<
       BoundaryConditionBase<Real, MHDCoreDevice<Real>, GridDevice<Real>>>
       bc;
+  Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force;
   ArtificialViscosity<Real> artdiff;
 
   // Array3D<Real> pr, bb, ht, vb;
@@ -430,13 +441,14 @@ template <typename Real> struct TimeIntegrator {
   TimeIntegrator(Model<Real> &model_)
       : model(model_), config(model_.config), time(model_.time),
         grid(model_.grid_local), grid_d(model_.grid_d), eos(model_.eos),
-        mhd(model_.mhd), mhd_d(model_.mhd_d), artdiff(model_), mpi(model_.mpi),
-        pr_d(grid.i_total, grid.j_total, grid.k_total),
+        mhd(model_.mhd), mhd_d(model_.mhd_d), force(model_), artdiff(model_),
+        mpi(model_.mpi), pr_d(grid.i_total, grid.j_total, grid.k_total),
         bb_d(grid.i_total, grid.j_total, grid.k_total),
         ht_d(grid.i_total, grid.j_total, grid.k_total),
         vb_d(grid.i_total, grid.j_total, grid.k_total), cuda(model_.cuda),
         time_d(model_.time_d) {
 
+    // Initialize boundary condition defined in config.yaml_obj
     if (config.yaml_obj["boundary_condition"]["boundary_type"]
             .template as<std::string>() == "standard") {
       bc = std::make_unique<
@@ -446,6 +458,7 @@ template <typename Real> struct TimeIntegrator {
                    .template as<std::string>() == "custom") {
       bc = create_custom_boundary_condition<Real>(model);
     }
+
     cfl_number =
         config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
   }
@@ -463,15 +476,15 @@ template <typename Real> struct TimeIntegrator {
     CUDA_CHECK(cudaGetLastError());
 
     update_vx_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, grid_d, dt);
+        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_vy_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, grid_d, dt);
+        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_vz_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, grid_d, dt);
+        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_bx_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
