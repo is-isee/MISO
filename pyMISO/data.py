@@ -141,8 +141,8 @@ class Data:
         output_path : str
             The path to save the VTK file.
 
-        Note
-        ----
+        Notes
+        -----
         In this version, uniform grid is assumed.
         """
         import pyvista as pv
