@@ -4,7 +4,7 @@ import pyMISO
 
 
 class Data:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir: str):
         """
         Initialize the pyMISO.Data class instance
 
@@ -19,10 +19,14 @@ class Data:
         self.grid = pyMISO.Grid(self.conf)
         self.time = pyMISO.Time(self.conf)
 
-    def load(self, n_output):
+    def load(self, n_output: int):
         """
-        Load the config.json file in the data_dir and set the parameters as attributes
-        using np.memmap for efficient access to large binary data.
+        Load mhd quantities
+
+        Parameters
+        ----------
+        n_output : int
+            The output number to load the data from
         """
 
         self.ro = np.zeros(
@@ -40,48 +44,47 @@ class Data:
         self.time.load(n_output)
 
         shape = (
-            self.conf.i_total_local,
-            self.conf.j_total_local,
-            self.conf.k_total_local,
+            self.grid.i_total_local,
+            self.grid.j_total_local,
+            self.grid.k_total_local,
         )
         count = np.prod(shape)
 
         for rank in range(self.mpi.n_procs):
-            filename = (
-                self.conf.mhd_data_dir
-                + "mhd."
-                + str(n_output).zfill(self.conf.n_output_digits)
+            filename = self.conf.mhd_data_dir / (
+                "mhd."
+                + str(n_output).zfill(self.time.n_output_digits)
                 + "."
-                + str(rank).zfill(self.conf.n_procs_digits)
+                + str(rank).zfill(self.mpi.n_procs_digits)
                 + ".bin"
             )
 
             if self.mpi.n_procs > 1:
                 ijk_global = [
                     slice(
-                        self.mpi.coords["x"][rank] * self.conf.i_size_local,
-                        (self.mpi.coords["x"][rank] + 1) * self.conf.i_size_local,
+                        self.mpi.coords["x"][rank] * self.grid.i_size_local,
+                        (self.mpi.coords["x"][rank] + 1) * self.grid.i_size_local,
                     ),
                     slice(
-                        self.mpi.coords["y"][rank] * self.conf.j_size_local,
-                        (self.mpi.coords["y"][rank] + 1) * self.conf.j_size_local,
+                        self.mpi.coords["y"][rank] * self.grid.j_size_local,
+                        (self.mpi.coords["y"][rank] + 1) * self.grid.j_size_local,
                     ),
                     slice(
-                        self.mpi.coords["z"][rank] * self.conf.k_size_local,
-                        (self.mpi.coords["z"][rank] + 1) * self.conf.k_size_local,
+                        self.mpi.coords["z"][rank] * self.grid.k_size_local,
+                        (self.mpi.coords["z"][rank] + 1) * self.grid.k_size_local,
                     ),
                 ]
             else:
                 ijk_global = [
-                    slice(0, self.conf.i_size_local),
-                    slice(0, self.conf.j_size_local),
-                    slice(0, self.conf.k_size_local),
+                    slice(0, self.grid.i_size_local),
+                    slice(0, self.grid.j_size_local),
+                    slice(0, self.grid.k_size_local),
                 ]
 
             ijk_local = [
-                slice(self.i_margin, self.conf.i_total_local - self.i_margin),
-                slice(self.j_margin, self.conf.j_total_local - self.j_margin),
-                slice(self.k_margin, self.conf.k_total_local - self.k_margin),
+                slice(self.grid.i_margin, self.grid.i_total_local - self.grid.i_margin),
+                slice(self.grid.j_margin, self.grid.j_total_local - self.grid.j_margin),
+                slice(self.grid.k_margin, self.grid.k_total_local - self.grid.k_margin),
             ]
 
             with open(filename, "rb") as f:
@@ -113,7 +116,6 @@ class Data:
                     f, dtype=self.conf.endian + self.conf.dtype, count=count
                 ).reshape(shape, order="C")[tuple(ijk_local)]
 
-        # squeezeはオプション（必要なら）
         self.ro = np.squeeze(self.ro)
         self.vx = np.squeeze(self.vx)
         self.vy = np.squeeze(self.vy)
@@ -183,9 +185,9 @@ class Data:
 
     def __getattr__(self, name):
         """
-        When an attribute is not found in pyMISO.Data, it is searched in pyMISO.MHD.conf and pyMISO.MHD.grid
+        When an attribute is not found in pyMISO.Data, it is searched in grid, time, and mpi.
         """
-        for obj in [self.grid, self.time]:
+        for obj in [self.grid, self.time, self.mpi]:
             if hasattr(obj, name):
                 # Only when the attribute is not a function, return it
                 if not callable(getattr(obj, name)):
