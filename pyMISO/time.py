@@ -16,7 +16,6 @@ class Time:
             setattr(self, group, values)
 
         self.time_data_dir = conf.time_data_dir
-        # self.n_output_digits = conf.n_output_digits
         with (self.time_data_dir / "n_output.txt").open("r") as f:
             self.n_output = int(f.readline())
 
