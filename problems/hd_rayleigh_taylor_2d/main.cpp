@@ -14,6 +14,8 @@
 
 #include "force.hpp"
 
+using force::g_grav;
+
 #ifdef USE_CUDA
 #include "time_integrator_gpu.cuh"
 #else
@@ -60,7 +62,7 @@ template <typename Real> void initial_condition(Model<Real> &model) {
           qq.ro(i, j, k) = 1.0;
         }
         Real pr0 = 2.5;
-        Real pr = pr0 - g_grav * qq.ro(i, j, k) * grid.y[j];
+        Real pr = pr0 - force::g_grav * qq.ro(i, j, k) * grid.y[j];
 
         qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
         qq.vx(i, j, k) = v_amp * dist(engine);
