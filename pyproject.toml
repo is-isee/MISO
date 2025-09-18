@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Hideyuki Hotta" }, { name = "Haruhisa Iijima" }]
 dynamic = ["version"]
-dependencies = ["numpy>=2", "pyyaml>6"]
+dependencies = ["numpy>=2", "pyyaml>6", "python-box>=7"]
 
 [project.optional-dependencies]
 vis = ["matplotlib>=3", "pyvista>=0.46"]
