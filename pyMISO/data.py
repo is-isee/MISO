@@ -167,7 +167,7 @@ class Data:
 
         pv_grid = pv.ImageData()
         pv_grid.dimensions = (self.i_size + 1, self.j_size + 1, self.k_size + 1)
-        pv_grid.origin = (self.xmin, self.ymin, self.zmin)
+        pv_grid.origin = (self.grid.xmin, self.grid.ymin, self.grid.zmin)
         pv_grid.spacing = (
             self.grid.x[1] - self.grid.x[0],
             self.grid.y[1] - self.grid.y[0],
