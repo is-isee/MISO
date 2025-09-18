@@ -1,6 +1,3 @@
-from pathlib import Path
-
-
 class Time:
     def __init__(self, conf):
         """
@@ -14,13 +11,14 @@ class Time:
 
         self.time_data_dir = conf.time_data_dir
         self.n_output_digits = conf.n_output_digits
-        with Path(self.time_data_dir, "n_output.txt").open("r") as f:
+        with (self.time_data_dir / "n_output.txt").open("r") as f:
             self.n_output = int(f.readline())
 
     def load(self, n_output):
-        with Path(
-            self.time_data_dir,
-            "time." + str(n_output).zfill(self.n_output_digits) + ".txt",
+        with (
+            self.time_data_dir / "time."
+            + str(n_output).zfill(self.n_output_digits)
+            + ".txt",
         ).open(mode="r") as f:
             self.time = float(f.readline())
             self.n_output = int(f.readline())

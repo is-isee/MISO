@@ -9,14 +9,9 @@
 #include "config.hpp"
 #include "model.hpp"
 #include "mpi_manager.hpp"
+#include "time_integrator_gpu.cuh"
 #include "types.hpp"
 #include "utility.hpp"
-
-#ifdef USE_CUDA
-#include "time_integrator_gpu.cuh"
-#else
-#include "time_integrator_cpu.hpp"
-#endif
 
 template <typename Real> void initial_condition(Model<Real> &model);
 

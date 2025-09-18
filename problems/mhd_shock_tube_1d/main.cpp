@@ -8,14 +8,9 @@
 #include "config.hpp"
 #include "constants.hpp"
 #include "model.hpp"
+#include "time_integrator_cpu.hpp"
 #include "types.hpp"
 #include "utility.hpp"
-
-#ifdef USE_CUDA
-#include "time_integrator_gpu.cuh"
-#else
-#include "time_integrator_cpu.hpp"
-#endif
 
 using util::pow2;
 
