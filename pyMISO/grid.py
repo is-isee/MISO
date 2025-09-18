@@ -69,4 +69,3 @@ class Grid:
             self.y_edge[-1] = conf.ymax
             self.z_edge[0] = conf.zmin
             self.z_edge[-1] = conf.zmax
-            self.z_edge[-1] = conf.zmax
