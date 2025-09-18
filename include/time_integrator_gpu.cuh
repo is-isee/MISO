@@ -418,7 +418,7 @@ template <typename Real> struct TimeIntegrator {
   EOS<Real> &eos;
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
-  MPIManager<Real> &mpi;
+  MPIManager &mpi;
   CudaManager<Real> &cuda;
   TimeDevice<Real> &time_d;
 

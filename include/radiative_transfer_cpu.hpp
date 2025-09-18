@@ -147,8 +147,7 @@ template <typename Real> struct RT {
   };
 
   /// @brief Exchange halo data between MPI processes
-  void mpi_exchange_halo(const Grid<Real> &grid,
-                         const MPIManager<Real> &mpi_manager) {
+  void mpi_exchange_halo(const Grid<Real> &grid, const MPIManager &mpi_manager) {
     mpi_exchange_halo_z(grid, mpi_manager);
     mpi_exchange_halo_y(grid, mpi_manager);
     mpi_exchange_halo_x(grid, mpi_manager);
@@ -156,7 +155,7 @@ template <typename Real> struct RT {
 
   /// @brief Exchange halo data (x-direction)
   void mpi_exchange_halo_x(const Grid<Real> &grid,
-                           const MPIManager<Real> &mpi_manager) {
+                           const MPIManager &mpi_manager) {
     if (grid.i_size == 1) {
       return;
     }
@@ -230,7 +229,7 @@ template <typename Real> struct RT {
 
   /// @brief Exchange halo data (y-direction)
   void mpi_exchange_halo_y(const Grid<Real> &grid,
-                           const MPIManager<Real> &mpi_manager) {
+                           const MPIManager &mpi_manager) {
     if (grid.j_size == 1) {
       return;
     }
@@ -304,7 +303,7 @@ template <typename Real> struct RT {
 
   /// @brief Exchange halo data (z-direction)
   void mpi_exchange_halo_z(const Grid<Real> &grid,
-                           const MPIManager<Real> &mpi_manager) {
+                           const MPIManager &mpi_manager) {
     if (grid.k_size == 1) {
       return;
     }
@@ -555,7 +554,7 @@ template <typename Real> struct RT {
   /// @brief Solve radiative transfer equation
   /// @details All necessary information should be stored in the `rte_t` object.
   template <typename BoundaryCondition>
-  void solve(const Grid<Real> &grid, const MPIManager<Real> &mpi_manager,
+  void solve(const Grid<Real> &grid, const MPIManager &mpi_manager,
              const Real tolerance, const int max_iters, BoundaryCondition &&bc) {
     for (int iter = 0; iter < max_iters; ++iter) {
       rint_old.copy_from(rint);
