@@ -175,7 +175,7 @@ template <typename Real> struct Grid {
 
   ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
   /// @param grid_global Global grid object
-  Grid(const Grid<Real> &grid_global, const MPIManager<Real> &mpi) {
+  Grid(const Grid<Real> &grid_global, const MPIManager &mpi) {
 
     i_size = grid_global.i_size / mpi.x_procs;
     j_size = grid_global.j_size / mpi.y_procs;

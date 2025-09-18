@@ -23,7 +23,7 @@
 
 template <typename Real> struct Model {
   Config &config;
-  MPIManager<Real> &mpi;
+  MPIManager &mpi;
   Time<Real> time;
   Grid<Real> grid_global;
   Grid<Real> grid_local;
@@ -53,7 +53,7 @@ template <typename Real> struct Model {
 
   Model(Config &config_, Time<Real> &time_, Grid<Real> &grid_global_,
         Grid<Real> &grid_local_, EOS<Real> &eos_, MHD<Real> &mhd_, RT<Real> &rt_,
-        MPIManager<Real> &mpi_)
+        MPIManager &mpi_)
       : config(config_), time(time_), grid_global(grid_global_),
         grid_local(grid_local_), eos(eos_), mpi(mpi_),
 #ifdef USE_CUDA

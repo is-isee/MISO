@@ -8,14 +8,9 @@
 #include "config.hpp"
 #include "constants.hpp"
 #include "model.hpp"
+#include "time_integrator_cpu.hpp"
 #include "types.hpp"
 #include "utility.hpp"
-
-#ifdef USE_CUDA
-#include "time_integrator_gpu.cuh"
-#else
-#include "time_integrator_cpu.hpp"
-#endif
 
 using util::pow2;
 
@@ -45,7 +40,7 @@ int main() {
   init.vvr = 0.0;
 
   std::vector<std::string> directions = {"x", "y", "z"};
-  MPIManager<Real> mpi;
+  MPIManager mpi;
 
   int m = 0;
   for (const auto &direction : directions) {

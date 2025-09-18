@@ -21,5 +21,5 @@ class MPI:
 
         self.n_procs = conf.x_procs * conf.y_procs * conf.z_procs
         self.coords = np.genfromtxt(
-            conf.mpi_data_dir + "coords.csv", delimiter=",", names=True, dtype=int
+            (conf.mpi_data_dir / "coords.csv"), delimiter=",", names=True, dtype=int
         )

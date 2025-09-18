@@ -9,6 +9,7 @@
 #include "artificial_viscosity_cpu.hpp"
 #include "constants.hpp"
 #include "custom_boundary_condition.hpp"
+#include "force.hpp"
 #include "model.hpp"
 #include "mpi_types.hpp"
 #include "standard_boundary_condition.hpp"
@@ -113,10 +114,12 @@ template <typename Real> struct TimeIntegrator {
   /// @brief MHD class object
   MHD<Real> &mhd;
   /// @brief MPIManager class object
-  MPIManager<Real> &mpi;
+  MPIManager &mpi;
 
   /// @brief Boundary condition for MHD equations
   std::unique_ptr<BoundaryConditionBase<Real, MHDCore<Real>, Grid<Real>>> bc;
+  /// @brief Force for MHD equations
+  Force<Real, MHDCore<Real>, Grid<Real>> force;
   /// @brief Artificial viscosity for MHD equations
   ArtificialViscosity<Real> artdiff;
 
@@ -142,12 +145,13 @@ template <typename Real> struct TimeIntegrator {
   TimeIntegrator(Model<Real> &model_)
       : model(model_), config(model_.config), time(model_.time),
         grid(model_.grid_local), eos(model_.eos), mhd(model_.mhd),
-        artdiff(model_), mpi(model_.mpi),
+        mpi(model_.mpi), force(model_), artdiff(model_),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total) {
 
+    // Initialize boundary condition defined in config.yaml_obj
     if (config.yaml_obj["boundary_condition"]["boundary_type"]
             .template as<std::string>() == "standard") {
       bc = std::make_unique<
@@ -156,6 +160,7 @@ template <typename Real> struct TimeIntegrator {
                    .template as<std::string>() == "custom") {
       bc = create_custom_boundary_condition<Real>(model);
     }
+
     cfl_number =
         config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
   }
@@ -224,6 +229,7 @@ template <typename Real> struct TimeIntegrator {
                   +space_centered_4th(qq_argm.bx, qq_argm.by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(qq_argm.bx, qq_argm.bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
+              +force.x(qq_argm, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -240,6 +246,7 @@ template <typename Real> struct TimeIntegrator {
                   +space_centered_4th(qq_argm.by, qq_argm.by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(qq_argm.by, qq_argm.bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
+              +force.y(qq_argm, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -256,6 +263,7 @@ template <typename Real> struct TimeIntegrator {
                   +space_centered_4th(qq_argm.bz, qq_argm.by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(qq_argm.bz, qq_argm.bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
+              +force.z(qq_argm, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 

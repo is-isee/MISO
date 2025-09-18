@@ -1,23 +1,34 @@
 base:
   save_dir: data/
+  # if save_dir exiests
+  # continue: true -> continue simulation
+  # continue: false -> start from scratch
+  continue: true
 
 time:
   time_save_dir: time/
-  tend: 0.2
-  dt_output: 0.01
+  tend: 50.0
+  dt_output: 0.02
   n_output_digits: 8
 
 grid:
-  i_size: 4
-  j_size: 5
-  k_size: 6
+  i_size: 384
+  j_size: 1152
+  k_size: 384
   margin: 2
-  xmin: 0.0
-  xmax: 1.0
-  ymin: 0.0
-  ymax: 1.0
-  zmin: 0.0
-  zmax: 1.0
+  xmin: -0.25
+  xmax:  0.25
+  ymin: -0.75
+  ymax:  0.75
+  zmin: -0.25
+  zmax:  0.25
+
+mpi:
+  mpi_save_dir: mpi/
+  n_procs_digits: 8
+  x_procs: 1
+  y_procs: 2
+  z_procs: 1
 
 mhd:
   mhd_save_dir: mhd/
@@ -28,21 +39,21 @@ eos:
 time_integrator:
   cfl_number: 0.5
 
-mpi:
-  mpi_save_dir: mpi/
-  n_procs_digits: 8
-  x_procs: 1
-  y_procs: 1
-  z_procs: 2
-
+artificial_viscosity:
+  ep: 2.0
+  fh: 2.0
+  # for characteristic velocity
+  cs_fac: 0.5
+  ca_fac: 1.0
+  vv_fac: 1.0
 boundary_condition:
   # please use "standard" or "custom" for boundary_type
   boundary_type: standard
 
   periodic:
-    x: false
+    x: true
     y: false
-    z: false
+    z: true
 
   ro:
     x: [symmetric, symmetric]
@@ -56,7 +67,7 @@ boundary_condition:
 
   vy:
     x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
+    y: [antisymmetric, antisymmetric]
     z: [symmetric, symmetric]
 
   vz:
@@ -88,7 +99,3 @@ boundary_condition:
     x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
-
-artificial_viscosity:
-  ep: 1.0
-  fh: 1.0

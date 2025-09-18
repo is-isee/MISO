@@ -21,6 +21,13 @@ class Grid:
         self.j_margin = conf.j_margin
         self.k_margin = conf.k_margin
 
+        self.xmin = conf.xmin
+        self.xmax = conf.xmax
+        self.ymin = conf.ymin
+        self.ymax = conf.ymax
+        self.zmin = conf.zmin
+        self.zmax = conf.zmax
+
     def load(self, conf):
         """
         Load the grid.dat file in the save_dir and set the grid points as attributes
@@ -33,7 +40,7 @@ class Grid:
                 ("z", conf.endian + str(conf.k_total) + conf.dtype),
             ]
         )
-        with open(conf.data_dir + "grid.bin", "rb") as f:
+        with (conf.data_dir / "grid.bin").open(mode="rb") as f:
             data = np.fromfile(f, dtype=dtype)
 
             # geometry is defined at cell center

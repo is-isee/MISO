@@ -140,6 +140,10 @@ class Data:
             The variable name to write (e.g., 'ro', 'vx', 'vy', 'vz', 'bx', 'by', 'bz', 'ei', 'ph').
         output_path : str
             The path to save the VTK file.
+
+        Notes
+        -----
+        In this version, uniform grid is assumed.
         """
         import pyvista as pv
 
@@ -161,9 +165,18 @@ class Data:
         if read_flag:
             self.load(n_output)
 
-        pv_grid = pv.RectilinearGrid(
-            self.grid.x_edge, self.grid.y_edge, self.grid.z_edge
+        pv_grid = pv.ImageData()
+        pv_grid.dimensions = (self.i_size + 1, self.j_size + 1, self.k_size + 1)
+        pv_grid.origin = (self.grid.xmin, self.grid.ymin, self.grid.zmin)
+        pv_grid.spacing = (
+            self.grid.x[1] - self.grid.x[0],
+            self.grid.y[1] - self.grid.y[0],
+            self.grid.z[1] - self.grid.z[0],
         )
+        # TODO: Retain the following alternative implementation for future support of non-uniform grids.
+        # pv_grid = pv.RectilinearGrid(
+        #     self.grid.x_edge, self.grid.y_edge, self.grid.z_edge
+        # )
         pv_grid.cell_data["scalar"] = getattr(self, var).flatten(order="F")
 
         pv_grid.save(output_path)

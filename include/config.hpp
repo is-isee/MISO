@@ -27,9 +27,9 @@ struct Config {
   std::string mhd_save_dir;
   /// @brief Directories for saving MPI-related information
   std::string mpi_save_dir;
-  MPIManager<Real> &mpi;
+  MPIManager &mpi;
 
-  Config(const std::string &load_filepath_, MPIManager<Real> &mpi_)
+  Config(const std::string &load_filepath_, MPIManager &mpi_)
       : load_filepath(load_filepath_), mpi(mpi_) {
     std::string yaml_str;
     if (mpi.myrank == 0) {

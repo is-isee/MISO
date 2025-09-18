@@ -11,17 +11,15 @@ class Time:
 
         self.time_data_dir = conf.time_data_dir
         self.n_output_digits = conf.n_output_digits
-        with open(self.time_data_dir + "n_output.txt", "r") as f:
+        with (self.time_data_dir / "n_output.txt").open("r") as f:
             self.n_output = int(f.readline())
 
     def load(self, n_output):
-        with open(
-            self.time_data_dir
-            + "time."
+        with (
+            self.time_data_dir / "time."
             + str(n_output).zfill(self.n_output_digits)
             + ".txt",
-            "r",
-        ) as f:
+        ).open(mode="r") as f:
             self.time = float(f.readline())
             self.n_output = int(f.readline())
             self.n_step = int(f.readline())
