@@ -15,7 +15,7 @@ struct CustomBoundaryCondition
   Config &config;
   GridType &grid;
   EOS<Real> &eos;
-  MPIManager mpi;
+  MPIManager &mpi;
 
   CustomBoundaryCondition(Model<Real> &model)
       : config(model.config),
