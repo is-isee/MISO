@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 
 
@@ -21,5 +23,5 @@ class MPI:
 
         self.n_procs = conf.x_procs * conf.y_procs * conf.z_procs
         self.coords = np.genfromtxt(
-            conf.mpi_data_dir + "coords.csv", delimiter=",", names=True, dtype=int
+            Path(conf.mpi_data_dir, "coords.csv"), delimiter=",", names=True, dtype=int
         )
