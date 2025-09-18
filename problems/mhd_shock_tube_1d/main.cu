@@ -45,7 +45,7 @@ int main() {
   init.vvr = 0.0;
 
   std::vector<std::string> directions = {"x", "y", "z"};
-  MPIManager<Real> mpi;
+  MPIManager mpi;
 
   int m = 0;
   for (const auto &direction : directions) {

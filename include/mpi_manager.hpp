@@ -9,7 +9,7 @@
 #include <cuda_runtime.h>
 #endif
 
-template <typename Real> struct MPIManager {
+struct MPIManager {
   MPI_Comm cart_comm = MPI_COMM_NULL;
   int myrank = -1;
   int n_procs = -1;
@@ -84,8 +84,20 @@ template <typename Real> struct MPIManager {
     MPI_Cart_coords(cart_comm, myrank, ndims, coord);
     int merr;
     merr = MPI_Cart_shift(cart_comm, 0, 1, &x_procs_neg, &x_procs_pos);
+    if (merr != MPI_SUCCESS) {
+      std::cerr << "Error in MPI_Cart_shift (x direction)" << std::endl;
+      MPI_Abort(cart_comm, merr);
+    }
     merr = MPI_Cart_shift(cart_comm, 1, 1, &y_procs_neg, &y_procs_pos);
+    if (merr != MPI_SUCCESS) {
+      std::cerr << "Error in MPI_Cart_shift (y direction)" << std::endl;
+      MPI_Abort(cart_comm, merr);
+    }
     merr = MPI_Cart_shift(cart_comm, 2, 1, &z_procs_neg, &z_procs_pos);
+    if (merr != MPI_SUCCESS) {
+      std::cerr << "Error in MPI_Cart_shift (z direction)" << std::endl;
+      MPI_Abort(cart_comm, merr);
+    }
   }
 
   void setup_mpi(YAML::Node &yaml_obj) {

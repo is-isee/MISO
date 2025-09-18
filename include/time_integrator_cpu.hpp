@@ -114,7 +114,7 @@ template <typename Real> struct TimeIntegrator {
   /// @brief MHD class object
   MHD<Real> &mhd;
   /// @brief MPIManager class object
-  MPIManager<Real> &mpi;
+  MPIManager &mpi;
 
   /// @brief Boundary condition for MHD equations
   std::unique_ptr<BoundaryConditionBase<Real, MHDCore<Real>, Grid<Real>>> bc;

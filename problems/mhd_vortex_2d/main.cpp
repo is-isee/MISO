@@ -22,7 +22,7 @@ template <typename Real> void initial_condition(Model<Real> &model);
 int main() {
   std::string config_dir = CONFIG_DIR;
 
-  MPIManager<Real> mpi;
+  MPIManager mpi;
   Config config(config_dir + "config.yaml", mpi);
   mpi.setup_mpi(config.yaml_obj);
   Model<Real> model(config);

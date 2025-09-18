@@ -32,7 +32,7 @@ int main() {
   std::vector<std::string> directions = {"x", "y"};
 
   std::string config_dir = CONFIG_DIR;
-  MPIManager<Real> mpi;
+  MPIManager mpi;
 
   for (const auto &direction : directions) {
     {

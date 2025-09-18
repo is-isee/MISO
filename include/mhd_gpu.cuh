@@ -384,7 +384,7 @@ template <typename Real> struct MHDDevice {
   MHDDevice &operator=(const MHDDevice &) = default;
 
   void mpi_exchange_halo(MHDCoreDevice<Real> &qq_trgt, GridDevice<Real> &grid,
-                         MPIManager<Real> &mpi, CudaManager<Real> &cuda) {
+                         MPIManager &mpi, CudaManager<Real> &cuda) {
     MPI_Request reqs[12];
     int req_count = 0;
 
