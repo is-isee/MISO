@@ -88,9 +88,9 @@ class Grid:
         self.j_total = self.j_size + 2 * self.j_margin
         self.k_total = self.k_size + 2 * self.k_margin
 
-        self.i_size_local = int(self.i_size / conf.mpi.x_procs)
-        self.j_size_local = int(self.j_size / conf.mpi.y_procs)
-        self.k_size_local = int(self.k_size / conf.mpi.z_procs)
+        self.i_size_local = self.i_size // conf.mpi.x_procs
+        self.j_size_local = self.j_size // conf.mpi.y_procs
+        self.k_size_local = self.k_size // conf.mpi.z_procs
         self.i_total_local = self.i_size_local + 2 * self.i_margin
         self.j_total_local = self.j_size_local + 2 * self.j_margin
         self.k_total_local = self.k_size_local + 2 * self.k_margin
