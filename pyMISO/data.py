@@ -4,7 +4,7 @@ import pyMISO
 
 
 class Data:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir: str):
         """
         Initialize the pyMISO.Data class instance
 
@@ -19,10 +19,14 @@ class Data:
         self.grid = pyMISO.Grid(self.conf)
         self.time = pyMISO.Time(self.conf)
 
-    def load(self, n_output):
+    def load(self, n_output: int):
         """
-        Load the config.json file in the data_dir and set the parameters as attributes
-        using np.memmap for efficient access to large binary data.
+        Load mhd quantities
+
+        Parameters
+        ----------
+        n_output : int
+            The output number to load the data from
         """
 
         self.ro = np.zeros(
@@ -47,9 +51,8 @@ class Data:
         count = np.prod(shape)
 
         for rank in range(self.mpi.n_procs):
-            filename = (
-                self.conf.mhd_data_dir
-                + "mhd."
+            filename = self.conf.mhd_data_dir / (
+                "mhd."
                 + str(n_output).zfill(self.conf.n_output_digits)
                 + "."
                 + str(rank).zfill(self.conf.n_procs_digits)
@@ -113,7 +116,6 @@ class Data:
                     f, dtype=self.conf.endian + self.conf.dtype, count=count
                 ).reshape(shape, order="C")[tuple(ijk_local)]
 
-        # squeezeはオプション（必要なら）
         self.ro = np.squeeze(self.ro)
         self.vx = np.squeeze(self.vx)
         self.vy = np.squeeze(self.vy)
@@ -183,9 +185,9 @@ class Data:
 
     def __getattr__(self, name):
         """
-        When an attribute is not found in pyMISO.Data, it is searched in pyMISO.MHD.conf and pyMISO.MHD.grid
+        When an attribute is not found in pyMISO.Data, it is searched in grid, time, and mpi.
         """
-        for obj in [self.grid, self.time]:
+        for obj in [self.grid, self.time, self.mpi]:
             if hasattr(obj, name):
                 # Only when the attribute is not a function, return it
                 if not callable(getattr(obj, name)):
