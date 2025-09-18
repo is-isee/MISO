@@ -169,9 +169,9 @@ class Data:
         pv_grid.dimensions = (self.i_size + 1, self.j_size + 1, self.k_size + 1)
         pv_grid.origin = (self.xmin, self.ymin, self.zmin)
         pv_grid.spacing = (
-            self.x[1] - self.x[0],
-            self.y[1] - self.y[0],
-            self.z[1] - self.z[0],
+            self.grid.x[1] - self.grid.x[0],
+            self.grid.y[1] - self.grid.y[0],
+            self.grid.z[1] - self.grid.z[0],
         )
         # pv_grid = pv.RectilinearGrid(
         #     self.grid.x_edge, self.grid.y_edge, self.grid.z_edge
