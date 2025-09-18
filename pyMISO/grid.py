@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 
 
@@ -40,7 +42,7 @@ class Grid:
                 ("z", conf.endian + str(conf.k_total) + conf.dtype),
             ]
         )
-        with open(conf.data_dir + "grid.bin", "rb") as f:
+        with Path(conf.data_dir, "grid.bin").open(mode="rb") as f:
             data = np.fromfile(f, dtype=dtype)
 
             # geometry is defined at cell center
