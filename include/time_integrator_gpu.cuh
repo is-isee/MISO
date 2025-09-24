@@ -43,9 +43,9 @@ __global__ void cfl_condition_kernel(MHDCoreDevice<Real> qq,
                          + qq.by[grid.idx(i, j, k)] * qq.by[grid.idx(i, j, k)]
                          + qq.bz[grid.idx(i, j, k)] * qq.bz[grid.idx(i, j, k)]) /
                         qq.ro[grid.idx(i, j, k)] * pii4<Real>);
+    Real total_vel = (cs + vv + ca)*grid.mask[grid.idx(i, j, k)] + 1.e-10*(1.0 - grid.mask[grid.idx(i, j, k)]);
     // clang-format on
-    dt = cfl_number * util::min3(grid.dx[i], grid.dy[j], grid.dz[k]) /
-         (cs + vv + ca);
+    dt = cfl_number * util::min3(grid.dx[i], grid.dy[j], grid.dz[k]) / total_vel;
   }
 
   int thread_id = threadIdx.z * blockDim.y * blockDim.x +
@@ -585,6 +585,8 @@ template <typename Real> struct TimeIntegrator {
         fs::exists(this->config.time_save_dir + "n_output.txt")) {
       model.load_state();
     }
+
+    MPI_Barrier(mpi.cart_comm);
 
     grid_d.copy_from_host(grid);
     mhd_d.qq.copy_from_host(mhd.qq, cuda);
