@@ -15,8 +15,6 @@
 #include "types.hpp"
 #include "utility.hpp"
 
-template <typename Real> void initial_condition(Model<Real> &model);
-
 int main() {
   std::string config_dir = CONFIG_DIR;
 
