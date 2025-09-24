@@ -30,9 +30,10 @@ inline std::string zfill(int num, int width) {
 /// @tparam T type of the value
 /// @param x target value
 /// @return squared value
-template <typename T> inline T pow2(T x) { return x * x; }
-template <typename T> inline T pow3(T x) { return x * x * x; }
-template <typename T> inline T pow4(T x) { return x * x * x * x; }
+template <typename T> HOST_DEVICE inline T pow2(T x) { return x * x; }
+template <typename T> HOST_DEVICE inline T pow3(T x) { return x * x * x; }
+template <typename T> HOST_DEVICE inline T pow4(T x) { return x * x * x * x; }
+template <typename T> HOST_DEVICE inline T pow5(T x) { return x * x * x * x * x; }
 
 // for float min
 HOST_DEVICE inline float fmin_safe(float a, float b) { return fminf(a, b); }
