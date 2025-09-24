@@ -188,7 +188,6 @@ struct CustomBoundaryCondition
         for (int k = 0; k < grid.k_total; ++k) {
           Real rr = std::sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] +
                               grid.z[k] * grid.z[k]);
-          Real a0 = 100.0;
           Real hh;
           if (rr > rra) {
             hh = util::pow2(rr / rra) - 1.0;
