@@ -1,6 +1,6 @@
 base:
   save_dir: data/
-  # if save_dir exiests
+  # if save_dir exists
   # continue: true -> continue simulation
   # continue: false -> start from scratch
   continue: true
@@ -107,6 +107,7 @@ solar_wind: # solar wind parameter at x = xmin boundary
   bz_imf: 1.5e-4
 
 geo_boundary:
+  pr_earth: 5.4e-7
   radius: 3.5
   a0: 100.0
 

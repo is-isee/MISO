@@ -415,7 +415,7 @@ template <typename Real> struct TimeIntegrator {
             + this->mhd.qq.bz(i,j,k)*this->mhd.qq.bz(i,j,k)
           )/this->mhd.qq.ro(i,j,k)*pii4<Real>);
 
-          // in masked region, cfl condtion is not applied          
+          // in masked region, cfl condition is not applied          
           Real total_vel = (cs + vv + ca)*this->grid.mask(i,j,k) + slow_speed*(1.0 - this->grid.mask(i,j,k));
           this->time.dt = std::min(this->time.dt,
             this->cfl_number*std::min<Real>({this->grid.dx[i], this->grid.dy[j], this->grid.dz[k]})/total_vel);
