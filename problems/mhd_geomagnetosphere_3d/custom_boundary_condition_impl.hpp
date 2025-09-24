@@ -25,15 +25,21 @@ geo_boundary_condition_core(MHDCoreType &qq, const MHDCoreType &qq_init,
       sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] + grid.z[k] * grid.z[k]);
 
   // clang-format off
-  qq.ro[grid.idx(i, j, k)] = qq.ro[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.ro[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.vx[grid.idx(i, j, k)] = qq.vx[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.vx[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.vy[grid.idx(i, j, k)] = qq.vy[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.vy[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.vz[grid.idx(i, j, k)] = qq.vz[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.vz[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.bx[grid.idx(i, j, k)] = qq.bx[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.bx[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.by[grid.idx(i, j, k)] = qq.by[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.by[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.bz[grid.idx(i, j, k)] = qq.bz[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.bz[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.ei[grid.idx(i, j, k)] = qq.ei[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.ei[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
-  qq.ph[grid.idx(i, j, k)] = qq.ph[grid.idx(i, j, k)]*f_sphere[grid.idx(i, j, k)] + qq_init.ph[grid.idx(i, j, k)]*(1.0 - f_sphere[grid.idx(i, j, k)]);
+  // Helper lambda for linear interpolation
+  auto lerp = [](Real a, Real b, Real f) -> Real {
+    return a * f + b * (1.0 - f);
+  };
+  int idx = grid.idx(i, j, k);
+  Real f = f_sphere[idx];
+  qq.ro[idx] = lerp(qq.ro[idx], qq_init.ro[idx], f);
+  qq.vx[idx] = lerp(qq.vx[idx], qq_init.vx[idx], f);
+  qq.vy[idx] = lerp(qq.vy[idx], qq_init.vy[idx], f);
+  qq.vz[idx] = lerp(qq.vz[idx], qq_init.vz[idx], f);
+  qq.bx[idx] = lerp(qq.bx[idx], qq_init.bx[idx], f);
+  qq.by[idx] = lerp(qq.by[idx], qq_init.by[idx], f);
+  qq.bz[idx] = lerp(qq.bz[idx], qq_init.bz[idx], f);
+  qq.ei[idx] = lerp(qq.ei[idx], qq_init.ei[idx], f);
+  qq.ph[idx] = lerp(qq.ph[idx], qq_init.ph[idx], f);
   // clang-format on
 
   qq.ro[grid.idx(i, j, k)] = util::max2<Real>(qq.ro[grid.idx(i, j, k)], ro_floor);
