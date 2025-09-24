@@ -61,6 +61,9 @@ public:
     return array[i * j_total * k_total + j * k_total + k];
   }
 
+  T &operator[](int idx) { return array[idx]; }
+  const T &operator[](int idx) const { return array[idx]; }
+
   /// @brief overload function for accessing the 3D array elements
   T *data() { return array.data(); }
 
