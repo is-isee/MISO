@@ -4,7 +4,7 @@
 #include "utility.hpp"
 
 namespace force {
-constexpr Real g_grav = 1.35e-6;  // gravitational acceleration
+constexpr Real g_grav = 1.35e-6;  // gravitational acceleration (simulation units)
 }
 
 #if defined(__CUDACC__)
