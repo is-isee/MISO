@@ -46,8 +46,9 @@ template <typename Real> struct InitialCondition {
 
           // pressure
           Real pr;
-          Real pr00 = 5.4e-7;
-          Real pr_tmp = pr00 * util::pow2(1 / rr);
+          // Reference pressure at Earth's surface in simulation units (e.g., [Pa])
+          constexpr Real REFERENCE_PRESSURE = 5.4e-7;
+          Real pr_tmp = REFERENCE_PRESSURE * util::pow2(1 / rr);
 
           if (pr_tmp > pr_sw) {
             pr = pr_tmp;
