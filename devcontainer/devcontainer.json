@@ -30,7 +30,12 @@
                 "ms-vscode.cmake-tools",
                 "nvidia.nsight-cuda",
                 "charliermarsh.ruff"
-            ]
+            ],
+            "settings": {
+                "C_Cpp.default.defines": [
+                    "USE_CUDA"
+                ]
+            }
         }
     }
 }

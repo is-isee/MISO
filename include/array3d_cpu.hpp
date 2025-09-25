@@ -16,6 +16,9 @@ private:
   std::vector<T> array;
 
 public:
+  /// @brief Default constructor
+  Array3D() : i_total(0), j_total(0), k_total(0) {}
+
   /// @brief Constructor
   /// @param i_total_ Total size in x direction including margin
   /// @param j_total_ Total size in y direction including margin
@@ -23,6 +26,17 @@ public:
   Array3D(int i_total_, int j_total_, int k_total_)
       : i_total(i_total_), j_total(j_total_), k_total(k_total_),
         array(i_total_ * j_total_ * k_total_) {}
+
+  /// @brief Allocate memory for the array
+  /// @param i_total_ Total size in x direction including margin
+  /// @param j_total_ Total size in y direction including margin
+  /// @param k_total_ Total size in z direction including margin
+  void allocate(int i_total_, int j_total_, int k_total_) {
+    i_total = i_total_;
+    j_total = j_total_;
+    k_total = k_total_;
+    array.resize(i_total_ * j_total_ * k_total_);
+  }
 
   /// @brief overload function for accessing the 3D array elements
   /// @param i i index
@@ -46,6 +60,9 @@ public:
     assert(k >= 0 && k < k_total);
     return array[i * j_total * k_total + j * k_total + k];
   }
+
+  T &operator[](int idx) { return array[idx]; }
+  const T &operator[](int idx) const { return array[idx]; }
 
   /// @brief overload function for accessing the 3D array elements
   T *data() { return array.data(); }
