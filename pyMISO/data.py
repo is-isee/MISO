@@ -128,7 +128,7 @@ class Data:
 
         self.load_n_output = n_output
 
-    def write_scalar_vtk(self, n_output, var, output_path):
+    def write_scalar_vtk(self, n_output: int, var: str, output_path: str):
         """
         Write a scalar variable to a VTK file for visualization using PyVista.
 
@@ -180,6 +180,65 @@ class Data:
         #     self.grid.x_edge, self.grid.y_edge, self.grid.z_edge
         # )
         pv_grid.cell_data["scalar"] = getattr(self, var).flatten(order="F")
+        pv_grid = pv_grid.cell_data_to_point_data()
+
+        pv_grid.save(output_path)
+
+    def write_vector_vtk(self, n_output: int, var: str, output_path: str):
+        """
+        Write a vector variable to a VTK file for visualization using PyVista.
+
+        Parameters
+        ----------
+        self : pyMISO.Data
+            Instance of pyMISO.Data class containing the simulation data.
+        n_output : int
+            The output number to load the data from.
+        var : str
+            The variable name to write ('v' for velocity, 'b' for magnetic field).
+        output_path : str
+            The path to save the VTK file.
+
+        Notes
+        -----
+        In this version, uniform grid is assumed.
+        """
+        import pyvista as pv
+
+        if not isinstance(n_output, int):
+            raise TypeError("n_output must be an integer")
+
+        if not isinstance(output_path, str):
+            raise TypeError("output_path must be a string")
+
+        if var not in ["v", "b"]:
+            raise ValueError("var must be 'v' or 'b'")
+
+        read_flag = True
+        if hasattr(self, "load_n_output"):
+            if n_output == self.load_n_output:
+                read_flag = False
+        if read_flag:
+            self.load(n_output)
+
+        pv_grid = pv.ImageData()
+        pv_grid.dimensions = (self.i_size + 1, self.j_size + 1, self.k_size + 1)
+        pv_grid.origin = (self.grid.xmin, self.grid.ymin, self.grid.zmin)
+        pv_grid.spacing = (
+            self.grid.x[1] - self.grid.x[0],
+            self.grid.y[1] - self.grid.y[0],
+            self.grid.z[1] - self.grid.z[0],
+        )
+
+        pv_grid.cell_data["vector"] = np.stack(
+            (
+                getattr(self, var + "x").flatten(order="F"),
+                getattr(self, var + "y").flatten(order="F"),
+                getattr(self, var + "z").flatten(order="F"),
+            ),
+            axis=-1,
+        )
+        pv_grid = pv_grid.cell_data_to_point_data()
 
         pv_grid.save(output_path)
 

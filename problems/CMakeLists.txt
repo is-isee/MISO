@@ -7,6 +7,7 @@ foreach(PROBLEM_DIR
         hd_kh_2d
         mhd_kh_3d
         hd_rayleigh_taylor_2d
+        mhd_geomagnetosphere_3d
         rt_searchlight_2d
         )
     add_subdirectory(${PROBLEM_DIR})
