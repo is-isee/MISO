@@ -1,5 +1,9 @@
 #pragma once
 
+// This file contains CPU-specific implementations of time integration routines.
+// It is excluded from builds where CUDA support is enabled (USE_CUDA defined),
+// to avoid conflicts with GPU-specific code and ensure only the appropriate
+// implementation is compiled.
 #ifndef USE_CUDA
 
 #include <algorithm>
