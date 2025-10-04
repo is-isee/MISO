@@ -26,10 +26,13 @@ extensions = [
     "sphinx.ext.imgmath",  # math rendering
     "sphinx_automodapi.automodapi",  # automatic API documentation
     "sphinx_multiversion",  # multiple version support
+    "sphinx_copybutton",  # copy button for code blocks
     "breathe",  # Doxygen integration
 ]
 
-# pip install  sphinx-automodapi sphinx-multiversion breathe exhale
+autodoc_default_options = {
+    "special-members": "__init__",
+}
 
 breathe_projects = {
     "MISO-CPU": "../doxygen/cpu/xml",
@@ -46,7 +49,7 @@ if target == "CPU":
     exhale_args = {
         "containmentFolder": "./api/cpp_cpu",
         "rootFileName": "root.rst",
-        "rootFileTitle": "MISO CPU API Reference",
+        "rootFileTitle": "MISO C++ CPU API Reference",
         "doxygenStripFromPath": "..",
         "createTreeView": True,
     }
@@ -56,7 +59,7 @@ elif target == "GPU":
     exhale_args = {
         "containmentFolder": "./api/cpp_gpu",
         "rootFileName": "root.rst",
-        "rootFileTitle": "MISO GPU API Reference",
+        "rootFileTitle": "MISO C++ GPU API Reference",
         "doxygenStripFromPath": "..",
         "createTreeView": True,
     }

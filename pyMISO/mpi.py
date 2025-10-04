@@ -4,6 +4,10 @@ import pyMISO
 
 
 class MPI:
+    """
+    Class to handle MPI data.
+    """
+
     def __init__(self, conf: pyMISO.Conf):
         """
         Initialize the pyMISO.Grid class instance
