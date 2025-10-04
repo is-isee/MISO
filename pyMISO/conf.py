@@ -5,6 +5,10 @@ from box import Box
 
 
 class Conf:
+    """
+    Class to handle the configuration file
+    """
+
     def __init__(self, data_dir: str):
         """
         Initialize the pyrmhd.Conf class instance

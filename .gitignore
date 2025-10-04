@@ -55,10 +55,6 @@ venv/
 *_cache/
 *_cache/
 
-# doxygen files
-docs/doxygen_cpu
-docs/doxygen_gpu
-
 # figure files
 figs/
 
@@ -77,3 +73,12 @@ pyMISO/_version.py
 
 # test temporal files
 tests/Testing
+
+# Sphinx documentation build
+docs/build/
+docs/source/api/
+make.bat
+
+# doxygen files
+docs/doxygen/cpu
+docs/doxygen/gpu

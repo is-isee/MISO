@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cuda_runtime.h>
 
+/// @brief  3D array on GPU
+/// @tparam T
 template <typename T> class Array3DDevice {
 public:
   T *array = nullptr;
