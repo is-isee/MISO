@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef USE_CUDA
+
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
@@ -463,3 +465,5 @@ template <typename Real> struct TimeIntegrator {
     }
   }
 };
+
+#endif

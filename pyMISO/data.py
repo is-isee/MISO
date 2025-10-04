@@ -4,6 +4,10 @@ import pyMISO
 
 
 class Data:
+    """
+    Class to handle the simulation data
+    """
+
     def __init__(self, data_dir: str):
         """
         Initialize the pyMISO.Data class instance

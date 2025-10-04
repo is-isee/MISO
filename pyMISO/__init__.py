@@ -1,5 +1,5 @@
 """
-Package for dealing with MISO data.
+Package for dealing with MISO simulation data.
 """
 
 __all__ = ["Conf", "Data", "Grid", "MPI", "Time"]

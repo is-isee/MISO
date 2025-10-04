@@ -2,6 +2,10 @@ import pyMISO
 
 
 class Time:
+    """
+    Class to handle the time data
+    """
+
     def __init__(self, conf: pyMISO.Conf):
         """
         Initialize the pyMISO.Time class instance

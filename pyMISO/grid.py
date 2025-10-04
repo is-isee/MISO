@@ -4,6 +4,10 @@ import pyMISO
 
 
 class Grid:
+    """
+    Class to handle the grid.dat file
+    """
+
     def __init__(self, conf: pyMISO.Conf):
         """
         Initialize the pyMISO.Grid class instance
