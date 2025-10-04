@@ -181,6 +181,8 @@ __global__ void unpack_z_recv(MHDCoreDevice<Real> qq_trgt,
   }
 };
 
+/// @brief MHD core data structure on GPU
+/// @tparam Real floating point type
 template <typename Real> struct MHDCoreDevice {
 
   Real *ro = nullptr;
