@@ -28,6 +28,7 @@ extensions = [
     "sphinx_multiversion",  # multiple version support
     "sphinx_copybutton",  # copy button for code blocks
     "breathe",  # Doxygen integration
+    "sphinxcontrib.bibtex",  # bibliography management
 ]
 
 autodoc_default_options = {
@@ -76,3 +77,6 @@ exclude_patterns = []
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 #
+
+bibtex_bibfiles = ["reference.bib"]
+bibtex_reference_style = "author_year"
