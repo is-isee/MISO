@@ -60,7 +60,7 @@ sphinx + breathe + exhaleを利用
 
 以下のパッケージをインストール
 ```shell
-pip install sphinx sphinx-rtd-theme sphinx-automodapi sphinx-multiversion breathe exhale sphinx-copybutton sphinxcontrib-bibtex
+pip install sphinx sphinx-rtd-theme sphinx-automodapi sphinx-multiversion breathe exhale sphinx-copybutton sphinxcontrib-bibtex myst-parser 
 ```
 
 ```shell

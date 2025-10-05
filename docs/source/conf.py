@@ -23,12 +23,18 @@ extensions = [
     "sphinx.ext.viewcode",  # ソースコードのリンク
     "sphinx.ext.intersphinx",  # 他のドキュメントへのリンク
     "sphinx.ext.todo",  # todo directives
-    "sphinx.ext.imgmath",  # math rendering
     "sphinx_automodapi.automodapi",  # automatic API documentation
     "sphinx_multiversion",  # multiple version support
     "sphinx_copybutton",  # copy button for code blocks
     "breathe",  # Doxygen integration
     "sphinxcontrib.bibtex",  # bibliography management
+    "myst_parser",  # Markdown support
+    "sphinx.ext.mathjax",  # MathJax for math rendering
+]
+
+myst_enable_extensions = [
+    "dollarmath",  # $...$ や $$...$$ の数式を使えるようにする
+    "amsmath",  # align環境などを有効化
 ]
 
 autodoc_default_options = {
