@@ -94,6 +94,6 @@ artificial_viscosity:
   ep: 1.0
   fh: 1.0
   # for characteristic velocity
-  cs_fac: 0.5
+  cs_fac: 1.0
   ca_fac: 1.0
   vv_fac: 1.0
