@@ -9,7 +9,7 @@ time:
   n_output_digits: 8
 
 grid:
-  i_size: 128
+  i_size: 512
   j_size: 1
   k_size: 1
   margin: 2
@@ -24,7 +24,7 @@ mhd:
   mhd_save_dir: mhd/
 
 eos:
-  gm: 1.4
+  gm: 2.0
 
 time_integrator:
   cfl_number: 0.5
@@ -94,6 +94,6 @@ artificial_viscosity:
   ep: 1.0
   fh: 1.0
   # for characteristic velocity
-  cs_fac: 0.5
+  cs_fac: 1.0
   ca_fac: 1.0
   vv_fac: 1.0
