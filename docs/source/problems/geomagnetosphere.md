@@ -123,7 +123,7 @@ We set symmetric boundary condition for all physical quantities at all the bound
 
 You can run a python program `geomagnetosphere_3d.py` to generate result plots. The result plots are stored at `py/problems/figs/geomagnetosphere_3d/`.
 
-用意されたpythonプログラム `geomagnetosphere_3d.py` を実行することにより、結果を結果のプロットは `py/problems/figs/geomagnetosphere/` に保存されます。
+用意されたpythonプログラム `geomagnetosphere_3d.py` を実行することにより、結果のプロットは `py/problems/figs/geomagnetosphere_3d/` に保存されます。
 
 ```shell
 cd py/problems/
