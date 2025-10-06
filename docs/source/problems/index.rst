@@ -15,5 +15,8 @@ In some cases, additional files like ``custom_boundary_condition.cpp`` and ``for
    
    hd_shock_tube_1d.md
    mhd_shock_tube_1d.md
+   mhd_vortex.md
    kelvin_helmholtz.md
+   rayleigh_taylor.md
+   geomagnetosphere_3d.md
    
