@@ -21,11 +21,11 @@ help:
 	@doxygen ../docs/doxygen/Doxyfile_cpu
 	@doxygen ../docs/doxygen/Doxyfile_gpu
 	@echo "=== Building CPU docs ==="
-	@DOCS_TARGET=CPU $(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)/cpu" $(SPHINXOPTS)
+	@DOCS_TARGET=CPU $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)/cpu" $(SPHINXOPTS) $(O)
 	@echo "=== Building GPU docs ==="
-	@DOCS_TARGET=GPU $(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)/gpu" $(SPHINXOPTS)
+	@DOCS_TARGET=GPU $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)/gpu" $(SPHINXOPTS) $(O)
 	@echo "=== Merging CPU and GPU docs ==="
-	@DOCS_TARGET=MERGE $(SPHINXBUILD) -b html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	@DOCS_TARGET=MERGE $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	@echo "=== Cleaning up ==="
 	@rm -rf "$(BUILDDIR)/cpu" "$(BUILDDIR)/gpu"
 

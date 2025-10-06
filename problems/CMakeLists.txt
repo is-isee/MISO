@@ -4,10 +4,9 @@ foreach(PROBLEM_DIR
         hd_shock_tube_1d
         mhd_shock_tube_1d
         mhd_vortex_2d
-        hd_kh_2d
-        mhd_kh_3d
-        hd_rayleigh_taylor_2d
-        mhd_geomagnetosphere_3d
+        kelvin_helmholtz
+        rayleigh_taylor
+        geomagnetosphere_3d
         rt_searchlight_2d
         )
     add_subdirectory(${PROBLEM_DIR})
