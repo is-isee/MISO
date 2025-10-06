@@ -32,6 +32,14 @@ extensions = [
     "sphinx.ext.mathjax",  # MathJax for math rendering
 ]
 
+mathjax3_config = {
+    "tex": {
+        "macros": {
+            "bm": ["{\\boldsymbol{#1}}", 1],
+        }
+    }
+}
+
 myst_enable_extensions = [
     "dollarmath",  # $...$ や $$...$$ の数式を使えるようにする
     "amsmath",  # align環境などを有効化

@@ -7,14 +7,14 @@ base:
 
 time:
   time_save_dir: time/
-  tend: 10.0
-  dt_output: 0.005
+  tend: 2.0
+  dt_output: 0.02
   n_output_digits: 8
 
 grid:
-  i_size: 384
-  j_size: 384
-  k_size: 384
+  i_size: 512
+  j_size: 512
+  k_size: 1
   margin: 2
   xmin: -0.5
   xmax:  0.5
@@ -52,7 +52,7 @@ boundary_condition:
 
   periodic:
     x: true
-    y: true
+    y: false
     z: true
 
   ro:

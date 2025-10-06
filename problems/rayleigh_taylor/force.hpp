@@ -31,7 +31,6 @@ template <typename Real, typename MHDCoreType, typename GridType> struct Force {
     return 0.0;
   }
   DEVICE inline Real y(MHDCoreType &qq, int i, int j, int k) {
-    // write your custom force here
 #ifdef USE_CUDA
     return -qq.ro[grid.idx(i, j, k)] * force::g_grav;
 #else
