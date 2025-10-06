@@ -1,59 +1,59 @@
 base:
   save_dir: data/
-  # if save_dir exists
+  # if save_dir exiests
   # continue: true -> continue simulation
   # continue: false -> start from scratch
   continue: true
 
 time:
   time_save_dir: time/
-  tend: 2500.0
-  dt_output: 5.0
+  tend: 20.0
+  dt_output: 0.2
   n_output_digits: 8
 
 grid:
-  i_size: 128
-  j_size: 128
-  k_size: 128
+  i_size: 384
+  j_size: 1152
+  k_size: 1
   margin: 2
-  xmin: -44.8
-  xmax:  44.8
-  ymin: -44.8
-  ymax:  44.8
-  zmin: -44.8
-  zmax:  44.8
+  xmin: -0.25
+  xmax:  0.25
+  ymin: -0.75
+  ymax:  0.75
+  zmin: -0.25
+  zmax:  0.25
 
 mpi:
   mpi_save_dir: mpi/
   n_procs_digits: 8
-  x_procs: 2
-  y_procs: 1
+  x_procs: 1
+  y_procs: 2
   z_procs: 1
 
 mhd:
   mhd_save_dir: mhd/
 
 eos:
-  gm: 1.6666666666666667
+  gm: 1.4
 
 time_integrator:
-  cfl_number: 0.8
+  cfl_number: 0.5
 
 artificial_viscosity:
-  ep: 1.5
-  fh: 1.5
+  ep: 2.0
+  fh: 2.0
   # for characteristic velocity
-  cs_fac: 0.8
-  ca_fac: 0.8
-  vv_fac: 0.8
+  cs_fac: 0.5
+  ca_fac: 1.0
+  vv_fac: 1.0
 boundary_condition:
   # please use "standard" or "custom" for boundary_type
-  boundary_type: custom
+  boundary_type: standard
 
   periodic:
-    x: false
+    x: true
     y: false
-    z: false
+    z: true
 
   ro:
     x: [symmetric, symmetric]
@@ -66,22 +66,22 @@ boundary_condition:
     z: [symmetric, symmetric]
 
   vy:
-    x: [antisymmetric, symmetric]
-    y: [symmetric, symmetric]
+    x: [symmetric, symmetric]
+    y: [antisymmetric, antisymmetric]
     z: [symmetric, symmetric]
 
   vz:
-    x: [antisymmetric, symmetric]
+    x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
   bx:
-    x: [antisymmetric, symmetric]
+    x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
   by:
-    x: [antisymmetric, symmetric]
+    x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
@@ -99,19 +99,3 @@ boundary_condition:
     x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
-
-solar_wind: # solar wind parameter at x = xmin boundary
-  ro_sw: 5.e-5
-  pr_sw: 3.56e-8
-  vx_sw: 0.1
-  bz_imf: 1.5e-4
-
-geo_boundary:
-  pr_earth: 5.4e-7
-  radius: 3.5
-  a0: 100.0
-
-floor:
-  ro_floor: 1.e-8
-  pr_floor: 1.e-10
-  

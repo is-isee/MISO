@@ -60,15 +60,24 @@ sphinx + breathe + exhaleを利用
 
 以下のパッケージをインストール
 ```shell
-pip install sphinx sphinx-rtd-theme sphinx-automodapi sphinx-multiversion breathe exhale sphinx-copybutton
+pip install sphinx sphinx-rtd-theme sphinx-automodapi sphinx-multiversion breathe exhale sphinx-copybutton sphinxcontrib-bibtex myst-parser 
 ```
 
 ```shell
 cd docs
-make
+make html
 ```
 
 これで`docs/build/index.html`にHTMLが生成される。
+
+sphinxcontrib-bibtexを利用して、参考文献を管理している。bibtex情報を
+参考文献は`docs/source/reference.bib`に記載して、
+
+```rst
+:cite:`sod_1978JCoPh..27....1S`
+```
+
+として引用する。
 
 ## Dev Container
 

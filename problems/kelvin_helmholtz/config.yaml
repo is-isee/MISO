@@ -7,27 +7,27 @@ base:
 
 time:
   time_save_dir: time/
-  tend: 50.0
+  tend: 2.0
   dt_output: 0.02
   n_output_digits: 8
 
 grid:
-  i_size: 384
-  j_size: 1152
-  k_size: 384
+  i_size: 512
+  j_size: 512
+  k_size: 1
   margin: 2
-  xmin: -0.25
-  xmax:  0.25
-  ymin: -0.75
-  ymax:  0.75
-  zmin: -0.25
-  zmax:  0.25
+  xmin: -0.5
+  xmax:  0.5
+  ymin: -0.5
+  ymax:  0.5
+  zmin: -0.5
+  zmax:  0.5
 
 mpi:
   mpi_save_dir: mpi/
   n_procs_digits: 8
-  x_procs: 1
-  y_procs: 2
+  x_procs: 2
+  y_procs: 1
   z_procs: 1
 
 mhd:
@@ -37,11 +37,11 @@ eos:
   gm: 1.4
 
 time_integrator:
-  cfl_number: 0.5
+  cfl_number: 1.0
 
 artificial_viscosity:
-  ep: 2.0
-  fh: 2.0
+  ep: 1.5
+  fh: 1.5
   # for characteristic velocity
   cs_fac: 0.5
   ca_fac: 1.0
@@ -67,7 +67,7 @@ boundary_condition:
 
   vy:
     x: [symmetric, symmetric]
-    y: [antisymmetric, antisymmetric]
+    y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
   vz:

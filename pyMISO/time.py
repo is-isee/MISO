@@ -37,5 +37,5 @@ class Time:
             / ("time." + str(n_output).zfill(self.n_output_digits) + ".txt")
         ).open(mode="r") as f:
             self.time = float(f.readline())
-            self.n_output = int(f.readline())
-            self.n_step = int(f.readline())
+            self.load_n_output = int(f.readline())
+            self.load_n_step = int(f.readline())
