@@ -58,6 +58,5 @@ for n in range(d.n_output + 1):
 
     fig.savefig(fig_dir + "py_" + str(n).zfill(8) + ".png")
     print(n)
-    plt.pause(0.1)
     if n != d.n_output:
         plt.clf()

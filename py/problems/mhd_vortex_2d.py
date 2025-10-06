@@ -22,7 +22,6 @@ for n in range(d.n_output + 1):
         fig.tight_layout()
 
     fig.savefig(fig_dir + "py_" + str(n).zfill(8) + ".png")
-    plt.pause(0.01)
     print(n)
     if n != d.n_output:
         plt.clf()
