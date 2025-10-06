@@ -7,8 +7,8 @@ base:
 
 time:
   time_save_dir: time/
-  tend: 2500.0
-  dt_output: 5.0
+  tend: 15000.0
+  dt_output: 100.0
   n_output_digits: 8
 
 grid:
@@ -37,15 +37,15 @@ eos:
   gm: 1.6666666666666667
 
 time_integrator:
-  cfl_number: 0.8
+  cfl_number: 0.3
 
 artificial_viscosity:
-  ep: 1.5
-  fh: 1.5
+  ep: 1.2
+  fh: 1.0
   # for characteristic velocity
-  cs_fac: 0.8
+  cs_fac: 1.0
   ca_fac: 0.8
-  vv_fac: 0.8
+  vv_fac: 1.0
 boundary_condition:
   # please use "standard" or "custom" for boundary_type
   boundary_type: custom
@@ -66,22 +66,22 @@ boundary_condition:
     z: [symmetric, symmetric]
 
   vy:
-    x: [antisymmetric, symmetric]
+    x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
   vz:
-    x: [antisymmetric, symmetric]
+    x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
   bx:
-    x: [antisymmetric, symmetric]
+    x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
   by:
-    x: [antisymmetric, symmetric]
+    x: [symmetric, symmetric]
     y: [symmetric, symmetric]
     z: [symmetric, symmetric]
 
@@ -101,10 +101,10 @@ boundary_condition:
     z: [symmetric, symmetric]
 
 solar_wind: # solar wind parameter at x = xmin boundary
-  ro_sw: 5.e-5
+  ro_sw: 5.e-4
   pr_sw: 3.56e-8
-  vx_sw: 0.1
-  bz_imf: 1.5e-4
+  vx_sw: 0.05
+  bz_imf: -1.5e-4
 
 geo_boundary:
   pr_earth: 5.4e-7

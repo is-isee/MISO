@@ -47,12 +47,12 @@ template <typename Real> void initial_condition(Model<Real> &model) {
       for (int k = 0; k < grid.k_total; ++k) {
 
         // initial condition
-        if (std::abs(grid.y[j]) > 0.25) {
+        if (grid.y[j] > 0.0) {
           qq.ro(i, j, k) = 1.0;
-          qq.vx(i, j, k) = -0.5;
+          qq.vx(i, j, k) = 0.5;
         } else {
           qq.ro(i, j, k) = 2.0;
-          qq.vx(i, j, k) = 0.5;
+          qq.vx(i, j, k) = -0.5;
         }
         Real pr = 2.5;
         qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
