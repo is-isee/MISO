@@ -5,3 +5,5 @@
 
 
 This is MISO (Mhd ISee Open source code), an open-source software for performing magnetohydrodynamics (MHD) simulations.
+
+Documentation: https://is-isee.github.io/MISO/
