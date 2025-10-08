@@ -1,39 +1,13 @@
 {% extends "!layout.html" %}
 
-{% block extrabody %}
-{{ super() }}
-<div id="language-bar">
+{% block content %}
+<div id="language-links" style="margin-bottom: 1em; font-size: 100%;">
     Language:
     <a href="#" id="translate-link" target="_blank">English</a> |
     <a href="#" id="original-link">日本語</a>
 </div>
-{% endblock %}
 
-{% block extrahead %}
 {{ super() }}
-<style>
-    #language-bar {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        width: 100%;
-        background: #f8f9fa;
-        padding: 8px 16px;
-        border-bottom: 1px solid #ddd;
-        font-family: inherit;
-        font-size: 100%;
-    }
-
-    #language-bar a {
-        margin: 0 8px;
-        text-decoration: none;
-        color: #2980b9;
-    }
-
-    #language-bar a:hover {
-        text-decoration: underline;
-    }
-</style>
 {% endblock %}
 
 {% block footer %}
@@ -42,22 +16,37 @@
     document.addEventListener("DOMContentLoaded", () => {
         const currentUrl = window.location.href;
         const isTranslated = currentUrl.includes(".translate.goog");
-        const translateUrl = "https://translate.google.com/translate?sl=ja&tl=en&u=" + encodeURIComponent(currentUrl);
-
         const translateLink = document.getElementById("translate-link");
         const originalLink = document.getElementById("original-link");
 
-        // 英語リンク設定
-        translateLink.href = translateUrl;
+        // 翻訳URLを生成
+        const translateUrl =
+            "https://translate.google.com/translate?sl=ja&tl=en&u=" +
+            encodeURIComponent(currentUrl);
 
         if (isTranslated) {
-            // Google翻訳ラッパー上 → 元の日本語ページを別タブで開く
-            const originalUrl = currentUrl.replace(/^https:\/\/[^/]+\.translate\.goog/, "https://is-isee.github.io");
+            // --- 英語版(.translate.goog)にいる場合 ---
+            // English → ページを単にリロード
+            translateLink.removeAttribute("target");
+            translateLink.removeAttribute("href");
+            translateLink.addEventListener("click", (e) => {
+                e.preventDefault();
+                window.location.reload();
+            });
+
+            // 日本語 → 新タブで元URLを開く（翻訳解除）
+            const originalUrl = currentUrl.replace(
+                /^https:\/\/[^/]+\.translate\.goog/,
+                "https://1-is.isee.github.io"
+            );
             originalLink.href = originalUrl;
             originalLink.target = "_blank";
             originalLink.rel = "noopener";
         } else {
-            // 通常ページ上 → リロード扱い
+            // --- 日本語版にいる場合 ---
+            translateLink.href = translateUrl;
+            translateLink.target = "_blank";
+
             originalLink.href = currentUrl;
             originalLink.target = "_self";
         }
