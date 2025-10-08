@@ -4,7 +4,6 @@
 
 MISOで提供しているテスト問題では、$x$, $y$, $z$の各方向に1次元問題を実施しているが、本ページでは、$x$方向の問題を説明する。
 
-
 ## Location
 
 `problems/hd_shock_tube_1d/`
@@ -44,11 +43,9 @@ v_\mathrm{R}
 \end{align*}
 $$
 
-
-
 ## Boundary Conditions
 
-すべての物理量について、対称境界条件を設定します。`config_x.yaml`で以下のように設定してあります。$y$方向と$z$方向の設定ファイルは、それぞれ`config_y.yaml`と`config_z.yaml`にあります。
+すべての物理量について、対称境界条件を設定します。config_x.yamlで以下のように設定してあります。$y$方向と$z$方向の設定ファイルは、それぞれconfig_y.yamlとconfig_z.yamlにあります。
 
 ```yaml
 # config_x.yaml
@@ -71,7 +68,7 @@ boundary_condition:
 
 ## Results
 
-pythonプログラムを実行して、結果のプロットを生成し、$x$, $y$, $z$方向の結果を比較できます。結果のプロットは `py/problems/figs/hd_shock_tube_1d.png` にあります。
+pythonプログラムを実行して、結果のプロットを生成し、$x$, $y$, $z$方向の結果を比較できます。結果のプロットは py/problems/figs/hd_shock_tube_1d.pngにあります。
 
 ```shell
 cd py/problems/

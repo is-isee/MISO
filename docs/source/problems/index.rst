@@ -1,9 +1,9 @@
 Test Problems
 =============
 
-本セクションでは、MISOで利用可能なテスト問題について説明します。 ``problems/`` ディレクトリ以下に、各問題のディレクトリが設置してあり、 ``main.cpp`` (GPU版では ``main.cu`` )、および ``config.yaml`` などの設定ファイルが含まれています。
+本セクションでは、MISOで利用可能なテスト問題について説明します。problemsディレクトリ以下に、各問題のディレクトリが設置してあり、main.cpp (GPU版ではmain.cu)、およびconfig.yamlなどの設定ファイルが含まれています。
 
-:doc:`../customization/index` で説明するように追加で ``custom_boundary_condition.cpp`` や ``force.cpp``  を設定することでよりカスタマイズした境界条件や外力を設定している場合もあります。
+:doc:`../customization/index` で説明するように追加でcustom_boundary_condition.cppやforce.cppを設定することでよりカスタマイズした境界条件や外力を設定している場合もあります。
 
 .. toctree::
    :maxdepth: 1
