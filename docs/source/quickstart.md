@@ -42,7 +42,7 @@ pip install -e ".[all]"
 
 ## Usage
 
-インストールの後、 `problem`で定義された複数のターゲットが、`build`で利用可能になります。例えば、2D Orszag-Tang渦問題を実行するには、`build`で次のコマンドを使用します。
+インストールの後、 problemディレクトリで定義された複数のターゲットが、buildディレクトリで利用可能になります。例えば、2D Orszag-Tang渦問題を実行するには、buildディレクトリで次のコマンドを使用します。
 
 ```shell
 cd build
