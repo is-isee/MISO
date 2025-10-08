@@ -1,16 +1,12 @@
 # Geomagnetosphere 3D
 
-We simulate the interaction between the solar wind and the geomagnetosphere. Referring to {cite}`ogino_1986JGR....91.6791O`, we set a boundary at 3.5 times the Earth's radius from the center of the Earth so that it smoothly connects with the Earth's dipole magnetic field.
-
 地球磁気圏に太陽風が吹き付け、地球磁気圏が変形する様子をシミュレーションします。{cite}`ogino_1986JGR....91.6791O`を参考にして、地球の中心から地球半径の3.5倍の位置にも境界を設置し、地球の双極子磁場とスムーズに接続するようにしています。
 
 ## Location
 
-The problem is available at `problems/geomagnetosphere_3d/`
+`problems/geomagnetosphere_3d/`
 
 ## Normalization
-
-Quantities are normalized by the following typical values. We note that MKS unit is used in {cite}`ogino_1986JGR....91.6791O`, but cgs unit is used in this simulation.
 
 物理量は以下の代表値で規格化しています。{cite}`ogino_1986JGR....91.6791O`ではMKS単位系が使われていますが、本シミュレーションではcgs単位系を使用していることに注意してください。
 
@@ -29,11 +25,11 @@ Then the other quantities are normalized as follows.
 
 ## Geometry
 
-The calculation domain extends $-44.8 \leq x \leq 44.8$, $-44.8 \leq y \leq 44.8$, and $-44.8 \leq z \leq 44.8$.
+- $-44.8 \leq x \leq 44.8$
+- $-44.8 \leq y \leq 44.8$
+- $-44.8 \leq z \leq 44.8$
 
 ## Force
-
-The gravitational force directed to the center of the Earth is considered. In `force.hpp`, it is set as follows.
 
 地球の中心に向かう重力を考慮します。`force.hpp`では以下のように設定します。
 
@@ -71,9 +67,9 @@ constexpr Real g_grav = 1.35e-6;  // gravitational acceleration (simulation unit
 
 ## Initial Conditions
 
-The initial condition is described with a combination of the magnetosphere and the solar wind. The ratio of specific heats is set to $\gamma = 5/3$.
+初期条件は、磁気圏と太陽風の組み合わせで記述されます。比熱比は$\gamma = 5/3$とします。
 
-Density
+密度
 
 $$
 \begin{align*}
@@ -85,7 +81,7 @@ $$
 \end{align*}
 $$
 
-Pressure
+圧力
 
 $$
 \begin{align*}
@@ -97,7 +93,7 @@ p_\mathrm{sw} & p_0/r^2 < p_\mathrm{sw}
 \end{align*}
 $$
 
-Dipole magnetic field
+双極子磁場
 
 $$
 \begin{align*}
@@ -110,18 +106,14 @@ x^2 + y^2 - 2z^2
 \end{align*}
 $$
 
-where $p_0 = 5.4\times10^{-7}$.
-The solar wind parameters are $\rho_\mathrm{sw}=5\times10^{-4}$, $p_\mathrm{sw}=3.56\times10^{-8}$, $v_\mathrm{sw}=0.05$, and $B_\mathrm{sw}=-1.5\times10^{-4}$ in normalized unit.
+ここで$p_0 = 5.4\times10^{-7}$。
+太陽風のパラメータは、$\rho_\mathrm{sw}=5\times10^{-4}$、$p_\mathrm{sw}=3.56\times10^{-8}$、$v_\mathrm{sw}=0.05$、$B_\mathrm{sw}=-1.5\times10^{-4}$です。
 
 ## Boundary Conditions
-
-We set symmetric boundary condition for all physical quantities at all the boundaries except for the $x = -44.8$ boundary. At the $x = -44.8$ boundary, we set the solar wind parameters described above as fixed boundary conditions. In `config.yaml`, it is set as follows. In adition, we set boundary-like condition around the earth ($r = 3.5R_\mathrm{E}$) to connect smoothly with the dipole magnetic field.
 
 すべての境界に対して、$x = -44.8$境界を除き、全ての物理量に対して対称境界条件を設定します。$x = -44.8$境界では、上記の太陽風のパラメータを固定境界条件として設定します。`config.yaml`では以下のように設定します。加えて、地球周辺($r = 3.5R_\mathrm{E}$)に境界のような条件を設定し、双極子磁場とスムーズに接続するようにしています。
 
 ## Results
-
-You can run a python program `geomagnetosphere_3d.py` to generate result plots. The result plots are stored at `py/problems/figs/geomagnetosphere_3d/`.
 
 用意されたpythonプログラム `geomagnetosphere_3d.py` を実行することにより、結果のプロットは `py/problems/figs/geomagnetosphere_3d/` に保存されます。
 
