@@ -21,7 +21,11 @@ cd build
 make -j 4
 ```
 
-これで、CPU版のすべてのプログラムがコンパイルされる。GPU版をコンパイルする場合は、 `-DUSE_CUDA=ON` を指定してください。
+これで、CPU版のすべてのプログラムがコンパイルされる。GPU版をコンパイルする場合は、 以下を指定します。
+
+```shell
+cmake -B build -S . -DUSE_CUDA=ON # Changed flag to ON
+```
 
 MISOでは、解析のためのPythonモジュールも提供しています。以下のようにしてインストールしてください。
 
@@ -38,7 +42,7 @@ pip install -e ".[all]"
 
 ## Usage
 
-インストールの後、 `build` ディレクトリに `problem` ディレクトリで定義された複数のターゲットが利用可能になります。例えば、2D Orszag-Tang渦問題を実行するには、 `build` ディレクトリで次のコマンドを使用します。
+インストールの後、 ディレクトリ`build`に ディレクトリ`problem`で定義された複数のターゲットが利用可能になります。例えば、2D Orszag-Tang渦問題を実行するには、 ディレクトリ`build`で次のコマンドを使用します。
 
 ```shell
 cd build
