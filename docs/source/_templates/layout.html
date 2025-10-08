@@ -1,28 +1,45 @@
 {% extends "!layout.html" %}
 
+{% block content %}
+<div id="language-bar">
+    Language:
+    <a href="#" id="translate-link" target="_blank">English</a> |
+    <a href="#" id="original-link"
+        onclick="window.top.location.href = window.location.origin + window.location.pathname; return false;">日本語</a>
+</div>
+{{ super() }}
+{% endblock %}
+
 {% block extrahead %}
 {{ super() }}
 <style>
+    /* custom.css にある #language-switch の影響を打ち消す */
     #language-switch {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 8px 12px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        z-index: 9999;
-        font-size: 14px;
+        all: unset;
     }
 
-    #language-switch a {
-        margin-left: 10px;
+    /* ページ上部バーの新しいスタイル */
+    #language-bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        width: 100%;
+        background: var(--bg-color, #fff);
+        border-bottom: 1px solid #ddd;
+        padding: 0.6em 1.2em;
+        font-size: inherit;
+        /* 本文と同じフォントサイズ */
+        font-family: inherit;
+        /* 本文と同じフォント */
+    }
+
+    #language-bar a {
+        color: var(--link-color, #007acc);
         text-decoration: none;
-        color: #007acc;
+        margin: 0 8px;
     }
 
-    #language-switch a:hover {
+    #language-bar a:hover {
         text-decoration: underline;
     }
 </style>
@@ -30,18 +47,12 @@
 
 {% block footer %}
 {{ super() }}
-<div id="language-switch">
-    <span>🌐 言語:</span>
-    <a href="#" id="translate-link" target="_blank">英語</a>
-    <a href="#" id="original-link" target="_top">日本語</a>
-</div>
 <script>
     const currentUrl = window.location.href;
     const encodedUrl = encodeURIComponent(currentUrl);
     const translateUrl = "https://translate.google.com/translate?sl=ja&tl=en&u=" + encodedUrl;
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("translate-link").href = translateUrl;
-        document.getElementById("original-link").href = currentUrl;
     });
 </script>
 {% endblock %}
