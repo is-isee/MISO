@@ -1,0 +1,22 @@
+#language-switch {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    font-size: 14px;
+}
+
+#language-switch a {
+    margin-left: 10px;
+    text-decoration: none;
+    color: #007acc;
+}
+
+#language-switch a:hover {
+    text-decoration: underline;
+}
