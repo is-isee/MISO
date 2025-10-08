@@ -1,20 +1,19 @@
 # Orszag-Tang Vortex Problem
 
-This is the Orszag-Tang Vortex Problem {cite}`orszag_1979JFM....90..129O` which is a standard test problem for magnetohydrodynamics (MHD) codes. The problem involves the interaction of two vortex flows in a magnetized medium, leading to the formation of complex structures and turbulence.
-
 Orszag-Tang渦問題 {cite}`orszag_1979JFM....90..129O` は、磁気流体力学（MHD）コードの標準的なテスト問題です。この問題は、磁化された媒体における2つの渦流の相互作用を含み、複雑な構造と乱流の形成をもたらします。
 
 ## Location
 
-The problem is available at `problems/mhd_vortex_2d/`
+`problems/mhd_vortex_2d/`
 
 ## Geometry
 
-The geometry extends $0 \leq x \leq 1$ and $0 \leq y \leq 1$.
+- $0 \leq x \leq 1$
+- $0 \leq y \leq 1$.
 
 ## Initial Conditions
 
-The initial condition is described as follow
+初期条件は以下のように設定されます。比熱比は$\gamma = 5/3$とします。
 
 $$
 \begin{align*}
@@ -29,11 +28,9 @@ B_z & = 0,
 \end{align*}
 $$
 
-where $v_0 = 1$, and $B_0 = \sqrt{4\pi}/\gamma$.
+ここで$v_0 = 1$、$B_0 = \sqrt{4\pi}/\gammaです。
 
 ## Boundary Conditions
-
-We set periodic boundary condition on the all boundries for all quantities.
 
 周期境界条件を全ての境界に対して全ての物理量に設定します。
 
@@ -51,13 +48,9 @@ boundary_condition:
     ...
 ```
 
-We note that when the periodic bounday condition flag is set to true, the symmetric boundary condition does not work.
-
 $x$方向の周期境界条件フラグをtrueに設定すると、対称境界条件が機能しなくなることに注意してください。
 
 ## Results
-
-You can run a python program `mhd_vortex_2d.py` to generate result plots. The result plots are stored at `py/problems/figs/mhd_vortex_2d/`.
 
 用意されたpythonプログラム `mhd_vortex_2d.py` を実行することにより、結果のプロットは `py/problems/figs/mhd_vortex_2d/` に保存されます。
 
