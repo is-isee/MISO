@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pymiso"
 description = "Python utilities for MISO"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Hideyuki Hotta" }, { name = "Haruhisa Iijima" }]
 dynamic = ["version"]
@@ -36,7 +36,7 @@ ignore = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 strict = true
 
 [tool.setuptools.packages.find]
