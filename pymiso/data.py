@@ -1,6 +1,6 @@
 import numpy as np
 
-import pyMISO
+import pymiso
 
 
 class Data:
@@ -10,7 +10,7 @@ class Data:
 
     def __init__(self, data_dir: str):
         """
-        Initialize the pyMISO.Data class instance
+        Initialize the pymiso.Data class instance
 
         Parameters
         ----------
@@ -18,10 +18,10 @@ class Data:
             The directory where the config.nml file is located
         """
 
-        self.conf = pyMISO.Conf(data_dir)
-        self.mpi = pyMISO.MPI(self.conf)
-        self.grid = pyMISO.Grid(self.conf)
-        self.time = pyMISO.Time(self.conf)
+        self.conf = pymiso.Conf(data_dir)
+        self.mpi = pymiso.MPI(self.conf)
+        self.grid = pymiso.Grid(self.conf)
+        self.time = pymiso.Time(self.conf)
 
     def load(self, n_output: int):
         """
@@ -138,8 +138,8 @@ class Data:
 
         Parameters
         ----------
-        self : pyMISO.Data
-            Instance of pyMISO.Data class containing the simulation data.
+        self : pymiso.Data
+            Instance of pymiso.Data class containing the simulation data.
         n_output : int
             The output number to load the data from.
         var : str
@@ -194,8 +194,8 @@ class Data:
 
         Parameters
         ----------
-        self : pyMISO.Data
-            Instance of pyMISO.Data class containing the simulation data.
+        self : pymiso.Data
+            Instance of pymiso.Data class containing the simulation data.
         n_output : int
             The output number to load the data from.
         var : str
@@ -248,7 +248,7 @@ class Data:
 
     def __getattr__(self, name):
         """
-        When an attribute is not found in pyMISO.Data, it is searched in grid, time, and mpi.
+        When an attribute is not found in pymiso.Data, it is searched in grid, time, and mpi.
         """
         for obj in [self.grid, self.time, self.mpi]:
             if hasattr(obj, name):

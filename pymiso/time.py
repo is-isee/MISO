@@ -1,4 +1,4 @@
-import pyMISO
+import pymiso
 
 
 class Time:
@@ -6,14 +6,14 @@ class Time:
     Class to handle the time data
     """
 
-    def __init__(self, conf: pyMISO.Conf):
+    def __init__(self, conf: pymiso.Conf):
         """
-        Initialize the pyMISO.Time class instance
+        Initialize the pymiso.Time class instance
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : pymiso.Conf
+            Instance of pymiso.Conf class
         """
 
         for group, values in conf.time.items():
