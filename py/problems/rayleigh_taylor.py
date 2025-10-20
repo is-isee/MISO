@@ -2,9 +2,9 @@ import os
 
 import matplotlib.pyplot as plt
 
-import pyMISO
+import pymiso
 
-d = pyMISO.Data("../../problems/rayleigh_taylor/data")
+d = pymiso.Data("../../problems/rayleigh_taylor/data")
 
 fig_dir = "figs/rayleigh_taylor/"
 os.makedirs(fig_dir, exist_ok=True)
