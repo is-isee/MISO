@@ -2,11 +2,12 @@
 Utilities for handling MISO simulation data.
 """
 
-__all__ = ["Conf", "Data", "Grid", "MPI", "Time"]
+__all__ = ["Conf", "Data", "Grid", "MHD", "MPI", "Time"]
 
 from .conf import Conf
 from .data import Data
 from .grid import Grid
+from .mhd import MHD
 from .mpi import MPI
 from .time import Time
 
