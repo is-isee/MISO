@@ -3,24 +3,23 @@ requires = ["setuptools>=69", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "miso"
+name = "pymiso"
 description = "Python utilities for MISO"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "Hideyuki Hotta" }, { name = "Haruhisa Iijima" }]
 dynamic = ["version"]
-dependencies = ["numpy>=2", "pyyaml>6", "python-box>=7"]
+dependencies = ["numpy>=2", "pyyaml>=6", "python-box>=7"]
 
 [project.optional-dependencies]
 vis = ["matplotlib>=3", "pyvista>=0.46"]
 dev = ["pytest>=7", "ruff>=0.10", "mypy>=1"]
-all = ["miso[vis]", "miso[dev]"]
 
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
 local_scheme = "dirty-tag"
-write_to = 'pyMISO/_version.py'
+write_to = 'pymiso/_version.py'
 
 [tool.ruff]
 line-length = 88
@@ -39,3 +38,7 @@ ignore = [
 [tool.mypy]
 python_version = "3.11"
 strict = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pymiso*"]
