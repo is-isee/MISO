@@ -49,26 +49,26 @@ inline Real space_centered_4th(const Array3D<Real> &qq, Real dxyzi, int i, int j
 
 ```shell
 # 自動修正
-ruff check pyMISO --fix
+ruff check pymiso --fix
 
 # 検証のみ
-ruff check pyMISO
+ruff check pymiso
 ```
 
 ### フォーマッター
 
 ```shell
 # 自動修正
-ruff format pyMISO
+ruff format pymiso
 
 # 検証のみ
-ruff format pyMISO --check
+ruff format pymiso --check
 ```
 
 ### 静的型解析
 
 ```shell
-mypy pyMISO
+mypy pymiso
 ```
 
 ## ドキュメント生成
