@@ -6,26 +6,27 @@ from box import Box
 
 class Conf:
     """
-    Class to handle the configuration file
+    Class for handling model configuration from the ``config.yaml`` file
     """
 
     def __init__(self, data_dir: str):
         """
-        Initialize the pyrmhd.Conf class instance
+        Initialize the :class:`~pymiso.Conf` class instance
 
         Parameters
         ----------
         data_dir : str
-            The directory where the config.json file is located
+            The directory where the ``config.yaml`` file is located
         """
         self.data_dir = Path(data_dir)
+        self.config_file = self.data_dir / "config.yaml"
         self.load()
 
     def load(self):
         """
-        Load the config.json file in the save_dir and set the parameters as attributes
+        Load the ``config.yaml`` file and set the parameters as attributes
         """
-        with (self.data_dir / "config.yaml").open(mode="r") as f:
+        with self.config_file.open(mode="r") as f:
             config = Box(yaml.safe_load(f))
 
         for group, values in config.items():

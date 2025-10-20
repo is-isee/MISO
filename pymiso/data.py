@@ -1,31 +1,34 @@
 import numpy as np
 
-import pymiso
+from .conf import Conf
+from .grid import Grid
+from .mpi import MPI
+from .time import Time
 
 
 class Data:
     """
-    Class to handle the simulation data
+    Class for handling the simulation data
     """
 
     def __init__(self, data_dir: str):
         """
-        Initialize the pymiso.Data class instance
+        Initialize the :class:`~pymiso.Data` class instance
 
         Parameters
         ----------
         data_dir : str
-            The directory where the config.nml file is located
+            The directory where the ``config.yaml`` file is located
         """
 
-        self.conf = pymiso.Conf(data_dir)
-        self.mpi = pymiso.MPI(self.conf)
-        self.grid = pymiso.Grid(self.conf)
-        self.time = pymiso.Time(self.conf)
+        self.conf = Conf(data_dir)
+        self.mpi = MPI(self.conf)
+        self.grid = Grid(self.conf)
+        self.time = Time(self.conf)
 
     def load(self, n_output: int):
         """
-        Load mhd quantities
+        Load snapshot at a specified time index
 
         Parameters
         ----------
@@ -33,9 +36,8 @@ class Data:
             The output number to load the data from
         """
 
-        self.ro = np.zeros(
-            (self.i_size, self.j_size, self.k_size), dtype=self.conf.dtype
-        )
+        shape_global = (self.grid.i_size, self.grid.j_size, self.grid.k_size)
+        self.ro = np.zeros(shape_global, dtype=self.conf.dtype)
         self.vx = np.zeros_like(self.ro)
         self.vy = np.zeros_like(self.ro)
         self.vz = np.zeros_like(self.ro)
@@ -138,8 +140,6 @@ class Data:
 
         Parameters
         ----------
-        self : pymiso.Data
-            Instance of pymiso.Data class containing the simulation data.
         n_output : int
             The output number to load the data from.
         var : str
@@ -194,8 +194,6 @@ class Data:
 
         Parameters
         ----------
-        self : pymiso.Data
-            Instance of pymiso.Data class containing the simulation data.
         n_output : int
             The output number to load the data from.
         var : str
@@ -248,7 +246,7 @@ class Data:
 
     def __getattr__(self, name):
         """
-        When an attribute is not found in pymiso.Data, it is searched in grid, time, and mpi.
+        When an attribute is not found, it is searched in grid, time, and mpi.
         """
         for obj in [self.grid, self.time, self.mpi]:
             if hasattr(obj, name):
