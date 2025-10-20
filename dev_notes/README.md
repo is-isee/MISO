@@ -1,3 +1,21 @@
+# 開発者用 README
+
+## Dev Container
+
+CUDA対応のコードを開発する場合は、Dev Containerを利用することを推奨。
+コマンドパレットから `Dev Containers: Reopen in Container` を選択。
+
+`devcontainer`ディレクトリの`devcontainer.json`、`Dockerfile`に設定例あり。
+コンテナ実行環境の違いにより微妙に設定が変わるので注意。
+
+ホスト側の要件 (Docker on Linuxの場合):
+
+- Docker
+- NVIDIA Driver
+- NVIDIA Container Toolkit
+
+## C++
+
 ### フォーマッター
 
 ```shell
@@ -25,7 +43,8 @@ inline Real space_centered_4th(const Array3D<Real> &qq, Real dxyzi, int i, int j
 };
 ```
 
-## python
+## Python
+
 ### リンター
 
 ```shell
@@ -59,6 +78,7 @@ C++のAPIドキュメントをdoxygenで、pythonのAPIドキュメントをsphi
 sphinx + breathe + exhaleを利用
 
 以下のパッケージをインストール
+
 ```shell
 sudo apt update && sudo apt install -y doxygen
 pip install sphinx sphinx-rtd-theme sphinx-automodapi sphinx-multiversion breathe exhale sphinx-copybutton sphinxcontrib-bibtex myst-parser 
@@ -81,17 +101,3 @@ sphinxcontrib-bibtexを利用して、参考文献を管理している。bibtex
 として引用する。
 
 GitHub Pagesで公開する場合は、`.github/workflows/deploy_pages.yml`を利用する。mainブランチにpushすると、`gh-pages`ブランチに自動的にデプロイされる。
-
-## Dev Container
-
-CUDA対応のコードを開発する場合は、Dev Containerを利用することを推奨。
-コマンドパレットから `Dev Containers: Reopen in Container` を選択。
-
-`devcontainer`ディレクトリの`devcontainer.json`、`Dockerfile`に設定例あり。
-コンテナ実行環境の違いにより微妙に設定が変わるので注意。
-
-ホスト側の要件 (Docker on Linuxの場合):
-
-- Docker
-- NVIDIA Driver
-- NVIDIA Container Toolkit
