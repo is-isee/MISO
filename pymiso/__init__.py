@@ -1,5 +1,5 @@
-"""
-Package for dealing with MISO simulation data.
+""":mod:`pymiso`
+Utilities for handling MISO simulation data.
 """
 
 __all__ = ["Conf", "Data", "Grid", "MPI", "Time"]
