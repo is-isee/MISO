@@ -4,9 +4,9 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 
-import pyMISO
+import pymiso
 
-d = pyMISO.Data("../../problems/geomagnetosphere_3d/data")
+d = pymiso.Data("../../problems/geomagnetosphere_3d/data")
 
 fig_dir = "figs/geomagnetosphere_3d/"
 os.makedirs(fig_dir, exist_ok=True)

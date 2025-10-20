@@ -2,19 +2,19 @@ import os
 
 import matplotlib.pyplot as plt
 
-import pyMISO
+import pymiso
 
 problems_dir = "../../problems/hd_shock_tube_1d"
 data_dir = problems_dir + "/data_x/"
-dx = pyMISO.Data(data_dir)
+dx = pymiso.Data(data_dir)
 dx.load(dx.n_output)
 
 data_dir = problems_dir + "/data_y/"
-dy = pyMISO.Data(data_dir)
+dy = pymiso.Data(data_dir)
 dy.load(dy.n_output)
 
 data_dir = problems_dir + "/data_z/"
-dz = pyMISO.Data(data_dir)
+dz = pymiso.Data(data_dir)
 dz.load(dz.n_output)
 
 print("### x-y mean difference in density ###")

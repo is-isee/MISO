@@ -2,9 +2,9 @@ import os
 
 import matplotlib.pyplot as plt
 
-import pyMISO
+import pymiso
 
-d = pyMISO.Data("../../problems/kelvin_helmholtz/data")
+d = pymiso.Data("../../problems/kelvin_helmholtz/data")
 
 fig_dir = "figs/kelvin_helmholtz/"
 os.makedirs(fig_dir, exist_ok=True)
