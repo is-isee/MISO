@@ -1,8 +1,8 @@
-pyMISO Documentation
+pymiso Documentation
 ==========================
 
 API Reference
 **************************
 
-.. automodapi:: pyMISO
+.. automodapi:: pymiso
     :no-inheritance-diagram:
