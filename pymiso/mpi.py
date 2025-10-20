@@ -1,6 +1,6 @@
 import numpy as np
 
-import pyMISO
+import pymiso
 
 
 class MPI:
@@ -8,26 +8,26 @@ class MPI:
     Class to handle MPI data.
     """
 
-    def __init__(self, conf: pyMISO.Conf):
+    def __init__(self, conf: pymiso.Conf):
         """
-        Initialize the pyMISO.Grid class instance
+        Initialize the pymiso.Grid class instance
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : pymiso.Conf
+            Instance of pymiso.Conf class
         """
 
         self.load(conf)
 
-    def load(self, conf: pyMISO.Conf):
+    def load(self, conf: pymiso.Conf):
         """
         Load the coords.csv file in the save_dir
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : pymiso.Conf
+            Instance of pymiso.Conf class
         """
 
         for group, values in conf.mpi.items():

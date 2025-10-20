@@ -1,6 +1,6 @@
 import numpy as np
 
-import pyMISO
+import pymiso
 
 
 class Grid:
@@ -8,26 +8,26 @@ class Grid:
     Class to handle the grid.dat file
     """
 
-    def __init__(self, conf: pyMISO.Conf):
+    def __init__(self, conf: pymiso.Conf):
         """
-        Initialize the pyMISO.Grid class instance
+        Initialize the pymiso.Grid class instance
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : pymiso.Conf
+            Instance of pymiso.Conf class
         """
 
         self.load(conf)
 
-    def load(self, conf: pyMISO.Conf):
+    def load(self, conf: pymiso.Conf):
         """
         Load the grid.dat file in the save_dir and set the grid points as attributes
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : pymiso.Conf
+            Instance of pymiso.Conf class
         """
 
         for group, values in conf.grid.items():
@@ -71,14 +71,14 @@ class Grid:
             self.z_edge[0] = self.zmin
             self.z_edge[-1] = self.zmax
 
-    def set_ijk_params(self, conf: pyMISO.Conf):
+    def set_ijk_params(self, conf: pymiso.Conf):
         """
         Set the i, j, and k parameters
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : pymiso.Conf
+            Instance of pymiso.Conf class
         """
         self.i_stride = 1 if self.i_size > 1 else 0
         self.j_stride = 1 if self.j_size > 1 else 0
