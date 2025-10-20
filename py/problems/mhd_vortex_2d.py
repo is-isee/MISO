@@ -2,9 +2,9 @@ import os
 
 import matplotlib.pyplot as plt
 
-import pyMISO
+import pymiso
 
-d = pyMISO.Data("../../problems/mhd_vortex_2d/data")
+d = pymiso.Data("../../problems/mhd_vortex_2d/data")
 
 fig_dir = "figs/mhd_vortex_2d/"
 os.makedirs(fig_dir, exist_ok=True)
