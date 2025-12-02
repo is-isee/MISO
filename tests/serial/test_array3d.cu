@@ -1,3 +1,4 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "array3d_cpu.hpp"
 #include "array3d_gpu.cuh"
 #include <cassert>

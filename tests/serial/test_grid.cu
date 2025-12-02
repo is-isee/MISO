@@ -1,3 +1,4 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "grid_cpu.hpp"
 #include "grid_gpu.cuh"
 #include <cassert>
