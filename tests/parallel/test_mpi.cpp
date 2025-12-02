@@ -1,4 +1,4 @@
-
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "config.hpp"
 #include "grid_cpu.hpp"
 #include "model.hpp"

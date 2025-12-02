@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(MISO)
+include(FetchContent) # also used in tests
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -22,20 +23,29 @@ if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
-# --- macOS の場合 ---
-if(APPLE)
+# --- Homebrew を利用する場合 ---
+option(USE_HOMEBREW "Use homebrew" OFF)
+if(USE_HOMEBREW)
     list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/")
 endif()
 
 # --- external libraries ---
-find_package(yaml-cpp REQUIRED)
 find_package(MPI REQUIRED)
+find_package(yaml-cpp QUIET)
+if(NOT yaml-cpp_FOUND)
+    message(STATUS "yaml-cpp not found; fetching with FetchContent")
+    FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG 0.8.0)
+    FetchContent_MakeAvailable(yaml-cpp)
+endif()
 
-# --- shared library (src/*.cpp) ---
+# --- MISO as a header-only library ---
 add_library(MISO INTERFACE)
 add_library(MISO::MISO ALIAS MISO)
 target_include_directories(MISO INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(MISO INTERFACE yaml-cpp::yaml-cpp MPI::MPI_CXX)
+target_link_libraries(MISO INTERFACE MPI::MPI_CXX yaml-cpp::yaml-cpp)
 
 # --- unit tests ---
 option(ENABLE_TESTING "Enable Testing" ON)

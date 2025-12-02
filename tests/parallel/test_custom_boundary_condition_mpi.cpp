@@ -1,3 +1,4 @@
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "test_custom_boundary_condition_mpi_common.hpp"
 
 TEST_CASE("Test Custom Boundary Condition CPU" *
