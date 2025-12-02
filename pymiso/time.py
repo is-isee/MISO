@@ -1,19 +1,19 @@
-import pyMISO
+from .conf import Conf
 
 
 class Time:
     """
-    Class to handle the time data
+    Class for handling the simulation time
     """
 
-    def __init__(self, conf: pyMISO.Conf):
+    def __init__(self, conf: Conf):
         """
-        Initialize the pyMISO.Time class instance
+        Initialize :class:`~pymiso.Time` class instance
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : Conf
+            Instance of :class:`~pymiso.Conf` class
         """
 
         for group, values in conf.time.items():
@@ -25,17 +25,16 @@ class Time:
 
     def load(self, n_output: int):
         """
-        Load the time data from n_output
+        Load the simulation time at a specified time index
 
         Parameters
         ----------
         n_output : int
             The output number to load the time data from
         """
-        with (
-            self.time_data_dir
-            / ("time." + str(n_output).zfill(self.n_output_digits) + ".txt")
-        ).open(mode="r") as f:
+        n_output_str = f"{n_output:0{self.n_output_digits}d}"
+        self.time_data_file = self.time_data_dir / f"time.{n_output_str}.txt"
+        with self.time_data_file.open(mode="r") as f:
             self.time = float(f.readline())
             self.load_n_output = int(f.readline())
             self.load_n_step = int(f.readline())

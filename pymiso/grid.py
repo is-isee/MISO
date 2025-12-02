@@ -1,35 +1,34 @@
 import numpy as np
 
-import pyMISO
+from .conf import Conf
 
 
 class Grid:
     """
-    Class to handle the grid.dat file
+    Class for handling simulation grids from the ``grid.bin`` file
     """
 
-    def __init__(self, conf: pyMISO.Conf):
+    def __init__(self, conf: Conf):
         """
-        Initialize the pyMISO.Grid class instance
+        Initialize the :class:`~pymiso.Grid` class instance
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : Conf
+            Instance of :class:`~pymiso.Conf` class
         """
-
+        self.grid_file = conf.data_dir / "grid.bin"
         self.load(conf)
 
-    def load(self, conf: pyMISO.Conf):
+    def load(self, conf: Conf):
         """
-        Load the grid.dat file in the save_dir and set the grid points as attributes
+        Load the ``grid.bin`` file and set the grid points as attributes
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : Conf
+            Instance of :class:`~pymiso.Conf` class
         """
-
         for group, values in conf.grid.items():
             setattr(self, group, values)
         self.set_ijk_params(conf)
@@ -41,7 +40,7 @@ class Grid:
                 ("z", conf.endian + str(self.k_total) + conf.dtype),
             ]
         )
-        with (conf.data_dir / "grid.bin").open(mode="rb") as f:
+        with self.grid_file.open(mode="rb") as f:
             data = np.fromfile(f, dtype=dtype)
 
             # geometry is defined at cell center
@@ -71,14 +70,14 @@ class Grid:
             self.z_edge[0] = self.zmin
             self.z_edge[-1] = self.zmax
 
-    def set_ijk_params(self, conf: pyMISO.Conf):
+    def set_ijk_params(self, conf: Conf):
         """
-        Set the i, j, and k parameters
+        Set start, end, margin, size, etc. for each direction
 
         Parameters
         ----------
-        conf : pyMISO.Conf
-            Instance of pyMISO.Conf class
+        conf : Conf
+            Instance of :class:`~pymiso.Conf` class
         """
         self.i_stride = 1 if self.i_size > 1 else 0
         self.j_stride = 1 if self.j_size > 1 else 0
@@ -92,6 +91,9 @@ class Grid:
         self.j_total = self.j_size + 2 * self.j_margin
         self.k_total = self.k_size + 2 * self.k_margin
 
+        assert self.i_size % conf.mpi.x_procs == 0
+        assert self.j_size % conf.mpi.y_procs == 0
+        assert self.k_size % conf.mpi.z_procs == 0
         self.i_size_local = self.i_size // conf.mpi.x_procs
         self.j_size_local = self.j_size // conf.mpi.y_procs
         self.k_size_local = self.k_size // conf.mpi.z_procs
