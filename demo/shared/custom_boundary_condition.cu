@@ -27,3 +27,4 @@ create_custom_boundary_condition(Model<float> &);
 template std::unique_ptr<
     BoundaryConditionBase<double, MHDCoreDevice<double>, GridDevice<double>>>
 create_custom_boundary_condition(Model<double> &);
+

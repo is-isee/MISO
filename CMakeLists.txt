@@ -1,55 +1,29 @@
-cmake_minimum_required(VERSION 3.18)
-project(MISO)
-include(FetchContent) # also used in tests
+cmake_minimum_required(VERSION 3.20)
+project(MISO_superbuild NONE)
+include(ExternalProject)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(core_src ${CMAKE_SOURCE_DIR}/core)
+set(demo_dir ${CMAKE_SOURCE_DIR}/demo)
+set(core_bin ${CMAKE_BINARY_DIR}/_build_core)
+set(STAGE ${CMAKE_BINARY_DIR}/_stage)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ExternalProject_Add(
+    miso_core
+    SOURCE_DIR ${CORE_SRC}
+    BINARY_DIR ${CORE_BIN}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+               -DCMAKE_INSTALL_PREFIX=${STAGE} -DUSE_CUDA=ON # ここで切替
+    INSTALL_DIR ${STAGE}
+    STEP_TARGETS build install)
 
-set(CMAKE_BUILD_TYPE
-    Release
-    CACHE STRING "Choose a type of build." FORCE)
-
-# --- CUDA オプションと条件付き有効化 ---
-option(USE_CUDA "Disable CUDA support" OFF)
-if(USE_CUDA)
-    enable_language(CUDA)
-    add_definitions(-DUSE_CUDA)
-    set(CMAKE_CUDA_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-    # --- GPUアーキテクチャの指定（L40S/4090等：Ada）---
-    set(CMAKE_CUDA_ARCHITECTURES native)
-endif()
-
-# --- Homebrew を利用する場合 ---
-option(USE_HOMEBREW "Use homebrew" OFF)
-if(USE_HOMEBREW)
-    list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/")
-endif()
-
-# --- external libraries ---
-find_package(MPI REQUIRED)
-find_package(yaml-cpp QUIET)
-if(NOT yaml-cpp_FOUND)
-    message(STATUS "yaml-cpp not found; fetching with FetchContent")
-    FetchContent_Declare(
-        yaml-cpp
-        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-        GIT_TAG 0.8.0)
-    FetchContent_MakeAvailable(yaml-cpp)
-endif()
-
-# --- MISO as a header-only library ---
-add_library(MISO INTERFACE)
-add_library(MISO::MISO ALIAS MISO)
-target_include_directories(MISO INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(MISO INTERFACE MPI::MPI_CXX yaml-cpp::yaml-cpp)
-
-# --- unit tests ---
-option(ENABLE_TESTING "Enable Testing" ON)
-if(ENABLE_TESTING)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
+# cmake-format: off
+# # 例：problem1 を独立ビルド
+# ExternalProject_Add(
+#     problem1
+#     SOURCE_DIR ${PROB_DIR}/problem1
+#     BINARY_DIR ${CMAKE_BINARY_DIR}/_build_problem1
+#     CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+#                -DCMAKE_PREFIX_PATH=${STAGE} # ← MISO を find_package させる
+#     DEPENDS miso_core
+#     STEP_TARGETS build)
+# cmake-format: on
