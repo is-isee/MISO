@@ -1,6 +1,7 @@
 # tests/CMakeLists.txt
 
 # External libraries: doctest
+include(FetchContent)
 FetchContent_Declare(
     doctest
     GIT_REPOSITORY https://github.com/doctest/doctest.git
