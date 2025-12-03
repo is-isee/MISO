@@ -17,15 +17,13 @@ ExternalProject_Add(
     # TEST_COMMAND "" # Uncomment to skip tests
 )
 
-# cmake-format: off
-# set(demo_src ${CMAKE_SOURCE_DIR}/demo)
-# set(demo_bin ${CMAKE_BINARY_DIR}/_build_demo)
-# ExternalProject_Add(
-#     demo
-#     SOURCE_DIR ${demo_src}
-#     BINARY_DIR ${demo_bin}
-#     CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DUSE_CUDA=${USE_CUDA}
-#                -DMISO_BIN=${miso_bin}
-#     DEPENDS miso-build # Ensure MISO is built first
-#     STEP_TARGETS build)
-# cmake-format: on
+set(demo_src ${CMAKE_SOURCE_DIR}/demo)
+set(demo_bin ${CMAKE_BINARY_DIR}/_build_demo)
+ExternalProject_Add(
+    demo
+    SOURCE_DIR ${demo_src}
+    BINARY_DIR ${demo_bin}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DUSE_CUDA=${USE_CUDA}
+               -DMISO_BIN=${miso_bin}
+    DEPENDS miso-build # Ensure MISO is built first
+    STEP_TARGETS build)
