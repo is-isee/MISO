@@ -1,63 +1,31 @@
 cmake_minimum_required(VERSION 3.18)
-project(MISO)
+project(MISO_superbuild NONE)
+include(ExternalProject)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(USE_CUDA "Enable CUDA support" OFF)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose a type of build." FORCE)
-enable_testing()
-
-# --- CUDA オプションと条件付き有効化 ---
-option(USE_CUDA "Disable CUDA support" OFF)
-if(USE_CUDA)
-  enable_language(CUDA)
-  add_definitions(-DUSE_CUDA)
-  set(CMAKE_CUDA_STANDARD 17)
-  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-  # --- GPUアーキテクチャの指定（L40S/4090等：Ada）---
-  set(CMAKE_CUDA_ARCHITECTURES native)
-endif()
-
-# --- macOS の場合 ---
-if(APPLE)
-  list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/")
-  list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/libomp")
-endif()
-
-# --- external libraries: doctest ---
-include(FetchContent)
-FetchContent_Declare(
-    doctest
-    GIT_REPOSITORY https://github.com/doctest/doctest.git
-    GIT_TAG v2.4.12
-)
-FetchContent_MakeAvailable(doctest)
-include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
-
-# --- external libraries ---
-find_package(OpenMP REQUIRED)
-find_package(MPI REQUIRED)
-find_package(yaml-cpp REQUIRED)
-
-# --- shared library (src/*.cpp) ---
-add_library(MISOlib INTERFACE)
-target_include_directories(MISOlib INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-target_link_libraries(MISOlib INTERFACE
-    yaml-cpp::yaml-cpp
-    OpenMP::OpenMP_CXX
-    MPI::MPI_CXX
+set(miso_src ${CMAKE_SOURCE_DIR}/core)
+set(miso_bin ${CMAKE_BINARY_DIR}/_build_miso)
+ExternalProject_Add(
+    miso
+    SOURCE_DIR ${miso_src}
+    BINARY_DIR ${miso_bin}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DUSE_CUDA=${USE_CUDA}
+    STEP_TARGETS build test
+    INSTALL_COMMAND "" # Not to install doctest
+    TEST_COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${miso_bin}
+    # TEST_COMMAND "" # Uncomment to skip tests
 )
 
-# --- unit tests ---
-add_subdirectory(tests)
-
-# --- problems ---
-add_subdirectory(problems)
-
-# --- src ---
-add_executable(MISO src/main.cpp)
+# cmake-format: off
+# set(demo_src ${CMAKE_SOURCE_DIR}/demo)
+# set(demo_bin ${CMAKE_BINARY_DIR}/_build_demo)
+# ExternalProject_Add(
+#     demo
+#     SOURCE_DIR ${demo_src}
+#     BINARY_DIR ${demo_bin}
+#     CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DUSE_CUDA=${USE_CUDA}
+#                -DMISO_BIN=${miso_bin}
+#     DEPENDS miso-build # Ensure MISO is built first
+#     STEP_TARGETS build)
+# cmake-format: on
