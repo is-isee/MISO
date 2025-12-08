@@ -9,11 +9,21 @@ NUM_PROCS=1
 
 # Define application name
 APP_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# Build application
+cmake -B "${APP_DIR}/build" -S "${APP_DIR}"
+cmake --build "${APP_DIR}/build"
+
+# Define application name
 APP_NAME="${APP_DIR}/build/$(basename "${APP_DIR}")"
+if [[ ! -f "${APP_NAME}" ]]; then
+    echo "Error: Application binary not found at ${APP_NAME}"
+    exit 1
+fi
 
 # Load environment variables
 set -a
-source "${APP_DIR}/openmpi_config.env"
+source "${APP_DIR}"/openmpi_config.env
 set +a
 
 # Run command
