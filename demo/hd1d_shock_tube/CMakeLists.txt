@@ -28,7 +28,7 @@ else()
 endif()
 
 # App sources
-set(app_name MISO_app)
+set(app_name ${project_name})
 set(app_source_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB_RECURSE app_source_files CONFIGURE_DEPENDS
      "${app_source_dir}/*.${source_suffix}")
