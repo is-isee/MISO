@@ -23,7 +23,7 @@ fi
 
 # Load environment variables
 set -a
-source "${APP_DIR}"/openmpi_config.env
+source "${APP_DIR}"/../shared/openmpi_config.env
 set +a
 
 # Run command
