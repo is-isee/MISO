@@ -9,4 +9,4 @@ APP_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Run command
 set -x
-rm -rf "${APP_DIR}"/data_{x,y,z}
+rm -rf "${APP_DIR}"/build "${APP_DIR}"/data_{x,y,z}
