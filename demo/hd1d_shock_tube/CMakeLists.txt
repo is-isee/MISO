@@ -39,7 +39,7 @@ if(USE_CUDA)
 endif()
 
 # Shared sources
-set(shared_src ${CMAKE_CURRENT_SOURCE_DIR}/../../shared)
+set(shared_src ${CMAKE_CURRENT_SOURCE_DIR}/../shared)
 target_sources(${app_name}
                PRIVATE ${shared_src}/custom_boundary_condition.${source_suffix})
 
