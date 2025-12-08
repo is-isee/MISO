@@ -19,25 +19,3 @@ ExternalProject_Add(
 )
 
 add_subdirectory(demo)
-
-# cmake-format: off
-
-# set(demo_src ${CMAKE_SOURCE_DIR}/demo/hd1d_shock_tube)
-# set(demo_bin ${CMAKE_BINARY_DIR}/_build_demo)
-# ExternalProject_Add(
-#     demo
-#     SOURCE_DIR ${demo_src}
-#     BINARY_DIR ${demo_bin}
-#     CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DUSE_CUDA=${USE_CUDA}
-#                -DMISO_BIN=${miso_bin}
-#     DEPENDS miso-build # Ensure MISO is built first
-#     STEP_TARGETS build)
-
-# ExternalProject_Add_Step(demo run_all
-#   COMMAND ${demo_src}/run_all.sh
-#   WORKING_DIRECTORY ${demo_src} # May use relative paths
-#   DEPENDEES build
-# )
-# ExternalProject_Add_StepTargets(demo run_all)
-
-# cmake-format: on
