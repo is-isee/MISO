@@ -13,11 +13,3 @@ foreach(demo_name ${demo_names})
         INSTALL_COMMAND "" # Without install
         STEP_TARGETS build)
 endforeach()
-
-# add_custom_target(all_problems DEPENDS ${problem_targets})
-
-# set(problem_targets hd1d_shock_tube hd2d_kelvin_helmholtz hd2d_rayleigh_taylor
-# mhd1d_shock_tube mhd2d_vortex mhd3d_geomagnetosphere rt2d_searchlight)
-
-# foreach(problem_target ${problem_targets}) add_subdirectory(${problem_target})
-# endforeach()
