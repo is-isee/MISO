@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
+# Description: Launcher script for the MISO application
 
-# Error handling
+# Exit on error / undefined variable
 set -eu
 
 # Number of processes
@@ -8,15 +9,13 @@ NUM_PROCS=1
 
 # Define application name
 APP_DIR=$(cd "$(dirname "$0")" && pwd)
-PROJECT_NAME=$(basename "${APP_DIR}")
-APP_NAME="${APP_DIR}/build/${PROJECT_NAME}"
+APP_NAME="${APP_DIR}/build/$(basename "${APP_DIR}")"
 
 # Load environment variables
 set -a
 source "${APP_DIR}/openmpi_config.env"
 set +a
 
-# Run the application
-CMD="mpiexec -np ${NUM_PROCS} ${APP_NAME}"
-echo "Executing: ${CMD}"
-exec ${CMD}
+# Run command
+set -x
+mpiexec -np ${NUM_PROCS} "${APP_NAME}"
