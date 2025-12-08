@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_BUILD_TYPE
     Release
-    CACHE STRING "Choose a type of build." FORCE)
+    CACHE STRING "Choose a type of build.")
 
 # CUDA
 option(USE_CUDA "Enable CUDA support" OFF)
