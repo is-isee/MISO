@@ -3,11 +3,11 @@
 if(USE_CUDA)
     # cmake-format: off
     set(mpi_opts
-        "--bind-to" "none"
-        "--mca" "pml" "ob1"
-        "--mca" "btl" "tcp,self,vader"
-        "--mca" "coll" "^hcoll"
-        "--mca" "osc" "^ucx")
+        --bind-to none
+        --mca pml ob1
+        --mca btl tcp,self,vader
+        --mca coll ^hcoll
+        --mca osc ^ucx)
     # cmake-format: on
 else()
     set(mpi_opts)
