@@ -1,5 +1,5 @@
 base:
-  save_dir: data_x/
+  save_dir: ../data_x/
   continue: false
 
 time:
