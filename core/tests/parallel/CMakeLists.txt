@@ -10,7 +10,7 @@ if(USE_CUDA)
         "--mca" "osc" "^ucx")
     # cmake-format: on
 else()
-    set(mpi_opts "")
+    set(mpi_opts)
 endif()
 
 if(USE_CUDA)
