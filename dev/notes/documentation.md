@@ -18,7 +18,7 @@ make html
 
 これで`docs/build/index.html`にHTMLが生成される。
 
-sphinxcontrib-bibtexを利用して、参考文献を管理している。bibtex情報を
+sphinxcontrib-bibtexを利用して、参考文献を管理している。
 参考文献は`docs/source/reference.bib`に記載して、
 
 ```rst
