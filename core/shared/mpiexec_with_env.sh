@@ -7,7 +7,7 @@ set -eu
 
 # Load environment variables
 set -a
-source "$(dirname "$0")/openmpi_config.env"
+source "$(cd "$(dirname "$0")" && pwd)/openmpi_config.env"
 set +a
 
 # Run command
