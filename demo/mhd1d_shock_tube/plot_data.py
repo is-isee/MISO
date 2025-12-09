@@ -1,20 +1,18 @@
-import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 import pymiso
 
-problems_dir = "../../problems/mhd_shock_tube_1d"
-data_dir = problems_dir + "/data_x/"
-dx = pymiso.Data(data_dir)
+this_dir = Path(__file__).resolve().parent
+
+dx = pymiso.Data(data_dir=this_dir / "data_x")
 dx.load(dx.n_output)
 
-data_dir = problems_dir + "/data_y/"
-dy = pymiso.Data(data_dir)
+dy = pymiso.Data(data_dir=this_dir / "data_y")
 dy.load(dy.n_output)
 
-data_dir = problems_dir + "/data_z/"
-dz = pymiso.Data(data_dir)
+dz = pymiso.Data(data_dir=this_dir / "data_z")
 dz.load(dz.n_output)
 
 print("### x-y mean difference in density ###")
@@ -22,7 +20,6 @@ print((dx.ro - dy.ro).mean())
 print("### x-z mean difference in density ###")
 print((dx.ro - dz.ro).mean())
 
-plt.close("all")
 fig = plt.figure(figsize=(14, 8))
 ax1 = fig.add_subplot(231)
 ax2 = fig.add_subplot(232)
@@ -69,6 +66,7 @@ ax6.set_title("Pressure")
 
 fig.tight_layout()
 
-fig_dir = "figs/"
-os.makedirs(fig_dir, exist_ok=True)
-fig.savefig(fig_dir + "mhd_shock_tube_1d.png")
+fig_dir = Path(this_dir / "figs")
+fig_dir.mkdir(exist_ok=True)
+fig.savefig(fig_dir / "mhd_shock_tube_1d.png")
+plt.close("all")

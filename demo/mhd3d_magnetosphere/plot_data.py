@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -6,15 +6,16 @@ import numpy as np
 
 import pymiso
 
-d = pymiso.Data("../../problems/geomagnetosphere_3d/data")
+this_dir = Path(__file__).resolve().parent
 
-fig_dir = "figs/geomagnetosphere_3d/"
-os.makedirs(fig_dir, exist_ok=True)
+d = pymiso.Data(data_dir=this_dir / "data")
+
+fig_dir = Path(this_dir / "figs")
+fig_dir.mkdir(exist_ok=True)
 
 plt.close("all")
 fig = plt.figure("geomagnetosphere_3d", figsize=(8, 4))
 
-# for n in range(d.n_output, d.n_output + 1):
 for n in range(d.n_output + 1):
     d.load(n)
     ax1 = fig.add_subplot(121, aspect="equal")
@@ -56,7 +57,7 @@ for n in range(d.n_output + 1):
     if n == 0:
         fig.tight_layout()
 
-    fig.savefig(fig_dir + "py_" + str(n).zfill(8) + ".png")
+    fig.savefig(fig_dir / f"py_{n:08d}.png")
     print(n)
     if n != d.n_output:
         plt.clf()

@@ -9,4 +9,4 @@ THIS_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Run command
 set -x
-rm -rf "${THIS_DIR}"/build "${THIS_DIR}"/data
+rm -rf "${THIS_DIR}"/build "${THIS_DIR}"/figs "${THIS_DIR}"/data

@@ -1,16 +1,18 @@
-import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 import pymiso
 
-dx = pymiso.Data(data_dir="data_x/")
+this_dir = Path(__file__).resolve().parent
+
+dx = pymiso.Data(data_dir=this_dir / "data_x")
 dx.load(dx.n_output)
 
-dy = pymiso.Data(data_dir="data_y/")
+dy = pymiso.Data(data_dir=this_dir / "data_y")
 dy.load(dy.n_output)
 
-dz = pymiso.Data(data_dir="data_z/")
+dz = pymiso.Data(data_dir=this_dir / "data_z")
 dz.load(dz.n_output)
 
 print("### x-y mean difference in density ###")
@@ -41,7 +43,7 @@ ax3.set_title("Velocity")
 
 fig.tight_layout()
 
-fig_dir = "figs/"
-os.makedirs(fig_dir, exist_ok=True)
-fig.savefig(fig_dir + "hd_shock_tube_1d.png")
+fig_dir = Path(this_dir / "figs")
+fig_dir.mkdir(exist_ok=True)
+fig.savefig(fig_dir / "hd_shock_tube_1d.png")
 plt.close("all")
