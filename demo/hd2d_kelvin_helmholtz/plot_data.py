@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import pymiso
 
-d = pymiso.Data("../../problems/kelvin_helmholtz/data")
+d = pymiso.Data("data")
 
 fig_dir = "figs/kelvin_helmholtz/"
 os.makedirs(fig_dir, exist_ok=True)
