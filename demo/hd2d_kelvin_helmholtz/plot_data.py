@@ -1,17 +1,17 @@
-import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 import pymiso
 
-d = pymiso.Data("../../problems/kelvin_helmholtz/data")
+this_dir = Path(__file__).resolve().parent
 
-fig_dir = "figs/kelvin_helmholtz/"
-os.makedirs(fig_dir, exist_ok=True)
+d = pymiso.Data(data_dir=this_dir / "data")
 
+fig_dir = Path(this_dir / "figs")
+fig_dir.mkdir(exist_ok=True)
 
-plt.close("all")
-fig = plt.figure("kelvin_helmholtz", figsize=(5, 5))
+fig = plt.figure(figsize=(5, 5))
 
 for n in range(d.n_output + 1):
     d.load(n)
@@ -21,7 +21,9 @@ for n in range(d.n_output + 1):
     if n == 0:
         fig.tight_layout()
 
-    fig.savefig(fig_dir + "py_" + str(n).zfill(8) + ".png")
+    fig.savefig(fig_dir / f"py_{n:08d}.png")
     print(n)
     if n != d.n_output:
         plt.clf()
+
+plt.close("all")

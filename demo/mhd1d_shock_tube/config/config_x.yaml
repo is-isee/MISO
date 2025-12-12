@@ -1,5 +1,5 @@
 base:
-  save_dir: data_y/
+  save_dir: ../data_x/
   continue: false
 
 time:
@@ -9,8 +9,8 @@ time:
   n_output_digits: 8
 
 grid:
-  i_size: 1
-  j_size: 512
+  i_size: 512
+  j_size: 1
   k_size: 1
   margin: 2
   xmin: 0.0
