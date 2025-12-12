@@ -1,44 +1,65 @@
-get_filename_component(PROBLEM_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+cmake_minimum_required(VERSION 3.18)
 
+# Define project name by directory
+get_filename_component(project_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+project(${project_name})
+
+set(CMAKE_BUILD_TYPE
+    Release
+    CACHE STRING "Choose a type of build.")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(USE_CUDA "Enable CUDA support" OFF)
 if(USE_CUDA)
-  add_executable(${PROBLEM_NAME} main.cu)
-else()
-  add_executable(${PROBLEM_NAME} main.cpp)
+    enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+    # Select GPU architecture (e.g., L40S/4090: Ada)
+    set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
-set_target_properties(${PROBLEM_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-target_link_libraries(${PROBLEM_NAME} MISOlib)
-
 if(USE_CUDA)
-target_sources(${PROBLEM_NAME}
-  PRIVATE
-  ${CMAKE_SOURCE_DIR}/src/custom_boundary_condition.cu
-)
+    set(source_suffix "cu")
 else()
-target_sources(${PROBLEM_NAME}
-  PRIVATE
-  ${CMAKE_SOURCE_DIR}/src/custom_boundary_condition.cpp
-)
+    set(source_suffix "cpp")
 endif()
 
-target_include_directories(${PROBLEM_NAME}
-  PRIVATE
-  ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+# App sources
+set(app_name ${project_name})
+set(app_source_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
+file(GLOB_RECURSE app_source_files CONFIGURE_DEPENDS
+     "${app_source_dir}/*.${source_suffix}")
+add_executable(${app_name} ${app_source_files})
+target_include_directories(${app_name} PRIVATE ${app_source_dir})
+if(USE_CUDA)
+    target_compile_definitions(${app_name} PRIVATE USE_CUDA)
+endif()
 
-target_compile_definitions(${PROBLEM_NAME}
-  PRIVATE
-  CONFIG_DIR="${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/")
+# Shared sources
+set(shared_src ${CMAKE_CURRENT_SOURCE_DIR}/../shared)
+target_sources(${app_name}
+               PRIVATE ${shared_src}/custom_boundary_condition.${source_suffix})
 
-# run program
-add_custom_target(run_${PROBLEM_NAME}
-  COMMAND ${CMAKE_BINARY_DIR}/${PROBLEM_NAME}
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}
-)
+# MPI
+find_package(MPI REQUIRED)
+target_link_libraries(${app_name} PRIVATE MPI::MPI_CXX)
 
-add_custom_target(clean_data_${PROBLEM_NAME}
-  COMMAND ${CMAKE_COMMAND} -E echo "Removing data* in ${PROBLEM_NAME}..."
-  COMMAND /bin/sh -c "rm -rf ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}/data*"
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/problems/${PROBLEM_NAME}
-)
+# MISO library (also fetches dependencies)
+include(FetchContent)
+set(miso_src ${CMAKE_CURRENT_SOURCE_DIR}/../../core)
+# ENABLE_TESTING is passed to MISO by a cache variable (for faster builds)
+set(ENABLE_TESTING
+    OFF
+    CACHE BOOL "Disable tests in MISO")
+# Other options (e.g., USE_CUDA) is passed automatically
+FetchContent_Declare(MISO SOURCE_DIR ${miso_src})
+FetchContent_MakeAvailable(MISO)
+target_link_libraries(${app_name} PRIVATE MISO::MISO)
+
+# TODO: SHOULD BE PASSED BY ARGS
+set(config_dir ${CMAKE_CURRENT_SOURCE_DIR}/config)
+target_compile_definitions(${app_name} PRIVATE CONFIG_DIR="${config_dir}/")
+

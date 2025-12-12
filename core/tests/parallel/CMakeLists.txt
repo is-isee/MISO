@@ -1,19 +1,6 @@
 # tests/parallel/CMakeLists.txt
 
 if(USE_CUDA)
-    # cmake-format: off
-    set(mpi_opts
-        "--bind-to" "none"
-        "--mca" "pml" "ob1"
-        "--mca" "btl" "tcp,self,vader"
-        "--mca" "coll" "^hcoll"
-        "--mca" "osc" "^ucx")
-    # cmake-format: on
-else()
-    set(mpi_opts "")
-endif()
-
-if(USE_CUDA)
     set(source_suffix "cu")
 else()
     set(source_suffix "cpp")
@@ -36,7 +23,7 @@ foreach(test_src ${test_sources})
     target_link_libraries(${target_name} PRIVATE MISO::MISO doctest::doctest)
 
     set(mpi_num_procs 2)
-    set(mpi_cmd ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${mpi_num_procs})
-    add_test(NAME ${test_name} COMMAND ${mpi_cmd} ${mpi_opts}
-                                       $<TARGET_FILE:${target_name}>)
+    set(mpi_cmd ${CMAKE_SOURCE_DIR}/shared/mpiexec_with_env.sh
+                ${MPIEXEC_NUMPROC_FLAG} ${mpi_num_procs})
+    add_test(NAME ${test_name} COMMAND ${mpi_cmd} $<TARGET_FILE:${target_name}>)
 endforeach()

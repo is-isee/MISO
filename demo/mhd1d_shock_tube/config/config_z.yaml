@@ -1,5 +1,5 @@
 base:
-  save_dir: data_x/
+  save_dir: ../data_z/
   continue: false
 
 time:
@@ -9,9 +9,9 @@ time:
   n_output_digits: 8
 
 grid:
-  i_size: 128
+  i_size: 1
   j_size: 1
-  k_size: 1
+  k_size: 512
   margin: 2
   xmin: 0.0
   xmax: 1.0
@@ -24,7 +24,7 @@ mhd:
   mhd_save_dir: mhd/
 
 eos:
-  gm: 1.4
+  gm: 2.0
 
 time_integrator:
   cfl_number: 0.5
