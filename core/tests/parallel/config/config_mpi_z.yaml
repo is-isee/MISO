@@ -36,7 +36,6 @@ mpi:
   z_procs: 2
 
 boundary_condition:
-  # please use "standard" or "custom" for boundary_type
   boundary_type: standard
 
   periodic:

@@ -11,7 +11,6 @@
 #include <miso/artificial_viscosity.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_manager.cuh>
-#include <miso/custom_boundary_condition.hpp>
 #include <miso/grid.cuh>
 #include <miso/mhd.hpp>
 #include <miso/model.hpp>
@@ -453,15 +452,9 @@ template <typename Real, typename Force> struct TimeIntegrator {
         time_d(model_.time_d) {
 
     // Initialize boundary condition defined in config.yaml_obj
-    if (config.yaml_obj["boundary_condition"]["boundary_type"]
-            .template as<std::string>() == "standard") {
-      bc = std::make_unique<
-          StandardBoundaryCondition<Real, MHDCoreDevice<Real>, GridDevice<Real>>>(
-          model);
-    } else if (config.yaml_obj["boundary_condition"]["boundary_type"]
-                   .template as<std::string>() == "custom") {
-      bc = bnd::create_custom_boundary_condition<Real>(model);
-    }
+    bc = std::make_unique<
+        StandardBoundaryCondition<Real, MHDCoreDevice<Real>, GridDevice<Real>>>(
+        model);
 
     cfl_number =
         config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();

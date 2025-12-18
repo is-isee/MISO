@@ -11,10 +11,7 @@ foreach(test_src ${test_sources})
     get_filename_component(test_name ${test_src} NAME_WE) # based on filename
     set(target_name ${test_name})
 
-    add_executable(
-        ${target_name}
-        ${test_src}
-        ${CMAKE_CURRENT_SOURCE_DIR}/custom_boundary_condition.${source_suffix})
+    add_executable(${target_name} ${test_src})
 
     target_include_directories(${target_name}
                                PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
