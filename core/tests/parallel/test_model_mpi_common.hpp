@@ -1,14 +1,16 @@
 #pragma once
 
 #include <doctest/doctest.h>
-
-#include "config.hpp"
-#include "grid_cpu.hpp"
-#include "model.hpp"
-#include "types.hpp"
 #include <filesystem>
 
+#include <miso/config.hpp>
+#include <miso/grid.hpp>
+#include <miso/model.hpp>
+#include <miso/types.hpp>
+
 inline Model<Real> run_test_model() {
+  using namespace miso;
+
   // Test the Model constructor and accessors
 
   // assuming current path is build/tests

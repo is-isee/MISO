@@ -1,7 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "grid_cpu.hpp"
 #include <cassert>
 #include <doctest/doctest.h>
+
+#include <miso/grid_cpu.hpp>
 
 TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   // Test the Grid constructor and accessors
@@ -16,8 +17,8 @@ TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   double zmin = 4.0;
   double zmax = 5.0;
 
-  Grid<double> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax, zmin,
-                    zmax);
+  miso::Grid<double> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax,
+                          zmin, zmax);
 
   // Check dimensions
   REQUIRE(grid.i_size == i_size);

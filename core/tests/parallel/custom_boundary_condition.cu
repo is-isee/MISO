@@ -1,12 +1,16 @@
-#include "array3d_cpu.hpp"
-#include "boundary_condition_base.hpp"
-#include "boundary_condition_core.hpp"
-#include "boundary_condition_core_gpu.cuh"
-#include "custom_boundary_condition_impl.hpp"
-#include "grid_cpu.hpp"
-#include "mhd_cpu.hpp"
-#include "model.hpp"
 #include <memory>
+
+#include <miso/array3d_cpu.hpp>
+#include <miso/boundary_condition_base.hpp>
+#include <miso/boundary_condition_core.hpp>
+#include <miso/boundary_condition_core_gpu.cuh>
+#include <miso/grid_cpu.hpp>
+#include <miso/mhd_cpu.hpp>
+#include <miso/model.hpp>
+
+#include "custom_boundary_condition_impl.hpp"
+
+namespace miso {
 
 // Strong declaration of the user-defined function.
 // Weak declaration is in include/custom_boundary_condition.hpp
@@ -27,3 +31,5 @@ create_custom_boundary_condition(Model<float> &);
 template std::unique_ptr<
     BoundaryConditionBase<double, MHDCoreDevice<double>, GridDevice<double>>>
 create_custom_boundary_condition(Model<double> &);
+
+}  // namespace miso

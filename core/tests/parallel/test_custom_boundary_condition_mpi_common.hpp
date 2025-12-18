@@ -1,26 +1,26 @@
 #pragma once
 #include <doctest/doctest.h>
 
-#include "config.hpp"
-#include "model.hpp"
-#include "mpi_manager.hpp"
-#ifdef USE_CUDA
-#include "time_integrator_gpu.cuh"
-#else
-#include "time_integrator_cpu.hpp"
-#endif
+#include <miso/config.hpp>
+#include <miso/mhd.hpp>
+#include <miso/model.hpp>
+#include <miso/mpi_manager.hpp>
+#include <miso/time_integrator.hpp>
+#include <miso/types.hpp>
 
-#include "types.hpp"
+#include "force.hpp"
 
 inline void run_custom_boundary_condition_mpi_tests() {
+  using namespace miso;
+
   MPIManager mpi;
   const std::string config_dir = CONFIG_DIR;
   Config config(config_dir + "config_custom_boundary_condition.yaml", mpi);
   mpi.setup_mpi(config.yaml_obj);
   Model<Real> model(config);
 
-  TimeIntegrator<Real> time_integrator(model);
-
+  mhd::TimeIntegrator<Real, Force<Real, mhd::MHDCore<Real>, Grid<Real>>>
+      time_integrator(model);
   for (int i = 0; i < model.grid_local.i_total; ++i) {
     for (int j = 0; j < model.grid_local.j_total; ++j) {
       for (int k = 0; k < model.grid_local.k_total; ++k) {
