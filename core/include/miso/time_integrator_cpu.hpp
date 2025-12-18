@@ -8,7 +8,6 @@
 
 #include <miso/artificial_viscosity_cpu.hpp>
 #include <miso/constants.hpp>
-#include <miso/custom_boundary_condition.hpp>
 #include <miso/mhd.hpp>
 #include <miso/model.hpp>
 #include <miso/mpi_types.hpp>
@@ -155,14 +154,8 @@ template <typename Real, typename Force> struct TimeIntegrator {
         vb(grid.i_total, grid.j_total, grid.k_total) {
 
     // Initialize boundary condition defined in config.yaml_obj
-    if (config.yaml_obj["boundary_condition"]["boundary_type"]
-            .template as<std::string>() == "standard") {
-      bc = std::make_unique<
-          bnd::StandardBoundaryCondition<Real, MHDCore<Real>, Grid<Real>>>(model);
-    } else if (config.yaml_obj["boundary_condition"]["boundary_type"]
-                   .template as<std::string>() == "custom") {
-      bc = bnd::create_custom_boundary_condition<Real>(model);
-    }
+    bc = std::make_unique<
+        bnd::StandardBoundaryCondition<Real, MHDCore<Real>, Grid<Real>>>(model);
 
     cfl_number =
         config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
