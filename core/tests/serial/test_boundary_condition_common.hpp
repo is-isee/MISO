@@ -1,23 +1,17 @@
 #pragma once
-#include <doctest/doctest.h>
-
-#include "boundary_condition_core.hpp"
-#include "grid_cpu.hpp"
-#include "mhd_cpu.hpp"
-#include "types.hpp"
 #include <cassert>
+#include <doctest/doctest.h>
 #include <memory>
-#ifdef USE_CUDA
-#include "boundary_condition_core_gpu.cuh"
-#include "cuda_manager.cuh"
-#include "grid_gpu.cuh"
-#include "mhd_gpu.cuh"
-#else
-#include "boundary_condition_core_cpu.hpp"
-#endif
-#include "boundary_condition_base.hpp"
+
+#include <miso/boundary_condition_base.hpp>
+#include <miso/boundary_condition_core.hpp>
+#include <miso/cuda_manager.cuh>
+#include <miso/grid.hpp>
+#include <miso/mhd.hpp>
+#include <miso/types.hpp>
 
 inline void run_boundary_condition_tests() {
+  using namespace miso;
   int i_size = 10, j_size = 11, k_size = 12;
   int margin = 2;
   Real xmin = 0.0, xmax = 1.0, ymin = 0.0, ymax = 2.0, zmin = 0.0, zmax = 3.0;
@@ -52,7 +46,7 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k1_ == grid.k_margin);
 
   // test for a margin = 2 case
-  MHDCore<Real> qq(grid.i_total, grid.j_total, grid.k_total);
+  mhd::MHDCore<Real> qq(grid.i_total, grid.j_total, grid.k_total);
 #ifdef USE_CUDA
   CudaManager<Real> cuda(grid);
   GridDevice<Real> grid_d(grid);

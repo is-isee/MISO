@@ -1,23 +1,19 @@
 #pragma once
-#include "boundary_condition_base.hpp"
-#include "boundary_condition_core.hpp"
-#include "model.hpp"
 #include <memory>
-#ifdef USE_CUDA
-#include "boundary_condition_core_gpu.cuh"
-#else
-#include "boundary_condition_core_cpu.hpp"
-#endif
+
+#include <miso/boundary_condition_base.hpp>
+#include <miso/boundary_condition_core.hpp>
+#include <miso/model.hpp>
 
 template <typename Real, typename MHDCoreType, typename GridType>
 struct CustomBoundaryCondition
-    : public BoundaryConditionBase<Real, MHDCoreType, GridType> {
-  Config &config;
+    : public miso::bnd::BoundaryConditionBase<Real, MHDCoreType, GridType> {
+  miso::Config &config;
   GridType &grid;
-  EOS<Real> &eos;
-  MPIManager &mpi;
+  miso::EOS<Real> &eos;
+  miso::MPIManager &mpi;
 
-  CustomBoundaryCondition(Model<Real> &model)
+  CustomBoundaryCondition(miso::Model<Real> &model)
       : config(model.config),
 #ifdef USE_CUDA
         grid(model.grid_d),
@@ -30,9 +26,9 @@ struct CustomBoundaryCondition
   inline void apply(MHDCoreType &qq) override {
     // write your custom boundary condition here
     // see include/standard_boundary_condition.hpp for reference
-    bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, bnd::Direction::X,
-                         bnd::Side::INNER);
-    bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, bnd::Direction::X,
-                         bnd::Side::OUTER);
+    miso::bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, miso::bnd::Direction::X,
+                               miso::bnd::Side::INNER);
+    miso::bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0,
+                               miso::bnd::Direction::X, miso::bnd::Side::OUTER);
   }
 };

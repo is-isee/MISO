@@ -1,8 +1,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "array3d_cpu.hpp"
-#include "array3d_gpu.cuh"
 #include <cassert>
 #include <doctest/doctest.h>
+
+#include <miso/array3d_cpu.hpp>
+#include <miso/array3d_gpu.cuh>
 
 __global__ void test_array3d_kernel(double *data, int size_x, int size_y,
                                     int size_z) {
@@ -16,8 +17,8 @@ __global__ void test_array3d_kernel(double *data, int size_x, int size_y,
 }
 
 TEST_CASE("Test Array3D GPU" * doctest::test_suite("array3d")) {
-  Array3D<double> arr(3, 4, 5);
-  Array3DDevice<double> arr_d(3, 4, 5);
+  miso::Array3D<double> arr(3, 4, 5);
+  miso::Array3DDevice<double> arr_d(3, 4, 5);
 
   // Check access
   arr(1, 2, 3) = 42.0;
