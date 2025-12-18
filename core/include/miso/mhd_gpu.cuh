@@ -10,6 +10,8 @@ namespace mhd {
 
 constexpr int n_var = 9;
 
+template <typename Real> struct MHDCore;
+template <typename Real> struct MHD;
 template <typename Real> struct MHDCoreDevice;
 
 enum class Face { Pos, Neg };

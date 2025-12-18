@@ -2,10 +2,9 @@
 #include <cassert>
 #include <doctest/doctest.h>
 
-#include <miso/grid_cpu.hpp>
-#include <miso/grid_gpu.cuh>
+#include <miso/grid.hpp>
 
-__global__ void test_grid_kernel(GridDevice<double> grid_d) {
+__global__ void test_grid_kernel(miso::GridDevice<double> grid_d) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
