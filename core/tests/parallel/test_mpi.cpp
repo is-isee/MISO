@@ -17,7 +17,7 @@ TEST_CASE("Test MPI" * doctest::test_suite("mpi")) {
     {
       miso::Config config(config_dir + "config_mpi_" + direction + ".yaml", mpi);
       mpi.setup_mpi(config.yaml_obj);
-      miso::Model<Real> model(config);
+      miso::Model<miso::Real> model(config);
 
       REQUIRE(model.grid_local.i_size == model.grid_global.i_size / mpi.x_procs);
       REQUIRE(model.grid_local.j_size == model.grid_global.j_size / mpi.y_procs);

@@ -29,12 +29,9 @@ template <class Real> struct AngularQuadrature {
       // Carlson's A4 quadrature
       compute_quadrature_carlson_a4();
       break;
-    case 1:
+    default:
       // Single ray in positive-z direction
       compute_quadrature_single_positive_z();
-      break;
-    default:
-      throw std::runtime_error("Unsupported number of angles");
       break;
     }
   };

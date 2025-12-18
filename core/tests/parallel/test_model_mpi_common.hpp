@@ -8,10 +8,9 @@
 #include <miso/model.hpp>
 #include <miso/types.hpp>
 
-inline Model<Real> run_test_model() {
+// Test the Model constructor and accessors
+inline miso::Model<miso::Real> run_test_model() {
   using namespace miso;
-
-  // Test the Model constructor and accessors
 
   // assuming current path is build/tests
   MPIManager mpi;
@@ -23,11 +22,12 @@ inline Model<Real> run_test_model() {
   Grid<Real> grid_global(config.yaml_obj);
 
   Grid<Real> grid_local(grid_global, mpi);
-  EOS<Real> eos = EOS<Real>(config);
-  MHD<Real> mhd = MHD<Real>(grid_local);
-  RT<Real> rt(grid_local, 24);
+  EOS<Real> eos(config);
+  mhd::MHD<Real> mhd(grid_local);
+  rt::RT<Real> rt(grid_local, 24);
 
-  Model<Real> model(config, time, grid_global, grid_local, eos, mhd, rt, mpi);
+  miso::Model<Real> model(config, time, grid_global, grid_local, eos, mhd, rt,
+                          mpi);
 
   // Check dimensions
   REQUIRE(model.grid_global.i_size == grid_global.i_size);
