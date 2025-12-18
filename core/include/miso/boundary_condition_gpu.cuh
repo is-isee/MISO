@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include <miso/boundary_condition_core.hpp>
 #include <miso/grid_gpu.cuh>
 

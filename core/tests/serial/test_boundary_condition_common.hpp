@@ -3,8 +3,7 @@
 #include <doctest/doctest.h>
 #include <memory>
 
-#include <miso/boundary_condition_base.hpp>
-#include <miso/boundary_condition_core.hpp>
+#include <miso/boundary_condition.hpp>
 #include <miso/cuda_manager.cuh>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
@@ -50,7 +49,7 @@ inline void run_boundary_condition_tests() {
 #ifdef USE_CUDA
   CudaManager<Real> cuda(grid);
   GridDevice<Real> grid_d(grid);
-  MHDCoreDevice<Real> qq_d(grid);
+  mhd::MHDCoreDevice<Real> qq_d(grid);
 #endif
 
   // x boundary test
