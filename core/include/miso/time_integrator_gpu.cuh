@@ -16,11 +16,36 @@
 #include <miso/model.hpp>
 #include <miso/mpi_types.hpp>
 #include <miso/standard_boundary_condition.hpp>
-#include <miso/time_gpu.cuh>
 #include <miso/utility.hpp>
 
 namespace miso {
 namespace mhd {
+
+template <typename Real> struct TimeStep {
+  Real *min_values_device = nullptr;
+  Real *min_values_host = nullptr;
+  size_t shared_mem_size = 0;
+  int n_blocks;
+
+  TimeStep(CudaKernelShape<Real> &cu_shape)
+      : n_blocks(cu_shape.grid_dim.x * cu_shape.grid_dim.y *
+                 cu_shape.grid_dim.z) {
+    min_values_host = new Real[n_blocks];
+    shared_mem_size = sizeof(Real) * cu_shape.block_dim.x * cu_shape.block_dim.y *
+                      cu_shape.block_dim.z;
+    CUDA_CHECK(cudaMalloc(&min_values_device, sizeof(Real) * n_blocks));
+  }
+
+  ~TimeStep() {
+    delete[] min_values_host;
+    CUDA_CHECK(cudaFree(min_values_device));
+  }
+
+  void copy_to_host() {
+    CUDA_CHECK(cudaMemcpy(min_values_host, min_values_device,
+                          sizeof(Real) * n_blocks, cudaMemcpyDeviceToHost));
+  }
+};
 
 template <typename Real>
 __global__ void cfl_condition_kernel(MHDCoreDevice<Real> qq,
@@ -423,7 +448,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
   MHDDevice<Real> &mhd_d;
   MPIManager &mpi;
   CudaKernelShape<Real> &cu_shape;
-  TimeDevice<Real> &time_d;
+  TimeStep<Real> time_step;
 
   std::unique_ptr<
       BoundaryConditionBase<Real, MHDCoreDevice<Real>, GridDevice<Real>>>
@@ -449,7 +474,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
         bb_d(grid.i_total, grid.j_total, grid.k_total),
         ht_d(grid.i_total, grid.j_total, grid.k_total),
         vb_d(grid.i_total, grid.j_total, grid.k_total), cu_shape(model_.cu_shape),
-        time_d(model_.time_d) {
+        time_step(model_.cu_shape) {
 
     // Initialize boundary condition defined in config.yaml_obj
     bc = std::make_unique<
@@ -554,14 +579,14 @@ template <typename Real, typename Force> struct TimeIntegrator {
 
   void cfl_condition() {
     cfl_condition_kernel<Real>
-        <<<cu_shape.grid_dim, cu_shape.block_dim, time_d.shared_mem_size>>>(
-            mhd_d.qq, grid_d, time_d.dt_mins_d, cfl_number, eos.gm);
+        <<<cu_shape.grid_dim, cu_shape.block_dim, time_step.shared_mem_size>>>(
+            mhd_d.qq, grid_d, time_step.min_values_device, cfl_number, eos.gm);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
 
-    time_d.copy_to_host();
-    time.dt =
-        *std::min_element(time_d.dt_mins_h, time_d.dt_mins_h + time_d.n_blocks);
+    time_step.copy_to_host();
+    time.dt = *std::min_element(time_step.min_values_host,
+                                time_step.min_values_host + time_step.n_blocks);
     Real dt_global;
     MPI_Allreduce(&this->time.dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN,
                   mpi.cart_comm);

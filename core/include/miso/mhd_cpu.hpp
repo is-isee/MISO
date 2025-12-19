@@ -8,7 +8,7 @@
 #include <miso/grid_cpu.hpp>
 #include <miso/mpi_manager.hpp>
 #include <miso/mpi_types.hpp>
-#include <miso/time_cpu.hpp>
+#include <miso/time.hpp>
 #include <miso/utility.hpp>
 
 namespace miso {
