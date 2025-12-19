@@ -1,5 +1,7 @@
 #pragma once
 
+#include <miso/cuda_utils.cuh>
+
 namespace miso {
 
 namespace mhd {
@@ -10,11 +12,12 @@ template <typename Real> struct TimeDevice {
   size_t shared_mem_size = 0;
   int n_blocks;
 
-  TimeDevice(MHDCudaManager<Real> &cuda)
-      : n_blocks(cuda.grid_dim.x * cuda.grid_dim.y * cuda.grid_dim.z) {
+  TimeDevice(CudaKernelShape<Real> &cu_shape)
+      : n_blocks(cu_shape.grid_dim.x * cu_shape.grid_dim.y *
+                 cu_shape.grid_dim.z) {
     dt_mins_h = new Real[n_blocks];
-    shared_mem_size =
-        sizeof(Real) * cuda.block_dim.x * cuda.block_dim.y * cuda.block_dim.z;
+    shared_mem_size = sizeof(Real) * cu_shape.block_dim.x * cu_shape.block_dim.y *
+                      cu_shape.block_dim.z;
     CUDA_CHECK(cudaMalloc(&dt_mins_d, sizeof(Real) * n_blocks));
   }
 

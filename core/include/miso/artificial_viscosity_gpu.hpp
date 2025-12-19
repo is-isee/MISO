@@ -7,8 +7,8 @@
 
 #include <miso/artificial_viscosity_core.hpp>
 #include <miso/constants.hpp>
+#include <miso/cuda_utils.cuh>
 #include <miso/grid_gpu.cuh>
-#include <miso/mhd_cuda_manager.cuh>
 #include <miso/model.hpp>
 
 namespace miso {
@@ -468,7 +468,7 @@ template <typename Real> struct ArtificialViscosity {
   EOS<Real> &eos;
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
-  MHDCudaManager<Real> &cuda;
+  CudaKernelShape<Real> &cu_shape;
 
   Array3DDevice<Real> cc_d;
   Array3D<Real> cc;
@@ -478,7 +478,7 @@ template <typename Real> struct ArtificialViscosity {
   ArtificialViscosity(Model<Real> &model)
       : config(model.config), time(model.time), grid(model.grid_local),
         eos(model.eos), mhd(model.mhd), mhd_d(model.mhd_d), grid_d(model.grid_d),
-        cuda(model.cuda), cc(grid.i_total, grid.j_total, grid.k_total),
+        cu_shape(model.cu_shape), cc(grid.i_total, grid.j_total, grid.k_total),
         cc_d(grid.i_total, grid.j_total, grid.k_total) {
     this->ep = config.yaml_obj["artificial_viscosity"]["ep"].template as<Real>();
     this->fh = config.yaml_obj["artificial_viscosity"]["fh"].template as<Real>();
@@ -494,8 +494,8 @@ template <typename Real> struct ArtificialViscosity {
 
   void characteristic_velocity_eval() {
     artificial_viscosity::characteristic_velocity_eval_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(cc_d, mhd_d.qq, grid_d, eos.gm,
-                                            cs_fac, ca_fac, vv_fac);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            cc_d, mhd_d.qq, grid_d, eos.gm, cs_fac, ca_fac, vv_fac);
   }
 
   void update(std::vector<Real> &dxyzi, Real *dxyzi_d, std::string direction) {
@@ -524,49 +524,49 @@ template <typename Real> struct ArtificialViscosity {
     }
 
     artificial_viscosity::update_ro_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_vx_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_vy_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_vz_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_bx_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_by_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_bz_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_ph_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
 
     artificial_viscosity::update_ei_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim>>>(mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d,
-                                            dxyzi_d, i0_, i1_, j0_, j1_, k0_, k1_,
-                                            is, js, ks, ep, fh, time.dt);
+        <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, time.dt);
   }
 };
 
