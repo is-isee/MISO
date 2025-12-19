@@ -13,10 +13,9 @@
 #include <miso/mhd.hpp>
 #include <miso/mpi_manager.hpp>
 #include <miso/radiative_transfer.hpp>
-#include <miso/time_cpu.hpp>
+#include <miso/time.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_utils.cuh>
-#include <miso/time_gpu.cuh>
 #endif
 
 namespace miso {
@@ -38,7 +37,6 @@ template <typename Real> struct Model {
   GridDevice<Real> grid_d;
   CudaKernelShape<Real> cu_shape;
   mhd::MHDDevice<Real> mhd_d;
-  mhd::TimeDevice<Real> time_d;
 #endif
 
   Model(Config &config_)
@@ -46,7 +44,6 @@ template <typename Real> struct Model {
         grid_global(config.yaml_obj), grid_local(grid_global, mpi), eos(config),
 #ifdef USE_CUDA
         mhd_d(grid_local, mhd), grid_d(grid_local), cu_shape(grid_local),
-        time_d(cu_shape),
 #endif
         mhd(grid_local), rt(grid_local, num_rays) {
   }
@@ -58,7 +55,6 @@ template <typename Real> struct Model {
         grid_local(grid_local_), eos(eos_), mpi(mpi_),
 #ifdef USE_CUDA
         mhd_d(grid_local, mhd_), grid_d(grid_local), cu_shape(grid_local),
-        time_d(cu_shape),
 #endif
         mhd(mhd_), rt(rt_) {
   }
