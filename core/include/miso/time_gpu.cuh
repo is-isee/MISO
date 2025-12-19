@@ -2,13 +2,15 @@
 
 namespace miso {
 
+namespace mhd {
+
 template <typename Real> struct TimeDevice {
   Real *dt_mins_d = nullptr;
   Real *dt_mins_h = nullptr;
   size_t shared_mem_size = 0;
   int n_blocks;
 
-  TimeDevice(CudaManager<Real> &cuda)
+  TimeDevice(MHDCudaManager<Real> &cuda)
       : n_blocks(cuda.grid_dim.x * cuda.grid_dim.y * cuda.grid_dim.z) {
     dt_mins_h = new Real[n_blocks];
     shared_mem_size =
@@ -26,5 +28,7 @@ template <typename Real> struct TimeDevice {
                           cudaMemcpyHostToDevice));
   }
 };
+
+}  // namespace mhd
 
 }  // namespace miso

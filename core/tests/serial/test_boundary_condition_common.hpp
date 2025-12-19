@@ -4,7 +4,7 @@
 #include <memory>
 
 #include <miso/boundary_condition.hpp>
-#include <miso/cuda_manager.cuh>
+#include <miso/cuda_compat.cuh>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
 #include <miso/types.hpp>
@@ -47,7 +47,7 @@ inline void run_boundary_condition_tests() {
   // test for a margin = 2 case
   mhd::MHDCore<Real> qq(grid.i_total, grid.j_total, grid.k_total);
 #ifdef USE_CUDA
-  CudaManager<Real> cuda(grid);
+  mhd::MHDCudaManager<Real> cuda(grid);
   GridDevice<Real> grid_d(grid);
   mhd::MHDCoreDevice<Real> qq_d(grid);
 #endif

@@ -1,8 +1,8 @@
 #pragma once
 #include <cassert>
 
-#include <miso/cuda_manager.cuh>
 #include <miso/grid_gpu.cuh>
+#include <miso/mhd_cuda_manager.cuh>
 #include <miso/mpi_manager.hpp>
 
 namespace miso {
@@ -267,7 +267,7 @@ template <typename Real> struct MHDCoreDevice {
   MHDCoreDevice(const MHDCoreDevice &) = default;
   MHDCoreDevice &operator=(const MHDCoreDevice &) = default;
 
-  void copy_from_host(const MHDCore<Real> &qq_h, CudaManager<Real> &cuda) {
+  void copy_from_host(const MHDCore<Real> &qq_h, MHDCudaManager<Real> &cuda) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(ro, qq_h.ro.data(),
@@ -301,7 +301,7 @@ template <typename Real> struct MHDCoreDevice {
     cudaDeviceSynchronize();
   }
 
-  void copy_to_host(MHDCore<Real> &qq_h, CudaManager<Real> &cuda) {
+  void copy_to_host(MHDCore<Real> &qq_h, MHDCudaManager<Real> &cuda) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(qq_h.ro.data(), ro,
@@ -336,7 +336,7 @@ template <typename Real> struct MHDCoreDevice {
   }
 
   void copy_from_device(const MHDCoreDevice<Real> &qq_d,
-                        CudaManager<Real> &cuda) {
+                        MHDCudaManager<Real> &cuda) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(ro, qq_d.ro,
@@ -391,7 +391,7 @@ template <typename Real> struct MHDDevice {
   MHDDevice &operator=(const MHDDevice &) = default;
 
   void mpi_exchange_halo(MHDCoreDevice<Real> &qq_trgt, GridDevice<Real> &grid,
-                         MPIManager &mpi, CudaManager<Real> &cuda) {
+                         MPIManager &mpi, MHDCudaManager<Real> &cuda) {
     MPI_Request reqs[12];
     int req_count = 0;
 

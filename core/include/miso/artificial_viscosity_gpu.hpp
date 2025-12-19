@@ -8,6 +8,7 @@
 #include <miso/artificial_viscosity_core.hpp>
 #include <miso/constants.hpp>
 #include <miso/grid_gpu.cuh>
+#include <miso/mhd_cuda_manager.cuh>
 #include <miso/model.hpp>
 
 namespace miso {
@@ -467,7 +468,7 @@ template <typename Real> struct ArtificialViscosity {
   EOS<Real> &eos;
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
-  CudaManager<Real> &cuda;
+  MHDCudaManager<Real> &cuda;
 
   Array3DDevice<Real> cc_d;
   Array3D<Real> cc;

@@ -1,7 +1,7 @@
 #pragma once
 #include <cuda_runtime.h>
 
-#include <miso/cuda_manager.cuh>
+#include <miso/cuda_compat.cuh>
 
 namespace miso {
 

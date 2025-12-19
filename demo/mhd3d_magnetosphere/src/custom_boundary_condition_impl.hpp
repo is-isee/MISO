@@ -102,7 +102,7 @@ void apply_custom_boundary_condition_core(
     MHDCoreDevice<Real> qq, const MHDCoreDevice<Real> qq_init,
     const Array3DDevice<Real> f_sphere, const GridDevice<Real> grid,
     const EOS<Real> eos, Real ro_sw, Real pr_sw, Real vx_sw, Real bz_imf,
-    Real rra, Real ro_floor, Real pr_floor, CudaManager<Real> &cuda) {
+    Real rra, Real ro_floor, Real pr_floor, MHDCudaManager<Real> &cuda) {
   geo_boundary_condition_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
       qq, qq_init, f_sphere, grid, eos, ro_floor, pr_floor);
   solar_wind_boundary_condition_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
@@ -154,7 +154,7 @@ struct CustomBoundaryCondition
   MHDCoreDevice<Real> qq_init_d;
   Array3DDevice<Real> f_sphere_d;
   GridDevice<Real> &grid_d;
-  CudaManager<Real> &cuda;
+  MHDCudaManager<Real> &cuda;
 #endif
 
   std::unique_ptr<BoundaryConditionBase<Real, MHDCoreType, GridType>> bc_standard;
