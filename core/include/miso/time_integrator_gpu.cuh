@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cuda_runtime.h>
 #include <filesystem>
 #include <initializer_list>
 #include <mpi.h>
@@ -10,6 +9,7 @@
 #include <miso/array3d.cuh>
 #include <miso/artificial_viscosity.hpp>
 #include <miso/constants.hpp>
+#include <miso/cuda_compat.cuh>
 #include <miso/cuda_manager.cuh>
 #include <miso/grid.cuh>
 #include <miso/mhd.hpp>
@@ -422,7 +422,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
   MPIManager &mpi;
-  CudaManager<Real> &cuda;
+  MHDCudaManager<Real> &cuda;
   TimeDevice<Real> &time_d;
 
   std::unique_ptr<

@@ -7,16 +7,14 @@
 #include <string>
 #include <vector>
 
+#include <miso/cuda_compat.cuh>
 #include <miso/eos.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
 #include <miso/mpi_manager.hpp>
-#include <miso/time_cpu.hpp>
-
 #include <miso/radiative_transfer.hpp>
-
+#include <miso/time_cpu.hpp>
 #ifdef USE_CUDA
-#include <miso/cuda_manager.cuh>
 #include <miso/time_gpu.cuh>
 #endif
 
@@ -38,8 +36,8 @@ template <typename Real> struct Model {
 #ifdef USE_CUDA
   GridDevice<Real> grid_d;
   mhd::MHDDevice<Real> mhd_d;
-  CudaManager<Real> cuda;
-  TimeDevice<Real> time_d;
+  mhd::MHDCudaManager<Real> cuda;
+  mhd::TimeDevice<Real> time_d;
 #endif
 
   Model(Config &config_)

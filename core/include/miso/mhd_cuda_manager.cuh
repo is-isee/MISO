@@ -1,28 +1,14 @@
 #pragma once
-#ifdef USE_CUDA
 
-#include <cuda_runtime.h>
-
-#include <miso/grid_cpu.hpp>
-#include <miso/mpi_manager.hpp>
-
-// clang-format off
-#define CUDA_CHECK(ans) { miso::gpuAssert((ans), __FILE__, __LINE__); }
-// clang-format on
+#include <miso/cuda_compat.cuh>
 
 namespace miso {
 
-inline void gpuAssert(cudaError_t code, const char *file, int line,
-                      bool abort = true) {
-  if (code != cudaSuccess) {
-    fprintf(stderr, "CUDA Error: %s %s %d\n", cudaGetErrorString(code), file,
-            line);
-    if (abort)
-      std::exit(code);
-  }
-};
+template <typename Real> struct Grid;
 
-template <typename Real> struct CudaManager {
+namespace mhd {
+
+template <typename Real> struct MHDCudaManager {
   cudaStream_t stream_ro;
   cudaStream_t stream_vx;
   cudaStream_t stream_vy;
@@ -36,7 +22,7 @@ template <typename Real> struct CudaManager {
   dim3 grid_dim, grid_dim_x_margin, grid_dim_y_margin, grid_dim_z_margin;
   dim3 block_dim;
 
-  CudaManager(const Grid<Real> &grid) {
+  MHDCudaManager(const Grid<Real> &grid) {
 
     CUDA_CHECK(cudaStreamCreate(&stream_ro));
     CUDA_CHECK(cudaStreamCreate(&stream_vx));
@@ -67,6 +53,6 @@ template <typename Real> struct CudaManager {
   }
 };
 
-}  // namespace miso
+}  // namespace mhd
 
-#endif  // USE_CUDA
+}  // namespace miso
