@@ -1,8 +1,8 @@
 #pragma once
 #include <cassert>
 
+#include <miso/cuda_utils.cuh>
 #include <miso/grid_gpu.cuh>
-#include <miso/mhd_cuda_manager.cuh>
 #include <miso/mpi_manager.hpp>
 
 namespace miso {
@@ -15,6 +15,67 @@ template <typename Real> struct MHD;
 template <typename Real> struct MHDCoreDevice;
 
 enum class Face { Pos, Neg };
+
+struct MHDStreams {
+  cudaStream_t stream_ro;
+  cudaStream_t stream_vx;
+  cudaStream_t stream_vy;
+  cudaStream_t stream_vz;
+  cudaStream_t stream_bx;
+  cudaStream_t stream_by;
+  cudaStream_t stream_bz;
+  cudaStream_t stream_ei;
+  cudaStream_t stream_ph;
+
+  MHDStreams() {
+    CUDA_CHECK(cudaStreamCreate(&stream_ro));
+    CUDA_CHECK(cudaStreamCreate(&stream_vx));
+    CUDA_CHECK(cudaStreamCreate(&stream_vy));
+    CUDA_CHECK(cudaStreamCreate(&stream_vz));
+    CUDA_CHECK(cudaStreamCreate(&stream_bx));
+    CUDA_CHECK(cudaStreamCreate(&stream_by));
+    CUDA_CHECK(cudaStreamCreate(&stream_bz));
+    CUDA_CHECK(cudaStreamCreate(&stream_ei));
+    CUDA_CHECK(cudaStreamCreate(&stream_ph));
+  }
+
+  ~MHDStreams() {
+    if (stream_ro)
+      cudaStreamDestroy(stream_ro);
+    if (stream_vx)
+      cudaStreamDestroy(stream_vx);
+    if (stream_vy)
+      cudaStreamDestroy(stream_vy);
+    if (stream_vz)
+      cudaStreamDestroy(stream_vz);
+    if (stream_bx)
+      cudaStreamDestroy(stream_bx);
+    if (stream_by)
+      cudaStreamDestroy(stream_by);
+    if (stream_bz)
+      cudaStreamDestroy(stream_bz);
+    if (stream_ei)
+      cudaStreamDestroy(stream_ei);
+    if (stream_ph)
+      cudaStreamDestroy(stream_ph);
+  }
+
+  auto ro() const noexcept { return stream_ro; }
+  auto vx() const noexcept { return stream_vx; }
+  auto vy() const noexcept { return stream_vy; }
+  auto vz() const noexcept { return stream_vz; }
+  auto bx() const noexcept { return stream_bx; }
+  auto by() const noexcept { return stream_by; }
+  auto bz() const noexcept { return stream_bz; }
+  auto ei() const noexcept { return stream_ei; }
+  auto ph() const noexcept { return stream_ph; }
+
+  // Prohibit copy and move operations
+  MHDStreams(const MHDStreams &) = delete;
+  MHDStreams &operator=(const MHDStreams &) = delete;
+  MHDStreams(MHDStreams &&) = delete;
+  MHDStreams &operator=(MHDStreams &&) = delete;
+};
 
 // ##################
 // x-direction send
@@ -189,7 +250,6 @@ __global__ void unpack_z_recv(MHDCoreDevice<Real> qq_trgt,
 /// @brief MHD core data structure on GPU
 /// @tparam Real floating point type
 template <typename Real> struct MHDCoreDevice {
-
   Real *ro = nullptr;
   Real *vx = nullptr;
   Real *vy = nullptr;
@@ -251,121 +311,121 @@ template <typename Real> struct MHDCoreDevice {
       p = nullptr;
     };
     // clang-format off
-      // fields
-      F(ro); F(vx); F(vy); F(vz); F(bx); F(by); F(bz); F(ei); F(ph);
+    // fields
+    F(ro); F(vx); F(vy); F(vz); F(bx); F(by); F(bz); F(ei); F(ph);
 
-      // buffers
-      F(recv_buff_x_pos); F(recv_buff_x_neg);
-      F(recv_buff_y_pos); F(recv_buff_y_neg);
-      F(recv_buff_z_pos); F(recv_buff_z_neg);
-      F(send_buff_x_pos); F(send_buff_x_neg);
-      F(send_buff_y_pos); F(send_buff_y_neg);
-      F(send_buff_z_pos); F(send_buff_z_neg);
+    // buffers
+    F(recv_buff_x_pos); F(recv_buff_x_neg);
+    F(recv_buff_y_pos); F(recv_buff_y_neg);
+    F(recv_buff_z_pos); F(recv_buff_z_neg);
+    F(send_buff_x_pos); F(send_buff_x_neg);
+    F(send_buff_y_pos); F(send_buff_y_neg);
+    F(send_buff_z_pos); F(send_buff_z_neg);
     // clang-format on
   }
 
   MHDCoreDevice(const MHDCoreDevice &) = default;
   MHDCoreDevice &operator=(const MHDCoreDevice &) = default;
 
-  void copy_from_host(const MHDCore<Real> &qq_h, MHDCudaManager<Real> &cuda) {
+  void copy_from_host(const MHDCore<Real> &qq_h, MHDStreams &cuda_streams) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(ro, qq_h.ro.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_ro));
+                               cudaMemcpyHostToDevice, cuda_streams.ro()));
     CUDA_CHECK(cudaMemcpyAsync(vx, qq_h.vx.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_vx));
+                               cudaMemcpyHostToDevice, cuda_streams.vx()));
     CUDA_CHECK(cudaMemcpyAsync(vy, qq_h.vy.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_vy));
+                               cudaMemcpyHostToDevice, cuda_streams.vy()));
     CUDA_CHECK(cudaMemcpyAsync(vz, qq_h.vz.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_vz));
+                               cudaMemcpyHostToDevice, cuda_streams.vz()));
     CUDA_CHECK(cudaMemcpyAsync(bx, qq_h.bx.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_bx));
+                               cudaMemcpyHostToDevice, cuda_streams.bx()));
     CUDA_CHECK(cudaMemcpyAsync(by, qq_h.by.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_by));
+                               cudaMemcpyHostToDevice, cuda_streams.by()));
     CUDA_CHECK(cudaMemcpyAsync(bz, qq_h.bz.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_bz));
+                               cudaMemcpyHostToDevice, cuda_streams.bz()));
     CUDA_CHECK(cudaMemcpyAsync(ei, qq_h.ei.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_ei));
+                               cudaMemcpyHostToDevice, cuda_streams.ei()));
     CUDA_CHECK(cudaMemcpyAsync(ph, qq_h.ph.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda.stream_ph));
+                               cudaMemcpyHostToDevice, cuda_streams.ph()));
 
     cudaDeviceSynchronize();
   }
 
-  void copy_to_host(MHDCore<Real> &qq_h, MHDCudaManager<Real> &cuda) {
+  void copy_to_host(MHDCore<Real> &qq_h, MHDStreams &cuda_streams) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(qq_h.ro.data(), ro,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_ro));
+                               cudaMemcpyDeviceToHost, cuda_streams.ro()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.vx.data(), vx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_vx));
+                               cudaMemcpyDeviceToHost, cuda_streams.vx()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.vy.data(), vy,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_vy));
+                               cudaMemcpyDeviceToHost, cuda_streams.vy()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.vz.data(), vz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_vz));
+                               cudaMemcpyDeviceToHost, cuda_streams.vz()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.bx.data(), bx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_bx));
+                               cudaMemcpyDeviceToHost, cuda_streams.bx()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.by.data(), by,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_by));
+                               cudaMemcpyDeviceToHost, cuda_streams.by()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.bz.data(), bz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_bz));
+                               cudaMemcpyDeviceToHost, cuda_streams.bz()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.ei.data(), ei,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_ei));
+                               cudaMemcpyDeviceToHost, cuda_streams.ei()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.ph.data(), ph,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda.stream_ph));
+                               cudaMemcpyDeviceToHost, cuda_streams.ph()));
 
     cudaDeviceSynchronize();
   }
 
   void copy_from_device(const MHDCoreDevice<Real> &qq_d,
-                        MHDCudaManager<Real> &cuda) {
+                        MHDStreams &cuda_streams) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(ro, qq_d.ro,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_ro));
+                               cudaMemcpyDeviceToDevice, cuda_streams.ro()));
     CUDA_CHECK(cudaMemcpyAsync(vx, qq_d.vx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_vx));
+                               cudaMemcpyDeviceToDevice, cuda_streams.vx()));
     CUDA_CHECK(cudaMemcpyAsync(vy, qq_d.vy,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_vy));
+                               cudaMemcpyDeviceToDevice, cuda_streams.vy()));
     CUDA_CHECK(cudaMemcpyAsync(vz, qq_d.vz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_vz));
+                               cudaMemcpyDeviceToDevice, cuda_streams.vz()));
     CUDA_CHECK(cudaMemcpyAsync(bx, qq_d.bx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_bx));
+                               cudaMemcpyDeviceToDevice, cuda_streams.bx()));
     CUDA_CHECK(cudaMemcpyAsync(by, qq_d.by,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_by));
+                               cudaMemcpyDeviceToDevice, cuda_streams.by()));
     CUDA_CHECK(cudaMemcpyAsync(bz, qq_d.bz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_bz));
+                               cudaMemcpyDeviceToDevice, cuda_streams.bz()));
     CUDA_CHECK(cudaMemcpyAsync(ei, qq_d.ei,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_ei));
+                               cudaMemcpyDeviceToDevice, cuda_streams.ei()));
     CUDA_CHECK(cudaMemcpyAsync(ph, qq_d.ph,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda.stream_ph));
+                               cudaMemcpyDeviceToDevice, cuda_streams.ph()));
 
     cudaDeviceSynchronize();
   }
@@ -391,15 +451,15 @@ template <typename Real> struct MHDDevice {
   MHDDevice &operator=(const MHDDevice &) = default;
 
   void mpi_exchange_halo(MHDCoreDevice<Real> &qq_trgt, GridDevice<Real> &grid,
-                         MPIManager &mpi, MHDCudaManager<Real> &cuda) {
+                         MPIManager &mpi, CudaKernelShape<Real> &cu_shape) {
     MPI_Request reqs[12];
     int req_count = 0;
 
     // ##################
     // positive x-direction
     if (mpi.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
-      pack_x_send<<<cuda.grid_dim_x_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                              Face::Pos);
+      pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Pos);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
 
@@ -415,8 +475,8 @@ template <typename Real> struct MHDDevice {
 
     // positive y-direction
     if (mpi.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
-      pack_y_send<<<cuda.grid_dim_y_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                              Face::Pos);
+      pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Pos);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
 
@@ -432,8 +492,8 @@ template <typename Real> struct MHDDevice {
 
     // positive z-direction
     if (mpi.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
-      pack_z_send<<<cuda.grid_dim_z_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                              Face::Pos);
+      pack_z_send<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Pos);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
 
@@ -450,8 +510,8 @@ template <typename Real> struct MHDDevice {
     // ##################
     // negative x-direction
     if (mpi.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
-      pack_x_send<<<cuda.grid_dim_x_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                              Face::Neg);
+      pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Neg);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
       MPI_Isend(qq_trgt.send_buff_x_neg,
@@ -466,8 +526,8 @@ template <typename Real> struct MHDDevice {
 
     // negative y-direction
     if (mpi.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
-      pack_y_send<<<cuda.grid_dim_y_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                              Face::Neg);
+      pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Neg);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
       MPI_Isend(qq_trgt.send_buff_y_neg,
@@ -482,8 +542,8 @@ template <typename Real> struct MHDDevice {
 
     // negative z-direction
     if (mpi.z_procs_neg != MPI_PROC_NULL && grid.k_total > 1) {
-      pack_z_send<<<cuda.grid_dim_z_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                              Face::Neg);
+      pack_z_send<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Neg);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
       MPI_Isend(qq_trgt.send_buff_z_neg,
@@ -503,24 +563,24 @@ template <typename Real> struct MHDDevice {
     // ##################
     // positive x-direction
     if (mpi.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
-      unpack_x_recv<<<cuda.grid_dim_x_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                                Face::Pos);
+      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Pos);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // positive y-direction
     if (mpi.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
-      unpack_y_recv<<<cuda.grid_dim_y_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                                Face::Pos);
+      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Pos);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // positive z-direction
     if (mpi.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
-      unpack_z_recv<<<cuda.grid_dim_z_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                                Face::Pos);
+      unpack_z_recv<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Pos);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
     }
@@ -528,24 +588,24 @@ template <typename Real> struct MHDDevice {
     // ##################
     // negative x-direction
     if (mpi.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
-      unpack_x_recv<<<cuda.grid_dim_x_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                                Face::Neg);
+      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Neg);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // negative y-direction
     if (mpi.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
-      unpack_y_recv<<<cuda.grid_dim_y_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                                Face::Neg);
+      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Neg);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // negative z-direction
     if (mpi.z_procs_neg != MPI_PROC_NULL && grid.k_total > 1) {
-      unpack_z_recv<<<cuda.grid_dim_z_margin, cuda.block_dim>>>(qq_trgt, grid,
-                                                                Face::Neg);
+      unpack_z_recv<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
+          qq_trgt, grid, Face::Neg);
       CUDA_CHECK(cudaGetLastError());
       CUDA_CHECK(cudaDeviceSynchronize());
     }

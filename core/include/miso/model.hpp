@@ -15,6 +15,7 @@
 #include <miso/radiative_transfer.hpp>
 #include <miso/time_cpu.hpp>
 #ifdef USE_CUDA
+#include <miso/cuda_utils.cuh>
 #include <miso/time_gpu.cuh>
 #endif
 
@@ -35,8 +36,8 @@ template <typename Real> struct Model {
 
 #ifdef USE_CUDA
   GridDevice<Real> grid_d;
+  CudaKernelShape<Real> cu_shape;
   mhd::MHDDevice<Real> mhd_d;
-  mhd::MHDCudaManager<Real> cuda;
   mhd::TimeDevice<Real> time_d;
 #endif
 
@@ -44,8 +45,8 @@ template <typename Real> struct Model {
       : config(config_), mpi(config_.mpi), time(config.yaml_obj),
         grid_global(config.yaml_obj), grid_local(grid_global, mpi), eos(config),
 #ifdef USE_CUDA
-        mhd_d(grid_local, mhd), grid_d(grid_local), cuda(grid_local),
-        time_d(cuda),
+        mhd_d(grid_local, mhd), grid_d(grid_local), cu_shape(grid_local),
+        time_d(cu_shape),
 #endif
         mhd(grid_local), rt(grid_local, num_rays) {
   }
@@ -56,8 +57,8 @@ template <typename Real> struct Model {
       : config(config_), time(time_), grid_global(grid_global_),
         grid_local(grid_local_), eos(eos_), mpi(mpi_),
 #ifdef USE_CUDA
-        mhd_d(grid_local, mhd_), grid_d(grid_local), cuda(grid_local),
-        time_d(cuda),
+        mhd_d(grid_local, mhd_), grid_d(grid_local), cu_shape(grid_local),
+        time_d(cu_shape),
 #endif
         mhd(mhd_), rt(rt_) {
   }
@@ -100,7 +101,7 @@ template <typename Real> struct Model {
 
     if (this->time.time >= this->time.dt_output * this->time.n_output) {
 #ifdef USE_CUDA
-      this->mhd_d.qq.copy_to_host(this->mhd.qq, this->cuda);
+      this->mhd_d.qq.copy_to_host(this->mhd.qq, this->cu_shape);
 #endif
       this->save_state();
 

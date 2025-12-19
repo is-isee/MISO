@@ -10,7 +10,7 @@
 #include <miso/artificial_viscosity.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_compat.cuh>
-#include <miso/cuda_manager.cuh>
+#include <miso/cuda_utils.cuh>
 #include <miso/grid.cuh>
 #include <miso/mhd.hpp>
 #include <miso/model.hpp>
@@ -422,7 +422,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
   MPIManager &mpi;
-  MHDCudaManager<Real> &cuda;
+  CudaKernelShape<Real> &cu_shape;
   TimeDevice<Real> &time_d;
 
   std::unique_ptr<
@@ -448,7 +448,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
         mpi(model_.mpi), pr_d(grid.i_total, grid.j_total, grid.k_total),
         bb_d(grid.i_total, grid.j_total, grid.k_total),
         ht_d(grid.i_total, grid.j_total, grid.k_total),
-        vb_d(grid.i_total, grid.j_total, grid.k_total), cuda(model_.cuda),
+        vb_d(grid.i_total, grid.j_total, grid.k_total), cu_shape(model_.cu_shape),
         time_d(model_.time_d) {
 
     // Initialize boundary condition defined in config.yaml_obj
@@ -464,70 +464,70 @@ template <typename Real, typename Force> struct TimeIntegrator {
   void update_sc4(const MHDCoreDevice<Real> &qq_orgn,
                   const MHDCoreDevice<Real> &qq_argm,
                   MHDCoreDevice<Real> &qq_rslt, Real dt) {
-    pr_bb_ht_vb_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_argm, pr_d, bb_d, ht_d, vb_d, grid_d, eos.gm);
     CUDA_CHECK(cudaGetLastError());
 
-    update_ro_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_ro_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_vx_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_vx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_vy_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_vy_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_vz_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_vz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_bx_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_bx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_by_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_by_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_bz_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_bz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_ph_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_ph_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, ch_divb_square, tau_divb, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
-    update_ei_kernel<Real><<<cuda.grid_dim, cuda.block_dim>>>(
+    update_ei_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, ht_d, vb_d, grid_d, dt);
   }
 
   void runge_kutta_4step() {
     // Runge-Kutta 1st step
     update_sc4(mhd_d.qq, mhd_d.qq, mhd_d.qq_rslt, time.dt / 4.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
+    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cu_shape);
     bc->apply(mhd_d.qq_argm);
-    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
 
     // Runge-Kutta 2nd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 3.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
+    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cu_shape);
     bc->apply(mhd_d.qq_argm);
-    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
 
     // Runge-Kutta 3rd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 2.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cuda);
+    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cu_shape);
     bc->apply(mhd_d.qq_argm);
-    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
 
     // Runge-Kutta 4th step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt);
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
     bc->apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
   }
 
   void apply_artificial_viscosity() {
@@ -535,26 +535,26 @@ template <typename Real, typename Force> struct TimeIntegrator {
 
     // x direction
     artdiff.update(grid.dxi, grid_d.dxi, "x");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
     bc->apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
 
     // y direction
     artdiff.update(grid.dyi, grid_d.dyi, "y");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
     bc->apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
 
     // z direction
     artdiff.update(grid.dzi, grid_d.dzi, "z");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cuda);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
     bc->apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cuda);
+    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
   }
 
   void cfl_condition() {
     cfl_condition_kernel<Real>
-        <<<cuda.grid_dim, cuda.block_dim, time_d.shared_mem_size>>>(
+        <<<cu_shape.grid_dim, cu_shape.block_dim, time_d.shared_mem_size>>>(
             mhd_d.qq, grid_d, time_d.dt_mins_d, cfl_number, eos.gm);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
@@ -586,7 +586,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
     MPI_Barrier(mpi.cart_comm);
 
     grid_d.copy_from_host(grid);
-    mhd_d.qq.copy_from_host(mhd.qq, cuda);
+    mhd_d.qq.copy_from_host(mhd.qq, cu_shape);
     model.save_if_needed();
 
     while (this->time.time < this->time.tend) {
