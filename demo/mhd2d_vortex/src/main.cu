@@ -5,12 +5,12 @@
 #include <string>
 #include <vector>
 
-#include "config.hpp"
-#include "model.hpp"
-#include "mpi_manager.hpp"
-#include "time_integrator_gpu.cuh"
-#include "types.hpp"
-#include "utility.hpp"
+#include <miso/config.hpp>
+#include <miso/model.hpp>
+#include <miso/mpi_manager.hpp>
+#include <miso/time_integrator_gpu.cuh>
+#include <miso/types.hpp>
+#include <miso/utility.hpp>
 
 template <typename Real> void initial_condition(Model<Real> &model);
 

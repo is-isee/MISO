@@ -5,34 +5,17 @@
 #include <string>
 #include <vector>
 
-#include "config.hpp"
-#include "model.hpp"
-#include "mpi_manager.hpp"
-#include "time_integrator_cpu.hpp"
-#include "types.hpp"
-#include "utility.hpp"
+#include <miso/config.hpp>
+#include <miso/model.hpp>
+#include <miso/mpi_manager.hpp>
+#include <miso/time_integrator.hpp>
+#include <miso/types.hpp>
+#include <miso/utility.hpp>
 
-template <typename Real> void initial_condition(Model<Real> &model);
+using miso::Real, miso::pi;
 
-int main() {
-  std::string config_dir = CONFIG_DIR;
-
-  MPIManager mpi;
-  Config config(config_dir + "config.yaml", mpi);
-  mpi.setup_mpi(config.yaml_obj);
-  Model<Real> model(config);
-  model.save_metadata();
-
-  initial_condition<Real>(model);
-
-  TimeIntegrator<Real> time_integrator(model);
-  time_integrator.run();
-
-  return 0;
-}
-
-template <typename Real> void initial_condition(Model<Real> &model) {
-  MHDCore<Real> &qq = model.mhd.qq;
+template <typename Real> void initial_condition(miso::Model<Real> &model) {
+  auto &qq = model.mhd.qq;
   const auto &grid = model.grid_local;
   const auto &eos = model.eos;
 
@@ -54,4 +37,20 @@ template <typename Real> void initial_condition(Model<Real> &model) {
       }
     }
   }
+}
+
+int main() {
+  using namespace miso;
+  std::string config_dir = CONFIG_DIR;
+
+  MPIManager mpi;
+  Config config(config_dir + "config.yaml", mpi);
+  mpi.setup_mpi(config.yaml_obj);
+  Model<Real> model(config);
+  model.save_metadata();
+
+  initial_condition<Real>(model);
+
+  mhd::TimeIntegrator<Real> time_integrator(model);
+  time_integrator.run();
 }

@@ -221,13 +221,12 @@ update_ro_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
                                grid.ks, grid));
 }
 
-template <typename Real>
-__global__ void
-update_vx_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, Array3DDevice<Real> pr,
-                 Array3DDevice<Real> bb,
-                 Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force,
-                 GridDevice<Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_vx_kernel(MHDCoreDevice<Real> qq_orgn,
+                                 MHDCoreDevice<Real> qq_argm,
+                                 MHDCoreDevice<Real> qq_rslt,
+                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
+                                 Source source, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -245,18 +244,17 @@ update_vx_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
             + pii4<Real> * (+ space_centered_4th(qq_argm.bx, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                             + space_centered_4th(qq_argm.bx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                             + space_centered_4th(qq_argm.bx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
-            + force.x(qq_argm, i, j, k)
+            + source.vx(qq_argm, i, j, k)
             )) / qq_rslt.ro[grid.idx(i, j, k)];
   // clang-format on
 }
 
-template <typename Real>
-__global__ void
-update_vy_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, Array3DDevice<Real> pr,
-                 Array3DDevice<Real> bb,
-                 Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force,
-                 GridDevice<Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_vy_kernel(MHDCoreDevice<Real> qq_orgn,
+                                 MHDCoreDevice<Real> qq_argm,
+                                 MHDCoreDevice<Real> qq_rslt,
+                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
+                                 Source source, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -274,18 +272,17 @@ update_vy_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
             + pii4<Real> * (+ space_centered_4th(qq_argm.by, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                             + space_centered_4th(qq_argm.by, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                             + space_centered_4th(qq_argm.by, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
-            + force.y(qq_argm, i, j, k)
+            + source.vy(qq_argm, i, j, k)
             )) / qq_rslt.ro[grid.idx(i, j, k)];
   // clang-format on
 }
 
-template <typename Real>
-__global__ void
-update_vz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, Array3DDevice<Real> pr,
-                 Array3DDevice<Real> bb,
-                 Force<Real, MHDCoreDevice<Real>, GridDevice<Real>> force,
-                 GridDevice<Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_vz_kernel(MHDCoreDevice<Real> qq_orgn,
+                                 MHDCoreDevice<Real> qq_argm,
+                                 MHDCoreDevice<Real> qq_rslt,
+                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
+                                 Source source, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -303,7 +300,7 @@ update_vz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
              + pii4<Real> * (+ space_centered_4th(qq_argm.bz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                              + space_centered_4th(qq_argm.bz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                              + space_centered_4th(qq_argm.bz, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
-             + force.z(qq_argm, i, j, k)
+             + source.vz(qq_argm, i, j, k)
           )) / qq_rslt.ro[grid.idx(i, j, k)];
 }
 // clang-format on
@@ -389,12 +386,13 @@ __global__ void update_ph_kernel(MHDCoreDevice<Real> qq_orgn,
   // clang-format on
 }
 
-template <typename Real>
-__global__ void
-update_ei_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, Array3DDevice<Real> pr,
-                 Array3DDevice<Real> bb, Array3DDevice<Real> ht,
-                 Array3DDevice<Real> vb, GridDevice<Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_ei_kernel(MHDCoreDevice<Real> qq_orgn,
+                                 MHDCoreDevice<Real> qq_argm,
+                                 MHDCoreDevice<Real> qq_rslt,
+                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
+                                 Array3DDevice<Real> ht, Array3DDevice<Real> vb,
+                                 Source source, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -428,12 +426,37 @@ update_ei_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
        pii8<Real> *
            (+ qq_rslt.bx[grid.idx(i, j, k)] * qq_rslt.bx[grid.idx(i, j, k)]
             + qq_rslt.by[grid.idx(i, j, k)] * qq_rslt.by[grid.idx(i, j, k)]
-            + qq_rslt.bz[grid.idx(i, j, k)] * qq_rslt.bz[grid.idx(i, j, k)])) /
-      qq_rslt.ro[grid.idx(i, j, k)];
+            + qq_rslt.bz[grid.idx(i, j, k)] * qq_rslt.bz[grid.idx(i, j, k)])
+       + source.ei(qq_argm, i, j, k)
+      ) / qq_rslt.ro[grid.idx(i, j, k)];
   // clang-format on
 }
 
-template <typename Real, typename Force> struct TimeIntegrator {
+/// @brief Dummy source class (without source terms)
+/// @details Volumetric heat / force terms are expected.
+template <typename Real> struct NoSource {
+  /// External force: x-direction
+  constexpr Real vx(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+
+  /// External force: y-direction
+  constexpr Real vy(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+
+  /// External force: z-direction
+  constexpr Real vz(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+
+  /// External heating
+  constexpr Real ei(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+};
+
+template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator {
   // Disallow copying and assignment since this class manages resources
   TimeIntegrator(const TimeIntegrator &) = delete;
   TimeIntegrator &operator=(const TimeIntegrator &) = delete;
@@ -453,7 +476,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
   std::unique_ptr<
       BoundaryConditionBase<Real, MHDCoreDevice<Real>, GridDevice<Real>>>
       bc;
-  Force force;
+  Source source;
   ArtificialViscosity<Real> artdiff;
 
   // Array3D<Real> pr, bb, ht, vb;
@@ -469,8 +492,8 @@ template <typename Real, typename Force> struct TimeIntegrator {
   TimeIntegrator(Model<Real> &model_)
       : model(model_), config(model_.config), time(model_.time),
         grid(model_.grid_local), grid_d(model_.grid_d), eos(model_.eos),
-        mhd(model_.mhd), mhd_d(model_.mhd_d), force(model_), artdiff(model_),
-        mpi(model_.mpi), pr_d(grid.i_total, grid.j_total, grid.k_total),
+        mhd(model_.mhd), mhd_d(model_.mhd_d), artdiff(model_), mpi(model_.mpi),
+        pr_d(grid.i_total, grid.j_total, grid.k_total),
         bb_d(grid.i_total, grid.j_total, grid.k_total),
         ht_d(grid.i_total, grid.j_total, grid.k_total),
         vb_d(grid.i_total, grid.j_total, grid.k_total), cu_shape(model_.cu_shape),
@@ -498,15 +521,15 @@ template <typename Real, typename Force> struct TimeIntegrator {
     CUDA_CHECK(cudaGetLastError());
 
     update_vx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
+        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, source, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_vy_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
+        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, source, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_vz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, force, grid_d, dt);
+        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, source, grid_d, dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_bx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
@@ -526,7 +549,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
     CUDA_CHECK(cudaGetLastError());
 
     update_ei_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, ht_d, vb_d, grid_d, dt);
+        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, ht_d, vb_d, source, grid_d, dt);
   }
 
   void runge_kutta_4step() {
