@@ -4,7 +4,7 @@
 #include <memory>
 
 #include <miso/boundary_condition.hpp>
-#include <miso/cuda_compat.cuh>
+#include <miso/cuda_compat.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
 #include <miso/types.hpp>

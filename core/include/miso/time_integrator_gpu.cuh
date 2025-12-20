@@ -6,12 +6,12 @@
 #include <initializer_list>
 #include <mpi.h>
 
-#include <miso/array3d.cuh>
+#include <miso/array3d.hpp>
 #include <miso/artificial_viscosity.hpp>
 #include <miso/constants.hpp>
-#include <miso/cuda_compat.cuh>
+#include <miso/cuda_compat.hpp>
 #include <miso/cuda_utils.cuh>
-#include <miso/grid.cuh>
+#include <miso/grid.hpp>
 #include <miso/mhd.hpp>
 #include <miso/model.hpp>
 #include <miso/mpi_types.hpp>
@@ -436,22 +436,26 @@ __global__ void update_ei_kernel(MHDCoreDevice<Real> qq_orgn,
 /// @details Volumetric heat / force terms are expected.
 template <typename Real> struct NoSource {
   /// External force: x-direction
-  constexpr Real vx(const MHDCore<Real> &, int, int, int) const noexcept {
+  constexpr Real HOST_DEVICE vx(const MHDCoreDevice<Real> &, int, int,
+                                int) const noexcept {
     return 0.0;
   }
 
   /// External force: y-direction
-  constexpr Real vy(const MHDCore<Real> &, int, int, int) const noexcept {
+  constexpr Real HOST_DEVICE vy(const MHDCoreDevice<Real> &, int, int,
+                                int) const noexcept {
     return 0.0;
   }
 
   /// External force: z-direction
-  constexpr Real vz(const MHDCore<Real> &, int, int, int) const noexcept {
+  constexpr Real HOST_DEVICE vz(const MHDCoreDevice<Real> &, int, int,
+                                int) const noexcept {
     return 0.0;
   }
 
   /// External heating
-  constexpr Real ei(const MHDCore<Real> &, int, int, int) const noexcept {
+  constexpr Real HOST_DEVICE ei(const MHDCoreDevice<Real> &, int, int,
+                                int) const noexcept {
     return 0.0;
   }
 };
@@ -471,10 +475,11 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
   MHDDevice<Real> &mhd_d;
   MPIManager &mpi;
   CudaKernelShape<Real> &cu_shape;
+  MHDStreams &mhd_streams;
   TimeStep<Real> time_step;
 
   std::unique_ptr<
-      BoundaryConditionBase<Real, MHDCoreDevice<Real>, GridDevice<Real>>>
+      bnd::BoundaryConditionBase<Real, MHDCoreDevice<Real>, GridDevice<Real>>>
       bc;
   Source source;
   ArtificialViscosity<Real> artdiff;
@@ -497,12 +502,12 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
         bb_d(grid.i_total, grid.j_total, grid.k_total),
         ht_d(grid.i_total, grid.j_total, grid.k_total),
         vb_d(grid.i_total, grid.j_total, grid.k_total), cu_shape(model_.cu_shape),
-        time_step(model_.cu_shape) {
+        mhd_streams(model_.mhd_streams), time_step(model_.cu_shape) {
 
     // Initialize boundary condition defined in config.yaml_obj
-    bc = std::make_unique<
-        StandardBoundaryCondition<Real, MHDCoreDevice<Real>, GridDevice<Real>>>(
-        model);
+    bc =
+        std::make_unique<bnd::StandardBoundaryCondition<Real, MHDCoreDevice<Real>,
+                                                        GridDevice<Real>>>(model);
 
     cfl_number =
         config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
@@ -555,25 +560,25 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
   void runge_kutta_4step() {
     // Runge-Kutta 1st step
     update_sc4(mhd_d.qq, mhd_d.qq, mhd_d.qq_rslt, time.dt / 4.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cu_shape);
+    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, mhd_streams);
     bc->apply(mhd_d.qq_argm);
     mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
 
     // Runge-Kutta 2nd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 3.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cu_shape);
+    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, mhd_streams);
     bc->apply(mhd_d.qq_argm);
     mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
 
     // Runge-Kutta 3rd step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 2.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, cu_shape);
+    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, mhd_streams);
     bc->apply(mhd_d.qq_argm);
     mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
 
     // Runge-Kutta 4th step
     update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt);
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
     bc->apply(mhd_d.qq);
     mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
   }
@@ -583,19 +588,19 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
 
     // x direction
     artdiff.update(grid.dxi, grid_d.dxi, "x");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
     bc->apply(mhd_d.qq);
     mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
 
     // y direction
     artdiff.update(grid.dyi, grid_d.dyi, "y");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
     bc->apply(mhd_d.qq);
     mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
 
     // z direction
     artdiff.update(grid.dzi, grid_d.dzi, "z");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, cu_shape);
+    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
     bc->apply(mhd_d.qq);
     mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
   }
@@ -634,7 +639,7 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
     MPI_Barrier(mpi.cart_comm);
 
     grid_d.copy_from_host(grid);
-    mhd_d.qq.copy_from_host(mhd.qq, cu_shape);
+    mhd_d.qq.copy_from_host(mhd.qq, mhd_streams);
     model.save_if_needed();
 
     while (this->time.time < this->time.tend) {

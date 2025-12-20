@@ -48,9 +48,9 @@ public:
   __host__ __device__ inline T *data() { return array; }
   __host__ __device__ inline const T *data() const { return array; }
 
-  // prohibit copy construction/assignment
-  Array3DDevice(const Array3DDevice &) = delete;
-  Array3DDevice &operator=(const Array3DDevice &) = delete;
+  // Allow default copy constructor and copy assignment
+  Array3DDevice(const Array3DDevice &) = default;
+  Array3DDevice &operator=(const Array3DDevice &) = default;
 };
 
 }  // namespace miso
