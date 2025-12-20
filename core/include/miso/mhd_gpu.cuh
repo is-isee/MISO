@@ -276,30 +276,30 @@ template <typename Real> struct MHDCoreDevice {
   int i_total, j_total, k_total;
 
   // clang-format off
-    MHDCoreDevice(const Grid<Real> &grid)
-        : i_total(grid.i_total), j_total(grid.j_total), k_total(grid.k_total) {
-      CUDA_CHECK(cudaMalloc(&ro, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&vx, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&vy, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&vz, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&bx, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&by, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&bz, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&ei, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&ph, sizeof(Real) * i_total * j_total * k_total));
-      CUDA_CHECK(cudaMalloc(&recv_buff_x_pos, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&recv_buff_x_neg, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&recv_buff_y_pos, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&recv_buff_y_neg, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&recv_buff_z_pos, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
-      CUDA_CHECK(cudaMalloc(&recv_buff_z_neg, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
-      CUDA_CHECK(cudaMalloc(&send_buff_x_pos, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&send_buff_x_neg, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&send_buff_y_pos, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&send_buff_y_neg, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
-      CUDA_CHECK(cudaMalloc(&send_buff_z_pos, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
-      CUDA_CHECK(cudaMalloc(&send_buff_z_neg, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
-    }
+  MHDCoreDevice(const Grid<Real> &grid)
+      : i_total(grid.i_total), j_total(grid.j_total), k_total(grid.k_total) {
+    CUDA_CHECK(cudaMalloc(&ro, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&vx, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&vy, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&vz, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&bx, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&by, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&bz, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&ei, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&ph, sizeof(Real) * i_total * j_total * k_total));
+    CUDA_CHECK(cudaMalloc(&recv_buff_x_pos, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&recv_buff_x_neg, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&recv_buff_y_pos, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&recv_buff_y_neg, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&recv_buff_z_pos, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
+    CUDA_CHECK(cudaMalloc(&recv_buff_z_neg, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
+    CUDA_CHECK(cudaMalloc(&send_buff_x_pos, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&send_buff_x_neg, sizeof(Real) * grid.i_margin * j_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&send_buff_y_pos, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&send_buff_y_neg, sizeof(Real) * grid.j_margin * i_total * k_total * n_var));
+    CUDA_CHECK(cudaMalloc(&send_buff_z_pos, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
+    CUDA_CHECK(cudaMalloc(&send_buff_z_neg, sizeof(Real) * grid.k_margin * i_total * j_total * n_var));
+  }
   // clang-format on
 
   ~MHDCoreDevice() {}
@@ -324,108 +324,109 @@ template <typename Real> struct MHDCoreDevice {
     // clang-format on
   }
 
+  // Allow default copy constructor and copy assignment
   MHDCoreDevice(const MHDCoreDevice &) = default;
   MHDCoreDevice &operator=(const MHDCoreDevice &) = default;
 
-  void copy_from_host(const MHDCore<Real> &qq_h, MHDStreams &cuda_streams) {
+  void copy_from_host(const MHDCore<Real> &qq_h, MHDStreams &mhd_streams) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(ro, qq_h.ro.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.ro()));
+                               cudaMemcpyHostToDevice, mhd_streams.ro()));
     CUDA_CHECK(cudaMemcpyAsync(vx, qq_h.vx.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.vx()));
+                               cudaMemcpyHostToDevice, mhd_streams.vx()));
     CUDA_CHECK(cudaMemcpyAsync(vy, qq_h.vy.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.vy()));
+                               cudaMemcpyHostToDevice, mhd_streams.vy()));
     CUDA_CHECK(cudaMemcpyAsync(vz, qq_h.vz.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.vz()));
+                               cudaMemcpyHostToDevice, mhd_streams.vz()));
     CUDA_CHECK(cudaMemcpyAsync(bx, qq_h.bx.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.bx()));
+                               cudaMemcpyHostToDevice, mhd_streams.bx()));
     CUDA_CHECK(cudaMemcpyAsync(by, qq_h.by.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.by()));
+                               cudaMemcpyHostToDevice, mhd_streams.by()));
     CUDA_CHECK(cudaMemcpyAsync(bz, qq_h.bz.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.bz()));
+                               cudaMemcpyHostToDevice, mhd_streams.bz()));
     CUDA_CHECK(cudaMemcpyAsync(ei, qq_h.ei.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.ei()));
+                               cudaMemcpyHostToDevice, mhd_streams.ei()));
     CUDA_CHECK(cudaMemcpyAsync(ph, qq_h.ph.data(),
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyHostToDevice, cuda_streams.ph()));
+                               cudaMemcpyHostToDevice, mhd_streams.ph()));
 
     cudaDeviceSynchronize();
   }
 
-  void copy_to_host(MHDCore<Real> &qq_h, MHDStreams &cuda_streams) {
+  void copy_to_host(MHDCore<Real> &qq_h, MHDStreams &mhd_streams) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(qq_h.ro.data(), ro,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.ro()));
+                               cudaMemcpyDeviceToHost, mhd_streams.ro()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.vx.data(), vx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.vx()));
+                               cudaMemcpyDeviceToHost, mhd_streams.vx()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.vy.data(), vy,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.vy()));
+                               cudaMemcpyDeviceToHost, mhd_streams.vy()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.vz.data(), vz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.vz()));
+                               cudaMemcpyDeviceToHost, mhd_streams.vz()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.bx.data(), bx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.bx()));
+                               cudaMemcpyDeviceToHost, mhd_streams.bx()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.by.data(), by,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.by()));
+                               cudaMemcpyDeviceToHost, mhd_streams.by()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.bz.data(), bz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.bz()));
+                               cudaMemcpyDeviceToHost, mhd_streams.bz()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.ei.data(), ei,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.ei()));
+                               cudaMemcpyDeviceToHost, mhd_streams.ei()));
     CUDA_CHECK(cudaMemcpyAsync(qq_h.ph.data(), ph,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToHost, cuda_streams.ph()));
+                               cudaMemcpyDeviceToHost, mhd_streams.ph()));
 
     cudaDeviceSynchronize();
   }
 
   void copy_from_device(const MHDCoreDevice<Real> &qq_d,
-                        MHDStreams &cuda_streams) {
+                        MHDStreams &mhd_streams) {
     cudaDeviceSynchronize();
 
     CUDA_CHECK(cudaMemcpyAsync(ro, qq_d.ro,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.ro()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.ro()));
     CUDA_CHECK(cudaMemcpyAsync(vx, qq_d.vx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.vx()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.vx()));
     CUDA_CHECK(cudaMemcpyAsync(vy, qq_d.vy,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.vy()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.vy()));
     CUDA_CHECK(cudaMemcpyAsync(vz, qq_d.vz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.vz()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.vz()));
     CUDA_CHECK(cudaMemcpyAsync(bx, qq_d.bx,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.bx()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.bx()));
     CUDA_CHECK(cudaMemcpyAsync(by, qq_d.by,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.by()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.by()));
     CUDA_CHECK(cudaMemcpyAsync(bz, qq_d.bz,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.bz()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.bz()));
     CUDA_CHECK(cudaMemcpyAsync(ei, qq_d.ei,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.ei()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.ei()));
     CUDA_CHECK(cudaMemcpyAsync(ph, qq_d.ph,
                                sizeof(Real) * i_total * j_total * k_total,
-                               cudaMemcpyDeviceToDevice, cuda_streams.ph()));
+                               cudaMemcpyDeviceToDevice, mhd_streams.ph()));
 
     cudaDeviceSynchronize();
   }

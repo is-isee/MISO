@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-#include <miso/cuda_compat.cuh>
+#include <miso/cuda_compat.hpp>
 
 namespace miso {
 

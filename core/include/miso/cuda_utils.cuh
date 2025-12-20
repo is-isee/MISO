@@ -1,6 +1,6 @@
 #pragma once
 
-#include <miso/cuda_compat.cuh>
+#include <miso/cuda_compat.hpp>
 
 namespace miso {
 

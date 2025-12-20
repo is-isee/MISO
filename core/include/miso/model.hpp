@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include <miso/cuda_compat.cuh>
+#include <miso/cuda_compat.hpp>
 #include <miso/eos.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
@@ -36,6 +36,7 @@ template <typename Real> struct Model {
 #ifdef USE_CUDA
   GridDevice<Real> grid_d;
   CudaKernelShape<Real> cu_shape;
+  mhd::MHDStreams mhd_streams;
   mhd::MHDDevice<Real> mhd_d;
 #endif
 
@@ -55,6 +56,7 @@ template <typename Real> struct Model {
         grid_local(grid_local_), eos(eos_), mpi(mpi_),
 #ifdef USE_CUDA
         mhd_d(grid_local, mhd_), grid_d(grid_local), cu_shape(grid_local),
+        mhd_streams(),
 #endif
         mhd(mhd_), rt(rt_) {
   }
@@ -94,18 +96,17 @@ template <typename Real> struct Model {
   }
 
   void save_if_needed() {
-
-    if (this->time.time >= this->time.dt_output * this->time.n_output) {
+    if (time.time >= time.dt_output * time.n_output) {
 #ifdef USE_CUDA
-      this->mhd_d.qq.copy_to_host(this->mhd.qq, this->cu_shape);
+      mhd_d.qq.copy_to_host(mhd.qq, mhd_streams);
 #endif
-      this->save_state();
+      save_state();
 
-      if (this->mpi.myrank == 0) {
+      if (mpi.myrank == 0) {
         std::cout << std::fixed << std::setprecision(2)
-                  << "time = " << std::setw(6) << this->time.time
-                  << ";  n_step = " << std::setw(8) << this->time.n_step
-                  << ";  n_output = " << std::setw(8) << this->time.n_output
+                  << "time = " << std::setw(6) << time.time
+                  << ";  n_step = " << std::setw(8) << time.n_step
+                  << ";  n_output = " << std::setw(8) << time.n_output
                   << std::endl;
       }
 
