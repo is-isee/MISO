@@ -96,9 +96,33 @@ inline Real space_centered_4th(const Array3D<Real> &qq1, const Array3D<Real> &qq
   // clang-format on
 };
 
+/// @brief Dummy source class (without source terms)
+/// @details Volumetric heat / force terms are expected.
+template <typename Real> struct NoSource {
+  /// External force: x-direction
+  constexpr Real vx(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+
+  /// External force: y-direction
+  constexpr Real vy(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+
+  /// External force: z-direction
+  constexpr Real vz(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+
+  /// External heating
+  constexpr Real ei(const MHDCore<Real> &, int, int, int) const noexcept {
+    return 0.0;
+  }
+};
+
 /// @brief Class for time integration of MHD equations
 /// @tparam Real
-template <typename Real, typename Force> struct TimeIntegrator {
+template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator {
   /// @brief Disallow copying and assignment
   TimeIntegrator(const TimeIntegrator &) = delete;
   /// @brief Disallow copying and assignment
@@ -120,8 +144,8 @@ template <typename Real, typename Force> struct TimeIntegrator {
 
   /// @brief Boundary condition for MHD equations
   std::unique_ptr<bnd::BoundaryConditionBase<Real, MHDCore<Real>, Grid<Real>>> bc;
-  /// @brief Force for MHD equations
-  Force force;
+  /// @brief Body source for MHD equations
+  Source source;
   /// @brief Artificial viscosity for MHD equations
   ArtificialViscosity<Real> artdiff;
 
@@ -147,7 +171,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
   TimeIntegrator(Model<Real> &model_)
       : model(model_), config(model_.config), time(model_.time),
         grid(model_.grid_local), eos(model_.eos), mhd(model_.mhd),
-        mpi(model_.mpi), force(model_), artdiff(model_),
+        mpi(model_.mpi), artdiff(model_),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
@@ -225,7 +249,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
                   +space_centered_4th(qq_argm.bx, qq_argm.by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(qq_argm.bx, qq_argm.bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
-              +force.x(qq_argm, i, j, k)
+              +source.vx(qq_argm, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -242,7 +266,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
                   +space_centered_4th(qq_argm.by, qq_argm.by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(qq_argm.by, qq_argm.bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
-              +force.y(qq_argm, i, j, k)
+              +source.vy(qq_argm, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -259,7 +283,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
                   +space_centered_4th(qq_argm.bz, qq_argm.by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(qq_argm.bz, qq_argm.bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
-              +force.z(qq_argm, i, j, k)
+              +source.vz(qq_argm, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -332,6 +356,7 @@ template <typename Real, typename Force> struct TimeIntegrator {
                   + qq_rslt.bx(i, j, k)*qq_rslt.bx(i, j, k)
                   + qq_rslt.by(i, j, k)*qq_rslt.by(i, j, k)
                   + qq_rslt.bz(i, j, k)*qq_rslt.bz(i, j, k) )
+              + source.ei(qq_argm, i, j, k)
           )/qq_rslt.ro(i, j, k);
           // clang-format on
         }

@@ -13,7 +13,7 @@
 
 namespace miso {
 namespace mhd {
-namespace artificial_viscosity_impl {
+namespace artificial_viscosity {
 
 template <typename Real>
 __global__ void characteristic_velocity_eval_kernel(Array3DDevice<Real> cc_d,
@@ -458,7 +458,7 @@ update_ei_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
         qq_rslt.ro[grid.idx(i, j, k)];
   }
 }
-}  // namespace artificial_viscosity_impl
+}  // namespace artificial_viscosity
 
 template <typename Real> struct ArtificialViscosity {
   Config &config;

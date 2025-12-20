@@ -1,6 +1,6 @@
 #pragma once
 
-#include "model.hpp"
+#include <miso/model.hpp>
 
 #if defined(__CUDACC__)
 #define DEVICE __device__

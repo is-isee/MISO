@@ -38,11 +38,6 @@ if(USE_CUDA)
     target_compile_definitions(${app_name} PRIVATE USE_CUDA)
 endif()
 
-# Shared sources
-set(shared_src ${CMAKE_CURRENT_SOURCE_DIR}/../shared)
-target_sources(${app_name}
-               PRIVATE ${shared_src}/custom_boundary_condition.${source_suffix})
-
 # MPI
 find_package(MPI REQUIRED)
 target_link_libraries(${app_name} PRIVATE MPI::MPI_CXX)
@@ -62,4 +57,3 @@ target_link_libraries(${app_name} PRIVATE MISO::MISO)
 # TODO: SHOULD BE PASSED BY ARGS
 set(config_dir ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(${app_name} PRIVATE CONFIG_DIR="${config_dir}/")
-

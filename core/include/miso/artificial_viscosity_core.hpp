@@ -5,7 +5,7 @@
 namespace miso {
 namespace mhd {
 
-namespace artificial_viscosity_impl {
+namespace artificial_viscosity {
 
 ///@brief inline functions for generalized minmod limiter
 template <typename Real>
@@ -36,6 +36,6 @@ HOST_DEVICE inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw,
   return -0.5 * cc * pp * (qqr - qql);
 }
 
-}  // namespace artificial_viscosity_impl
+}  // namespace artificial_viscosity
 }  // namespace mhd
 }  // namespace miso

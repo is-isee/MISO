@@ -2,13 +2,8 @@
 
 #include <unordered_map>
 
-#include <miso/boundary_condition_base.hpp>
+#include <miso/boundary_condition.hpp>
 #include <miso/model.hpp>
-#ifdef USE_CUDA
-#include <miso/boundary_condition_core_gpu.cuh>
-#else
-#include <miso/boundary_condition_core_cpu.hpp>
-#endif
 
 namespace miso {
 namespace bnd {
