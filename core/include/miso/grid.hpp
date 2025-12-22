@@ -2,6 +2,6 @@
 
 #include <miso/grid_cpu.hpp>
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/grid_gpu.cuh>
 #endif

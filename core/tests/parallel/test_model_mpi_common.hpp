@@ -9,7 +9,7 @@
 #include <miso/types.hpp>
 
 // Test the Model constructor and accessors
-inline miso::Model<miso::Real> run_test_model() {
+void run_test_model() {
   using namespace miso;
 
   // assuming current path is build/tests
@@ -51,5 +51,12 @@ inline miso::Model<miso::Real> run_test_model() {
   REQUIRE(model.time.dt_output == time.dt_output);
   REQUIRE(model.time.n_output_digits == time.n_output_digits);
 
-  return model;
+#ifdef __CUDACC__
+  REQUIRE(model.grid_d.i_total == model.grid_local.i_total);
+  REQUIRE(model.grid_d.j_total == model.grid_local.j_total);
+  REQUIRE(model.grid_d.k_total == model.grid_local.k_total);
+  REQUIRE(model.grid_d.i_margin == model.grid_local.i_margin);
+  REQUIRE(model.grid_d.j_margin == model.grid_local.j_margin);
+  REQUIRE(model.grid_d.k_margin == model.grid_local.k_margin);
+#endif
 }
