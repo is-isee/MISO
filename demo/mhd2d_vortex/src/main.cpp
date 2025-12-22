@@ -54,7 +54,7 @@ int main() {
   model.save_metadata();
 
   initial_condition(model);
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   using bc_t = BoundaryCondition<mhd::MHDCoreDevice<Real>>;
 #else
   using bc_t = BoundaryCondition<mhd::MHDCore<Real>>;
