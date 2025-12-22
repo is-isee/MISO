@@ -28,8 +28,15 @@ set(app_main ${app_source_dir}/main.cpp)
 add_executable(${app_name} ${app_main})
 if(USE_CUDA)
     set_source_files_properties(${app_main} PROPERTIES LANGUAGE CUDA)
+    target_compile_definitions(${app_name} PRIVATE USE_CUDA)
 endif()
 target_include_directories(${app_name} PRIVATE ${app_source_dir})
+
+# CUDA runtime
+if(USE_CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    target_link_libraries(${app_name} PRIVATE CUDA::cudart)
+endif()
 
 # MISO library (also fetches dependencies)
 include(FetchContent)
