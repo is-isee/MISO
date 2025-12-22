@@ -35,58 +35,11 @@ mpi:
   y_procs: 2
   z_procs: 1
 
-boundary_condition:
-  boundary_type: standard
-
+domain:
   periodic:
     x: false
     y: false
     z: false
-
-  ro:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vy:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  by:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ei:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ph:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
 
 artificial_viscosity:
   ep: 1.0

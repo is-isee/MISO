@@ -46,7 +46,7 @@ inline void run_boundary_condition_tests() {
 
   // test for a margin = 2 case
   mhd::MHDCore<Real> qq(grid.i_total, grid.j_total, grid.k_total);
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   mhd::MHDStreams cuda_streams;
   GridDevice<Real> grid_d(grid);
   mhd::MHDCoreDevice<Real> qq_d(grid);
@@ -70,7 +70,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::X,
                        bnd::Side::INNER);
@@ -87,7 +87,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid, qq_d.ro, -1.0, bnd::Direction::X,
                        bnd::Side::INNER);
@@ -104,7 +104,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid, qq_d.ro, 1.0, bnd::Direction::X,
                        bnd::Side::OUTER);
@@ -121,7 +121,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::X,
                        bnd::Side::OUTER);
@@ -156,7 +156,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Y,
                        bnd::Side::INNER);
@@ -173,7 +173,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Y,
                        bnd::Side::INNER);
@@ -190,7 +190,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Y,
                        bnd::Side::OUTER);
@@ -207,7 +207,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Y,
                        bnd::Side::OUTER);
@@ -242,7 +242,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Z,
                        bnd::Side::INNER);
@@ -259,7 +259,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Z,
                        bnd::Side::INNER);
@@ -276,7 +276,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Z,
                        bnd::Side::OUTER);
@@ -293,7 +293,7 @@ inline void run_boundary_condition_tests() {
     }
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   qq_d.copy_from_host(qq, cuda_streams);
   bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Z,
                        bnd::Side::OUTER);

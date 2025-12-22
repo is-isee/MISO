@@ -3,6 +3,6 @@
 #include <miso/boundary_condition_core.hpp>
 #include <miso/boundary_condition_cpu.hpp>
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/boundary_condition_gpu.cuh>
 #endif

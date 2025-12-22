@@ -14,7 +14,7 @@
 #include <miso/mpi_manager.hpp>
 #include <miso/radiative_transfer.hpp>
 #include <miso/time.hpp>
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_utils.cuh>
 #endif
 
@@ -33,7 +33,7 @@ template <typename Real> struct Model {
   static constexpr int num_rays = 24;
   rt::RT<Real> rt;
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   GridDevice<Real> grid_d;
   CudaKernelShape<Real> cu_shape;
   mhd::MHDStreams mhd_streams;
@@ -43,7 +43,7 @@ template <typename Real> struct Model {
   Model(Config &config_)
       : config(config_), mpi(config_.mpi), time(config.yaml_obj),
         grid_global(config.yaml_obj), grid_local(grid_global, mpi), eos(config),
-#ifdef USE_CUDA
+#ifdef __CUDACC__
         mhd_d(grid_local, mhd), grid_d(grid_local), cu_shape(grid_local),
 #endif
         mhd(grid_local), rt(grid_local, num_rays) {
@@ -54,7 +54,7 @@ template <typename Real> struct Model {
         rt::RT<Real> &rt_, MPIManager &mpi_)
       : config(config_), time(time_), grid_global(grid_global_),
         grid_local(grid_local_), eos(eos_), mpi(mpi_),
-#ifdef USE_CUDA
+#ifdef __CUDACC__
         mhd_d(grid_local, mhd_), grid_d(grid_local), cu_shape(grid_local),
         mhd_streams(),
 #endif
@@ -97,7 +97,7 @@ template <typename Real> struct Model {
 
   void save_if_needed() {
     if (time.time >= time.dt_output * time.n_output) {
-#ifdef USE_CUDA
+#ifdef __CUDACC__
       mhd_d.qq.copy_to_host(mhd.qq, mhd_streams);
 #endif
       save_state();

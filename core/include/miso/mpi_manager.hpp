@@ -5,9 +5,7 @@
 #include <mpi.h>
 #include <yaml-cpp/yaml.h>
 
-#ifdef USE_CUDA
-#include <cuda_runtime.h>
-#endif
+#include <miso/cuda_compat.hpp>
 
 namespace miso {
 
@@ -93,7 +91,7 @@ struct MPIManager {
     init_parameters(yaml_obj);
     set_cart_comm(yaml_obj);
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
     // TODO: この部分はcuda_manager.cuhに移したいが、設定の順序でうまく行っていない
     // TODO: 複数ノードを使う場合は、ここを修正する必要
     int device_count;

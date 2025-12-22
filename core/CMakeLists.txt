@@ -28,7 +28,6 @@ target_include_directories(MISO INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # CUDA
 if(USE_CUDA)
-    target_compile_definitions(MISO INTERFACE USE_CUDA)
     find_package(CUDAToolkit REQUIRED)
     target_link_libraries(MISO INTERFACE CUDA::cudart)
 endif()
