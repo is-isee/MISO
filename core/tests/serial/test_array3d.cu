@@ -2,6 +2,7 @@
 #include <cassert>
 #include <doctest/doctest.h>
 
+#define USE_CUDA
 #include <miso/array3d_cpu.hpp>
 #include <miso/array3d_gpu.cuh>
 

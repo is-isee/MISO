@@ -4,7 +4,7 @@ function(miso_add_tests pattern suffix)
     file(GLOB test_sources CONFIGURE_DEPENDS ${pattern})
     foreach(test_src ${test_sources})
         get_filename_component(test_name ${test_src} NAME_WE)
-        set(target_name parallel_${test_name}_${suffix})
+        set(target_name ${test_name}_${suffix})
 
         add_executable(${target_name} ${test_src})
 

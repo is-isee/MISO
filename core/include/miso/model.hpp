@@ -14,7 +14,7 @@
 #include <miso/mpi_manager.hpp>
 #include <miso/radiative_transfer.hpp>
 #include <miso/time.hpp>
-#ifdef __CUDACC__
+#ifdef USE_CUDA
 #include <miso/cuda_utils.cuh>
 #endif
 
@@ -22,18 +22,14 @@ namespace miso {
 
 template <typename Real> struct Model {
   Config &config;
-  MPIManager &mpi;
+  MPIManager mpi;
   Time<Real> time;
   Grid<Real> grid_global;
   Grid<Real> grid_local;
   EOS<Real> eos;
   mhd::MHD<Real> mhd;
 
-  /// TODO: make num_rays configurable
-  static constexpr int num_rays = 24;
-  rt::RT<Real> rt;
-
-#ifdef __CUDACC__
+#ifdef USE_CUDA
   GridDevice<Real> grid_d;
   CudaKernelShape<Real> cu_shape;
   mhd::MHDStreams mhd_streams;
@@ -41,65 +37,40 @@ template <typename Real> struct Model {
 #endif
 
   Model(Config &config_)
-      : config(config_), mpi(config_.mpi), time(config.yaml_obj),
+      : config(config_), mpi(config_), time(config.yaml_obj),
         grid_global(config.yaml_obj), grid_local(grid_global, mpi), eos(config),
-#ifdef __CUDACC__
-        mhd_d(grid_local, mhd), grid_d(grid_local), cu_shape(grid_local),
+#ifdef USE_CUDA
+        mhd(grid_local), mhd_d(grid_local, mhd), grid_d(grid_local),
+        cu_shape(grid_local)
+#else
+        mhd(grid_local)
 #endif
-        mhd(grid_local), rt(grid_local, num_rays) {
-  }
-
-  Model(Config &config_, Time<Real> &time_, Grid<Real> &grid_global_,
-        Grid<Real> &grid_local_, EOS<Real> &eos_, mhd::MHD<Real> &mhd_,
-        rt::RT<Real> &rt_, MPIManager &mpi_)
-      : config(config_), time(time_), grid_global(grid_global_),
-        grid_local(grid_local_), eos(eos_), mpi(mpi_),
-#ifdef __CUDACC__
-        mhd_d(grid_local, mhd_), grid_d(grid_local), cu_shape(grid_local),
-        mhd_streams(),
-#endif
-        mhd(mhd_), rt(rt_) {
+  {
   }
 
   void save_metadata() {
-    this->config.create_save_directory();
-    MPI_Barrier(this->mpi.cart_comm);
-    this->config.save();
-    this->grid_global.save(this->config);
-    this->save_mpi_coords();
+    config.create_save_directory();
+    MPI_Barrier(mpi.cart_comm);
+    config.save();
+    grid_global.save(config);
+    mpi.save_metadata(config.mpi_save_dir);
   }
 
   void save_state() {
-    this->mhd.save(this->config, this->time);
-    this->time.save(this->config);
+#ifdef USE_CUDA
+    mhd_d.qq.copy_to_host(mhd.qq, mhd_streams);
+#endif
+    mhd.save(config, time);
+    time.save(config);
   }
 
   void load_state() {
-    this->time.load(this->config);
-    this->mhd.load(this->config, this->time);
-  }
-
-  void save_mpi_coords() {
-    int all_coords[this->mpi.ndims * this->mpi.n_procs];
-    MPI_Gather(this->mpi.coord, this->mpi.ndims, MPI_INT, all_coords,
-               this->mpi.ndims, MPI_INT, 0, this->mpi.cart_comm);
-
-    if (this->mpi.myrank == 0) {
-      std::ofstream ofs(config.mpi_save_dir + "/coords.csv");
-      ofs << "rank,x,y,z\n";
-      for (int rank = 0; rank < this->mpi.n_procs; ++rank) {
-        ofs << rank << "," << all_coords[rank * 3 + 0] << ","
-            << all_coords[rank * 3 + 1] << "," << all_coords[rank * 3 + 2]
-            << "\n";
-      }
-    }
+    time.load(config);
+    mhd.load(config, time);
   }
 
   void save_if_needed() {
     if (time.time >= time.dt_output * time.n_output) {
-#ifdef __CUDACC__
-      mhd_d.qq.copy_to_host(mhd.qq, mhd_streams);
-#endif
       save_state();
 
       if (mpi.myrank == 0) {

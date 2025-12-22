@@ -9,16 +9,17 @@
 
 TEST_CASE("Test MPI" * doctest::test_suite("mpi")) {
   // Test MPI initialization and finalization
-  miso::MPIManager mpi;
+  miso::ContextManager ctx;
   std::string config_dir = CONFIG_DIR;
   std::vector<std::string> directions = {"x", "y", "z"};
 
   for (const auto &direction : directions) {
     {
-      miso::Config config(config_dir + "config_mpi_" + direction + ".yaml", mpi);
-      mpi.setup_mpi(config.yaml_obj);
-      miso::Model<miso::Real> model(config);
+      const auto &config_path = config_dir + "config_mpi_" + direction + ".yaml";
+      miso::Config config(config_path, ctx.mpi_env);
+      miso::MPIManager mpi(config);
 
+      miso::Model<miso::Real> model(config);
       REQUIRE(model.grid_local.i_size == model.grid_global.i_size / mpi.x_procs);
       REQUIRE(model.grid_local.j_size == model.grid_global.j_size / mpi.y_procs);
       REQUIRE(model.grid_local.k_size == model.grid_global.k_size / mpi.z_procs);

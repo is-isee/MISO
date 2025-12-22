@@ -2,6 +2,7 @@
 #include <cassert>
 #include <doctest/doctest.h>
 
+#define USE_CUDA
 #include <miso/grid.hpp>
 
 __global__ void test_grid_kernel(miso::GridDevice<double> grid_d) {

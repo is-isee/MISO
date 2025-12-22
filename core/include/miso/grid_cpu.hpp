@@ -4,6 +4,7 @@
 
 #include <miso/array3d_cpu.hpp>
 #include <miso/config.hpp>
+#include <miso/mpi_manager.hpp>
 
 namespace miso {
 
@@ -187,7 +188,6 @@ template <typename Real> struct Grid {
   ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
   /// @param grid_global Global grid object
   Grid(const Grid<Real> &grid_global, const MPIManager &mpi) {
-
     i_size = grid_global.i_size / mpi.x_procs;
     j_size = grid_global.j_size / mpi.y_procs;
     k_size = grid_global.k_size / mpi.z_procs;
@@ -254,7 +254,7 @@ template <typename Real> struct Grid {
   /// @brief save grid data to a binary file
   /// @param config
   void save(const Config &config) const {
-    if (config.mpi.myrank == 0) {
+    if (config.mpi_env.is_root()) {
       std::ofstream ofs_bin(config.save_dir + "/grid.bin", std::ios::binary);
       assert(ofs_bin.is_open());
 
