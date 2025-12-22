@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __CUDACC__
+#ifdef USE_CUDA
 #include <miso/array3d_gpu.cuh>
 #endif
 

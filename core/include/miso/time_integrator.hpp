@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __CUDACC__
+#ifdef USE_CUDA
 #include <miso/time_integrator_gpu.cuh>
 #else
 #include <miso/time_integrator_cpu.hpp>

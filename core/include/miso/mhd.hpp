@@ -2,6 +2,6 @@
 
 #include <miso/mhd_cpu.hpp>
 
-#ifdef __CUDACC__
+#ifdef USE_CUDA
 #include <miso/mhd_gpu.cuh>
 #endif

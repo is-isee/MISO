@@ -1,7 +1,7 @@
 /// @brief CUDA compatibility macros and functions
 #pragma once
 
-#if defined(__CUDACC__)
+#ifdef USE_CUDA
 #include <cstdio>
 #include <cuda_runtime.h>
 
@@ -34,4 +34,4 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
 #define HOST_DEVICE
 #define GLOBAL
 #define CUDA_CHECK(ans)
-#endif  // defined(__CUDACC__)
+#endif

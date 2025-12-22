@@ -8,7 +8,7 @@
 #include <miso/model.hpp>
 #include <miso/types.hpp>
 
-// Test the Model constructor and accessors
+// Test the Context constructor and accessors
 void run_test_model() {
   using namespace miso;
 
@@ -26,8 +26,8 @@ void run_test_model() {
   mhd::MHD<Real> mhd(grid_local);
   rt::RT<Real> rt(grid_local, 24);
 
-  miso::Model<Real> model(config, time, grid_global, grid_local, eos, mhd, rt,
-                          mpi);
+  miso::Context<Real> model(config, time, grid_global, grid_local, eos, mhd, rt,
+                            mpi);
 
   // Check dimensions
   REQUIRE(model.grid_global.i_size == grid_global.i_size);

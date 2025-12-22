@@ -2,6 +2,7 @@
 #include <cassert>
 #include <doctest/doctest.h>
 
+#undef USE_CUDA
 #include <miso/grid_cpu.hpp>
 
 TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {

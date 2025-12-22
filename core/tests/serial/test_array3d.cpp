@@ -2,6 +2,7 @@
 #include <cassert>
 #include <doctest/doctest.h>
 
+#undef USE_CUDA
 #include <miso/array3d_cpu.hpp>
 
 TEST_CASE("Test Array3D CPU" * doctest::test_suite("array3d")) {

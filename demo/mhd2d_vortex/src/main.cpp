@@ -1,6 +1,7 @@
 #include <string>
 
 #include <miso/config.hpp>
+#include <miso/context_manager.hpp>
 #include <miso/model.hpp>
 #include <miso/mpi_manager.hpp>
 #include <miso/time_integrator.hpp>
@@ -34,31 +35,30 @@ void initial_condition(miso::Model<Real> &model) {
   }
 }
 
-template <typename MHDCoreType> struct BoundaryCondition {
-  explicit BoundaryCondition(miso::Model<Real> &model) {}
+struct PeriodicBC {
+  explicit PeriodicBC(miso::Model<Real> &model) {}
 
-  void apply(MHDCoreType &qq) {
-    // Periodic boundary condition is applied by MPI communication.
-    // Be sure to set "periodic" in domain field in config.yaml.
-  }
+  // Periodic boundary condition is applied by MPI communication.
+  // Be sure to set "periodic" in domain field in config.yaml.
+#ifdef __CUDACC__
+  void apply(miso::mhd::MHDCoreDevice<Real> &qq) {}
+#else
+  void apply(miso::mhd::MHDCore<Real> &qq) {}
+#endif
 };
 
 int main() {
   using namespace miso;
   std::string config_dir = CONFIG_DIR;
 
+  ContextManager ctx(argc, argv);
+  Config config(config_dir + "config.yaml", ctx.mpi_env);
   MPIManager mpi;
-  Config config(config_dir + "config.yaml", mpi);
   mpi.setup_mpi(config.yaml_obj);
   Model<Real> model(config);
   model.save_metadata();
 
   initial_condition(model);
-#ifdef __CUDACC__
-  using bc_t = BoundaryCondition<mhd::MHDCoreDevice<Real>>;
-#else
-  using bc_t = BoundaryCondition<mhd::MHDCore<Real>>;
-#endif
-  mhd::TimeIntegrator<Real, bc_t> time_integrator(model);
+  mhd::TimeIntegrator<Real, PeriodicBC> time_integrator(model);
   time_integrator.run();
 }

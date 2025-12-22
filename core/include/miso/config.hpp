@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <yaml-cpp/yaml.h>
 
-#include <miso/mpi_manager.hpp>
+#include <miso/context_manager.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
 
@@ -26,12 +26,12 @@ struct Config {
   std::string mhd_save_dir;
   /// @brief Directories for saving MPI-related information
   std::string mpi_save_dir;
-  MPIManager &mpi;
+  MPIEnvironment &mpi_env;
 
-  Config(const std::string &load_filepath_, MPIManager &mpi_)
-      : load_filepath(load_filepath_), mpi(mpi_) {
+  Config(const std::string &load_filepath_, MPIEnvironment &mpi_env_)
+      : load_filepath(load_filepath_), mpi_env(mpi_env_) {
     std::string yaml_str;
-    if (mpi.myrank == 0) {
+    if (mpi_env.is_root()) {
       assert(!load_filepath.empty());
       if (!fs::exists(load_filepath)) {
         throw std::runtime_error("Config file not found: " + load_filepath);
@@ -62,12 +62,12 @@ struct Config {
     int yaml_str_length = yaml_str.length();
     MPI_Bcast(&yaml_str_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    if (mpi.myrank != 0) {
+    if (mpi_env.myrank != 0) {
       yaml_str.resize(yaml_str_length);
     }
     MPI_Bcast(yaml_str.data(), yaml_str_length, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-    if (mpi.myrank != 0) {
+    if (mpi_env.myrank != 0) {
       yaml_obj = YAML::Load(yaml_str);
     }
 
@@ -96,7 +96,7 @@ struct Config {
 
   /// @brief Create save directories for the simulation
   void create_save_directory() const {
-    if (mpi.myrank == 0) {
+    if (mpi_env.is_root()) {
       create_save_directory_core(save_dir);
       create_save_directory_core(time_save_dir);
       create_save_directory_core(mhd_save_dir);
@@ -106,7 +106,7 @@ struct Config {
 
   /// @brief  Save the configuration to a YAML file
   void save() const {
-    if (mpi.myrank == 0) {
+    if (mpi_env.is_root()) {
       std::string save_filepath = save_dir + "/config.yaml";
       std::ofstream ofs(save_filepath);
       if (!ofs.is_open()) {
