@@ -474,7 +474,7 @@ struct TimeIntegrator {
   EOS<Real> &eos;
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
-  MPIManager &mpi;
+  MPITopology &mpi;
   CudaKernelShape<Real> &cu_shape;
   MHDStreams &mhd_streams;
   TimeStep<Real> time_step;

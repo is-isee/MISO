@@ -1,7 +1,7 @@
 #pragma once
+
 #include <algorithm>
 #include <cstdint>
-#include <filesystem>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -9,9 +9,6 @@
 #include <miso/cuda_compat.hpp>
 
 namespace miso {
-
-/// @brief Common alias for filesystem namespace
-namespace fs = std::filesystem;
 
 /// @brief Utility functions
 namespace util {

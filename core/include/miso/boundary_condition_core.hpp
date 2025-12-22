@@ -105,7 +105,7 @@ HOST_DEVICE inline void periodic_index(int i, int i_total, int i_margin,
 
 template <typename Real>
 bool is_physical_boundary(const Direction direction, const Side side,
-                          const MPIManager &mpi) {
+                          const MPITopology &mpi) {
   switch (direction) {
   case Direction::X:
     return (side == Side::INNER) ? (mpi.x_procs_neg == MPI_PROC_NULL)

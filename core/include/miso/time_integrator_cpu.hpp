@@ -140,8 +140,8 @@ struct TimeIntegrator {
   EOS<Real> &eos;
   /// @brief MHD class object
   MHD<Real> &mhd;
-  /// @brief MPIManager class object
-  MPIManager &mpi;
+  /// @brief MPITopology class object
+  MPITopology &mpi;
 
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;

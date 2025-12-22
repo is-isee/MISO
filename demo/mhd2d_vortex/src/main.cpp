@@ -52,8 +52,8 @@ int main() {
   std::string config_dir = CONFIG_DIR;
 
   ContextManager ctx(argc, argv);
-  Config config(config_dir + "config.yaml", ctx.mpi_env);
-  MPIManager mpi;
+  Config config(config_dir + "config.yaml", ctx.mpi_rt);
+  MPITopology mpi;
   mpi.setup_mpi(config.yaml_obj);
   Model<Real> model(config);
   model.save_metadata();

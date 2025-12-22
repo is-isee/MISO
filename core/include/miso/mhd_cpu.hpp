@@ -113,7 +113,7 @@ template <typename Real> struct MHD {
   };
 
   void mpi_exchange_halo(MHDCore<Real> &qq_trgt, Grid<Real> &grid,
-                         MPIManager &mpi) {
+                         MPITopology &mpi) {
     std::array<Array3D<Real> *, 9> vars = {&qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy,
                                            &qq_trgt.vz, &qq_trgt.bx, &qq_trgt.by,
                                            &qq_trgt.bz, &qq_trgt.ei, &qq_trgt.ph};
