@@ -16,8 +16,8 @@ TEST_CASE("Test MPI" * doctest::test_suite("mpi")) {
   for (const auto &direction : directions) {
     {
       const auto &config_path = config_dir + "config_mpi_" + direction + ".yaml";
-      miso::Config config(config_path, ctx.mpi_env);
-      miso::MPIManager mpi(config);
+      miso::Config config(config_path, ctx.mpi_rt);
+      miso::MPITopology mpi(config);
 
       miso::Model<miso::Real> model(config);
       REQUIRE(model.grid_local.i_size == model.grid_global.i_size / mpi.x_procs);

@@ -13,7 +13,7 @@ void run_test_model() {
   using namespace miso;
 
   // assuming current path is build/tests
-  MPIManager mpi;
+  MPITopology mpi;
   std::string config_dir = CONFIG_DIR;
 
   Config config(config_dir + "config_model.yaml", mpi);

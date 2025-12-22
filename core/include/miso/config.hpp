@@ -1,16 +1,28 @@
 #pragma once
+
 #include <cassert>
+#include <filesystem>
 #include <fstream>
-#include <mpi.h>
 #include <string>
 #include <type_traits>
+
+#include <mpi.h>
 #include <yaml-cpp/yaml.h>
 
-#include <miso/context_manager.hpp>
+#include <miso/env.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
 
 namespace miso {
+
+/// @brief Create directories if they do not exist (only on root process)
+void create_directories(const std::string &dir_path) {
+  if (!mpi::is_root()) {
+    return;
+  }
+  namespace fs = std::filesystem;
+  fs::create_directories(dir_path);
+}
 
 /// @brief Configuration class for MHD simulations
 struct Config {
@@ -26,12 +38,11 @@ struct Config {
   std::string mhd_save_dir;
   /// @brief Directories for saving MPI-related information
   std::string mpi_save_dir;
-  MPIEnvironment &mpi_env;
 
-  Config(const std::string &load_filepath_, MPIEnvironment &mpi_env_)
-      : load_filepath(load_filepath_), mpi_env(mpi_env_) {
+  Config(const std::string &load_filepath_)
+      : load_filepath(load_filepath_), mpi_rt(mpi_env_) {
     std::string yaml_str;
-    if (mpi_env.is_root()) {
+    if (mpi::is_root()) {
       assert(!load_filepath.empty());
       if (!fs::exists(load_filepath)) {
         throw std::runtime_error("Config file not found: " + load_filepath);
@@ -62,12 +73,12 @@ struct Config {
     int yaml_str_length = yaml_str.length();
     MPI_Bcast(&yaml_str_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    if (mpi_env.myrank != 0) {
+    if (!mpi::is_root()) {
       yaml_str.resize(yaml_str_length);
     }
     MPI_Bcast(yaml_str.data(), yaml_str_length, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-    if (mpi_env.myrank != 0) {
+    if (!mpi::is_root()) {
       yaml_obj = YAML::Load(yaml_str);
     }
 
@@ -77,36 +88,15 @@ struct Config {
     save_dir =
         (config_dir / yaml_obj["base"]["save_dir"].template as<std::string>())
             .string();
-    time_save_dir =
-        save_dir + yaml_obj["time"]["time_save_dir"].template as<std::string>();
+    create_directories(save_dir);
     mhd_save_dir =
         save_dir + yaml_obj["mhd"]["mhd_save_dir"].template as<std::string>();
-    mpi_save_dir =
-        save_dir + yaml_obj["mpi"]["mpi_save_dir"].template as<std::string>();
-  }
-
-  /// @brief Create a save directory if they do not exist
-  /// @param directory Directory path to create
-  void create_save_directory_core(const std::string &directory) const {
-    fs::path directory_fs(directory);
-    if (!fs::exists(directory_fs)) {
-      fs::create_directories(directory_fs);
-    }
-  }
-
-  /// @brief Create save directories for the simulation
-  void create_save_directory() const {
-    if (mpi_env.is_root()) {
-      create_save_directory_core(save_dir);
-      create_save_directory_core(time_save_dir);
-      create_save_directory_core(mhd_save_dir);
-      create_save_directory_core(mpi_save_dir);
-    }
+    create_directories(mhd_save_dir);
   }
 
   /// @brief  Save the configuration to a YAML file
   void save() const {
-    if (mpi_env.is_root()) {
+    if (mpi::is_root()) {
       std::string save_filepath = save_dir + "/config.yaml";
       std::ofstream ofs(save_filepath);
       if (!ofs.is_open()) {
@@ -115,7 +105,6 @@ struct Config {
       YAML::Emitter out;
       out << yaml_obj;
       ofs << out.c_str();
-      ofs.close();
     }
   }
 };

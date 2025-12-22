@@ -22,7 +22,7 @@ namespace miso {
 
 template <typename Real> struct Model {
   Config &config;
-  MPIManager mpi;
+  MPITopology mpi;
   Time<Real> time;
   Grid<Real> grid_global;
   Grid<Real> grid_local;
@@ -53,7 +53,7 @@ template <typename Real> struct Model {
     MPI_Barrier(mpi.cart_comm);
     config.save();
     grid_global.save(config);
-    mpi.save_metadata(config.mpi_save_dir);
+    mpi.save(config.mpi_save_dir);
   }
 
   void save_state() {
