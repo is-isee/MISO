@@ -7,6 +7,7 @@ namespace miso {
 namespace bnd {
 
 enum class Direction { X, Y, Z };
+
 inline std::string direction_to_string(Direction direction) {
   switch (direction) {
   case Direction::X:
