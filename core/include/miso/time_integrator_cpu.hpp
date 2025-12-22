@@ -11,7 +11,6 @@
 #include <miso/mhd.hpp>
 #include <miso/model.hpp>
 #include <miso/mpi_types.hpp>
-#include <miso/standard_boundary_condition.hpp>
 
 namespace miso {
 namespace mhd {
@@ -100,29 +99,31 @@ inline Real space_centered_4th(const Array3D<Real> &qq1, const Array3D<Real> &qq
 /// @details Volumetric heat / force terms are expected.
 template <typename Real> struct NoSource {
   /// External force: x-direction
-  constexpr Real vx(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real vx(const MHDCore<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 
   /// External force: y-direction
-  constexpr Real vy(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real vy(const MHDCore<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 
   /// External force: z-direction
-  constexpr Real vz(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real vz(const MHDCore<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 
   /// External heating
-  constexpr Real ei(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real ei(const MHDCore<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 };
 
 /// @brief Class for time integration of MHD equations
 /// @tparam Real
-template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator {
+template <typename Real, typename BoundaryCondition,
+          typename Source = NoSource<Real>>
+struct TimeIntegrator {
   /// @brief Disallow copying and assignment
   TimeIntegrator(const TimeIntegrator &) = delete;
   /// @brief Disallow copying and assignment
@@ -143,7 +144,7 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
   MPIManager &mpi;
 
   /// @brief Boundary condition for MHD equations
-  std::unique_ptr<bnd::BoundaryConditionBase<Real, MHDCore<Real>, Grid<Real>>> bc;
+  BoundaryCondition bc;
   /// @brief Body source for MHD equations
   Source source;
   /// @brief Artificial viscosity for MHD equations
@@ -171,16 +172,11 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
   TimeIntegrator(Model<Real> &model_)
       : model(model_), config(model_.config), time(model_.time),
         grid(model_.grid_local), eos(model_.eos), mhd(model_.mhd),
-        mpi(model_.mpi), artdiff(model_),
+        mpi(model_.mpi), bc(model_), artdiff(model_),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total) {
-
-    // Initialize boundary condition defined in config.yaml_obj
-    bc = std::make_unique<
-        bnd::StandardBoundaryCondition<Real, MHDCore<Real>, Grid<Real>>>(model);
-
     cfl_number =
         config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
   }
@@ -372,22 +368,22 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
 
     update_sc4(qq, qq, qq_rslt, time.dt / 4.0);
     qq_argm.copy_from(qq_rslt);
-    bc->apply(qq_argm);
+    bc.apply(qq_argm);
     mhd.mpi_exchange_halo(qq_argm, grid, mpi);
 
     update_sc4(qq, qq_argm, qq_rslt, time.dt / 3.0);
     qq_argm.copy_from(qq_rslt);
-    bc->apply(qq_argm);
+    bc.apply(qq_argm);
     mhd.mpi_exchange_halo(qq_argm, grid, mpi);
 
     update_sc4(qq, qq_argm, qq_rslt, time.dt / 2.0);
     qq_argm.copy_from(qq_rslt);
-    bc->apply(qq_argm);
+    bc.apply(qq_argm);
     mhd.mpi_exchange_halo(qq_argm, grid, mpi);
 
     update_sc4(qq, qq_argm, qq_rslt, time.dt);
     qq.copy_from(qq_rslt);
-    bc->apply(qq);
+    bc.apply(qq);
     mhd.mpi_exchange_halo(qq, grid, mpi);
   }
 
@@ -398,79 +394,75 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
     // x direction
     artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dxi, "x");
     mhd.qq.copy_from(mhd.qq_rslt);
-    bc->apply(mhd.qq);
+    bc.apply(mhd.qq);
     mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
 
     // y direction
     artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dyi, "y");
     mhd.qq.copy_from(mhd.qq_rslt);
-    bc->apply(mhd.qq);
+    bc.apply(mhd.qq);
     mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
 
     // z direction
     artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dzi, "z");
     mhd.qq.copy_from(mhd.qq_rslt);
-    bc->apply(mhd.qq);
+    bc.apply(mhd.qq);
     mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
   }
 
   /// @brief Calculate time spacing based on CFL condition
   void cfl_condition() {
-
-    this->time.dt = 1.e10;
+    time.dt = 1.e10;
     Real slow_speed = 1.e-10;
     for (int i = grid.i_margin; i < grid.i_total - grid.i_margin; ++i) {
       for (int j = grid.j_margin; j < grid.j_total - grid.j_margin; ++j) {
         for (int k = grid.k_margin; k < grid.k_total - grid.k_margin; ++k) {
           // clang-format off
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(this->eos.gm*(this->eos.gm-1.0)*this->mhd.qq.ei(i,j,k));
+          Real cs = std::sqrt(eos.gm*(eos.gm-1.0)*mhd.qq.ei(i,j,k));
           Real vv = std::sqrt(
-            + this->mhd.qq.vx(i,j,k)*this->mhd.qq.vx(i,j,k)
-            + this->mhd.qq.vy(i,j,k)*this->mhd.qq.vy(i,j,k)
-            + this->mhd.qq.vz(i,j,k)*this->mhd.qq.vz(i,j,k)
+            + mhd.qq.vx(i,j,k)*mhd.qq.vx(i,j,k)
+            + mhd.qq.vy(i,j,k)*mhd.qq.vy(i,j,k)
+            + mhd.qq.vz(i,j,k)*mhd.qq.vz(i,j,k)
           );
           Real ca = std::sqrt( (
-            + this->mhd.qq.bx(i,j,k)*this->mhd.qq.bx(i,j,k)
-            + this->mhd.qq.by(i,j,k)*this->mhd.qq.by(i,j,k)
-            + this->mhd.qq.bz(i,j,k)*this->mhd.qq.bz(i,j,k)
-          )/this->mhd.qq.ro(i,j,k)*pii4<Real>);
+            + mhd.qq.bx(i,j,k)*mhd.qq.bx(i,j,k)
+            + mhd.qq.by(i,j,k)*mhd.qq.by(i,j,k)
+            + mhd.qq.bz(i,j,k)*mhd.qq.bz(i,j,k)
+          )/mhd.qq.ro(i,j,k)*pii4<Real>);
 
           // in masked region, cfl condition is not applied
-          Real total_vel = (cs + vv + ca)*this->grid.mask(i,j,k) + slow_speed*(1.0 - this->grid.mask(i,j,k));
-          this->time.dt = std::min(this->time.dt,
-            this->cfl_number*std::min<Real>({this->grid.dx[i], this->grid.dy[j], this->grid.dz[k]})/total_vel);
+          Real total_vel = (cs + vv + ca)*grid.mask(i,j,k) + slow_speed*(1.0 - grid.mask(i,j,k));
+          time.dt = std::min(time.dt,
+            cfl_number*std::min<Real>({grid.dx[i], grid.dy[j], grid.dz[k]})/total_vel);
           // clang-format on
         }
       }
     }
     Real dt_global;
-    MPI_Allreduce(&this->time.dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN,
+    MPI_Allreduce(&time.dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN,
                   mpi.cart_comm);
-    this->time.dt = dt_global;
+    time.dt = dt_global;
   }
 
   /// @brief Set parameters for divergence B cleaning
   void divb_parameters_set() {
-    this->ch_divb = 0.8 * this->cfl_number * this->grid.min_dxyz / this->time.dt;
-    this->ch_divb_square = this->ch_divb * this->ch_divb;
-    this->tau_divb = 2.0 * this->time.dt;
+    ch_divb = 0.8 * cfl_number * grid.min_dxyz / time.dt;
+    ch_divb_square = ch_divb * ch_divb;
+    tau_divb = 2.0 * time.dt;
   }
 
   /// @brief Main time integration loop
   void run() {
-    // Time integration loop
-    this->time.dt = 0.1;
-
-    if (this->config.yaml_obj["base"]["continue"].template as<bool>() &&
-        fs::exists(this->config.time_save_dir + "n_output.txt")) {
+    if (config.yaml_obj["base"]["continue"].template as<bool>() &&
+        fs::exists(config.time_save_dir + "n_output.txt")) {
       model.load_state();
     }
 
     MPI_Barrier(mpi.cart_comm);
 
     model.save_if_needed();
-    while (this->time.time < this->time.tend) {
+    while (time.time < time.tend) {
 
       // basic MHD time integration
       cfl_condition();
@@ -479,7 +471,7 @@ template <typename Real, typename Source = NoSource<Real>> struct TimeIntegrator
       apply_artificial_viscosity();
 
       // Time is update after all procedures
-      this->time.update();
+      time.update();
       model.save_if_needed();
     }
   }

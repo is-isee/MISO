@@ -1,6 +1,5 @@
 #pragma once
 
-#include <miso/boundary_condition_base.hpp>
 #include <miso/boundary_condition_core.hpp>
 #include <miso/boundary_condition_cpu.hpp>
 

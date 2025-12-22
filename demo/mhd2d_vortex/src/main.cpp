@@ -1,9 +1,4 @@
-#include <cmath>
-#include <cstdlib>
-#include <filesystem>
-#include <iostream>
 #include <string>
-#include <vector>
 
 #include <miso/config.hpp>
 #include <miso/model.hpp>
@@ -14,7 +9,7 @@
 
 using miso::Real, miso::pi;
 
-template <typename Real> void initial_condition(miso::Model<Real> &model) {
+void initial_condition(miso::Model<Real> &model) {
   auto &qq = model.mhd.qq;
   const auto &grid = model.grid_local;
   const auto &eos = model.eos;
@@ -39,6 +34,15 @@ template <typename Real> void initial_condition(miso::Model<Real> &model) {
   }
 }
 
+template <typename MHDCoreType> struct BoundaryCondition {
+  explicit BoundaryCondition(miso::Model<Real> &model) {}
+
+  void apply(MHDCoreType &qq) {
+    // Periodic boundary condition is applied by MPI communication.
+    // Be sure to set "periodic" in domain field in config.yaml.
+  }
+};
+
 int main() {
   using namespace miso;
   std::string config_dir = CONFIG_DIR;
@@ -49,8 +53,12 @@ int main() {
   Model<Real> model(config);
   model.save_metadata();
 
-  initial_condition<Real>(model);
-
-  mhd::TimeIntegrator<Real> time_integrator(model);
+  initial_condition(model);
+#ifdef USE_CUDA
+  using bc_t = BoundaryCondition<mhd::MHDCoreDevice<Real>>;
+#else
+  using bc_t = BoundaryCondition<mhd::MHDCore<Real>>;
+#endif
+  mhd::TimeIntegrator<Real, bc_t> time_integrator(model);
   time_integrator.run();
 }

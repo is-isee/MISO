@@ -70,25 +70,14 @@ struct MPIManager {
   void set_cart_comm(const YAML::Node &yaml_obj) {
     int dims[ndims] = {x_procs, y_procs, z_procs};
     int periods[ndims];
-    if (n_procs == 1) {
-      periods[0] = 0;
-      periods[1] = 0;
-      periods[2] = 0;
-    } else {
-      periods[0] =
-          yaml_obj["boundary_condition"]["periodic"]["x"].template as<bool>() ? 1
-                                                                              : 0;
-      periods[1] =
-          yaml_obj["boundary_condition"]["periodic"]["y"].template as<bool>() ? 1
-                                                                              : 0;
-      periods[2] =
-          yaml_obj["boundary_condition"]["periodic"]["z"].template as<bool>() ? 1
-                                                                              : 0;
-    }
+    periods[0] = yaml_obj["domain"]["periodic"]["x"].template as<bool>() ? 1 : 0;
+    periods[1] = yaml_obj["domain"]["periodic"]["y"].template as<bool>() ? 1 : 0;
+    periods[2] = yaml_obj["domain"]["periodic"]["z"].template as<bool>() ? 1 : 0;
 
     MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &cart_comm);
     MPI_Comm_rank(cart_comm, &myrank);
     MPI_Comm_size(cart_comm, &n_procs);
+    assert(n_procs == x_procs * y_procs * z_procs);
 
     MPI_Cart_coords(cart_comm, myrank, ndims, coord);
     int merr;
