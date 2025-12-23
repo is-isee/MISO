@@ -98,10 +98,12 @@ template <typename Real> struct MHD {
   void load(const Config &config, const Time<Real> &time) {
     const auto n_procs_digits =
         config["mpi"]["n_procs_digits"].template as<int>();
-    std::string filename = config.mhd_save_dir + "mhd." +
-                           util::zfill(time.n_output, time.n_output_digits) +
-                           "." + util::zfill(mpi::rank(), n_procs_digits) +
-                           ".bin";
+    const auto mhd_save_dir =
+        config.save_dir +
+        config["mhd"]["mhd_save_dir"].template as<std::string>();
+    std::string filename =
+        mhd_save_dir + "mhd." + util::zfill(time.n_output, time.n_output_digits) +
+        "." + util::zfill(mpi::rank(), n_procs_digits) + ".bin";
     std::ifstream ifs(filename, std::ios::binary);
     assert(ifs.is_open());
 

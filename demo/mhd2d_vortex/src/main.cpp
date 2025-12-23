@@ -1,7 +1,7 @@
 #include <string>
 
 #include <miso/config.hpp>
-#include <miso/context_manager.hpp>
+#include <miso/env.hpp>
 #include <miso/model.hpp>
 #include <miso/mpi_manager.hpp>
 #include <miso/time_integrator.hpp>
@@ -47,14 +47,13 @@ struct PeriodicBC {
 #endif
 };
 
-int main() {
+int main(int argc, char *argv[]) {
   using namespace miso;
   std::string config_dir = CONFIG_DIR;
 
-  ContextManager ctx(argc, argv);
-  Config config(config_dir + "config.yaml", ctx.mpi_rt);
-  MPIManager mpi;
-  mpi.setup_mpi(config.yaml_obj);
+  Env ctx(argc, argv);
+  Config config(config_dir + "config.yaml");
+  MPIManager mpi(config);
   Model<Real> model(config);
   model.save_metadata();
 
