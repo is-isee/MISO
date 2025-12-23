@@ -23,8 +23,6 @@ struct Config {
   std::string save_dir;
   /// @brief Directories for saving time information
   std::string time_save_dir;
-  /// @brief Directories for saving MHD results
-  std::string mhd_save_dir;
 
   Config(const std::string &load_filepath_) : load_filepath(load_filepath_) {
     std::string yaml_str;
