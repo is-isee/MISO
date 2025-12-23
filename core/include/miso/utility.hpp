@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -10,8 +11,16 @@
 
 namespace miso {
 
+namespace fs = std::filesystem;
+
 /// @brief Utility functions
 namespace util {
+
+/// @brief Create directories if they do not exist (only on root process)
+/// @details Do nothing if the directory already exists.
+void create_directories(const std::string &dir_path) {
+  fs::create_directories(dir_path);
+}
 
 /// @brief zero-fill integer to string
 /// @param num target integer number

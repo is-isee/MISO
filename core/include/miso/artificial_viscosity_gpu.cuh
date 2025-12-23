@@ -480,14 +480,11 @@ template <typename Real> struct ArtificialViscosity {
         eos(model.eos), mhd(model.mhd), mhd_d(model.mhd_d), grid_d(model.grid_d),
         cu_shape(model.cu_shape), cc(grid.i_total, grid.j_total, grid.k_total),
         cc_d(grid.i_total, grid.j_total, grid.k_total) {
-    this->ep = config.yaml_obj["artificial_viscosity"]["ep"].template as<Real>();
-    this->fh = config.yaml_obj["artificial_viscosity"]["fh"].template as<Real>();
-    this->cs_fac =
-        config.yaml_obj["artificial_viscosity"]["cs_fac"].template as<Real>();
-    this->ca_fac =
-        config.yaml_obj["artificial_viscosity"]["ca_fac"].template as<Real>();
-    this->vv_fac =
-        config.yaml_obj["artificial_viscosity"]["vv_fac"].template as<Real>();
+    ep = config["artificial_viscosity"]["ep"].template as<Real>();
+    fh = config["artificial_viscosity"]["fh"].template as<Real>();
+    cs_fac = config["artificial_viscosity"]["cs_fac"].template as<Real>();
+    ca_fac = config["artificial_viscosity"]["ca_fac"].template as<Real>();
+    vv_fac = config["artificial_viscosity"]["vv_fac"].template as<Real>();
     assert(ep >= 0);
     assert(fh >= 0);
   }

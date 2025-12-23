@@ -22,7 +22,7 @@ namespace miso {
 
 template <typename Real> struct Model {
   Config &config;
-  MPITopology mpi;
+  MPIManager mpi;
   Time<Real> time;
   Grid<Real> grid_global;
   Grid<Real> grid_local;
@@ -37,8 +37,8 @@ template <typename Real> struct Model {
 #endif
 
   Model(Config &config_)
-      : config(config_), mpi(config_), time(config.yaml_obj),
-        grid_global(config.yaml_obj), grid_local(grid_global, mpi), eos(config),
+      : config(config_), mpi(config_), time(config), grid_global(config),
+        grid_local(grid_global, mpi), eos(config),
 #ifdef USE_CUDA
         mhd(grid_local), mhd_d(grid_local, mhd), grid_d(grid_local),
         cu_shape(grid_local)
@@ -49,11 +49,10 @@ template <typename Real> struct Model {
   }
 
   void save_metadata() {
-    config.create_save_directory();
     MPI_Barrier(mpi.cart_comm);
     config.save();
     grid_global.save(config);
-    mpi.save(config.mpi_save_dir);
+    mpi.save();
   }
 
   void save_state() {
@@ -73,7 +72,7 @@ template <typename Real> struct Model {
     if (time.time >= time.dt_output * time.n_output) {
       save_state();
 
-      if (mpi.myrank == 0) {
+      if (mpi::is_root()) {
         std::cout << std::fixed << std::setprecision(2)
                   << "time = " << std::setw(6) << time.time
                   << ";  n_step = " << std::setw(8) << time.n_step

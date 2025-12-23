@@ -11,8 +11,7 @@ template <typename Real> struct EOS {
 
   /// @brief Constructor for EOS
   /// @param config
-  EOS(const Config &config)
-      : gm(config.yaml_obj["eos"]["gm"].template as<Real>()) {}
+  EOS(const Config &config) : gm(config["eos"]["gm"].template as<Real>()) {}
 };
 
 }  // namespace miso

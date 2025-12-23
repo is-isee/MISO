@@ -66,10 +66,16 @@ template <typename Real> struct MHD {
         send_buff_z_neg(grid.i_total, grid.j_total, grid.k_margin, 9) {}
 
   void save(const Config &config, const Time<Real> &time) const {
+    const auto n_procs_digits =
+        config["mpi"]["n_procs_digits"].template as<int>();
+    const auto mhd_save_dir =
+        config.save_dir +
+        config["mhd"]["mhd_save_dir"].template as<std::string>();
+    util::create_directories(mhd_save_dir);
+
     std::string filename =
-        config.mhd_save_dir + "mhd." +
-        util::zfill(time.n_output, time.n_output_digits) + "." +
-        util::zfill(config.mpi.myrank, config.mpi.n_procs_digits) + ".bin";
+        mhd_save_dir + "mhd." + util::zfill(time.n_output, time.n_output_digits) +
+        "." + util::zfill(mpi::rank(), n_procs_digits) + ".bin";
     std::ofstream ofs(filename, std::ios::binary);
     assert(ofs.is_open());
 
@@ -90,10 +96,12 @@ template <typename Real> struct MHD {
   };
 
   void load(const Config &config, const Time<Real> &time) {
-    std::string filename =
-        config.mhd_save_dir + "mhd." +
-        util::zfill(time.n_output, time.n_output_digits) + "." +
-        util::zfill(config.mpi.myrank, config.mpi.n_procs_digits) + ".bin";
+    const auto n_procs_digits =
+        config["mpi"]["n_procs_digits"].template as<int>();
+    std::string filename = config.mhd_save_dir + "mhd." +
+                           util::zfill(time.n_output, time.n_output_digits) +
+                           "." + util::zfill(mpi::rank(), n_procs_digits) +
+                           ".bin";
     std::ifstream ifs(filename, std::ios::binary);
     assert(ifs.is_open());
 
@@ -113,7 +121,7 @@ template <typename Real> struct MHD {
   };
 
   void mpi_exchange_halo(MHDCore<Real> &qq_trgt, Grid<Real> &grid,
-                         MPITopology &mpi) {
+                         MPIManager &mpi) {
     std::array<Array3D<Real> *, 9> vars = {&qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy,
                                            &qq_trgt.vz, &qq_trgt.bx, &qq_trgt.by,
                                            &qq_trgt.bz, &qq_trgt.ei, &qq_trgt.ph};
