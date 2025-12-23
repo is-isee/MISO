@@ -34,11 +34,11 @@ void initial_condition(miso::Model<Real> &model) {
   }
 }
 
-struct PeriodicBC {
-  explicit PeriodicBC(miso::MHD<Real> &mhd) {}
+// Periodic boundary condition is applied by MPI communication.
+// Be sure to set "periodic" in domain field of config.yaml.
+struct EmptyBC {
+  explicit EmptyBC(miso::MHD<Real> &mhd) {}
 
-  // Periodic boundary condition is applied by MPI communication.
-  // Be sure to set "periodic" in domain field in config.yaml.
 #ifdef __CUDACC__
   void apply(miso::mhd::MHDCoreDevice<Real> &qq) {}
 #else
@@ -56,6 +56,6 @@ int main(int argc, char *argv[]) {
   model.save_metadata();
 
   initial_condition(model);
-  mhd::TimeIntegrator<Real, PeriodicBC> time_integrator(model);
+  mhd::TimeIntegrator<Real, EmptyBC> time_integrator(model);
   time_integrator.run();
 }
