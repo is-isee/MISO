@@ -36,9 +36,8 @@ template <typename Real> struct ArtificialViscosity {
 
   /// @brief Constructor for ArtificialViscosity
   /// @param model
-  ArtificialViscosity(Model<Real> &model)
-      : config(model.config), time(model.time), grid(model.grid_local),
-        eos(model.eos), mhd(model.mhd),
+  ArtificialViscosity(MHD<Real> &mhd)
+      : config(config), time(time), grid(grid), eos(eos), mhd(mhd),
         cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();

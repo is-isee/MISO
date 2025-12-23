@@ -1,12 +1,5 @@
 #pragma once
 
-#include <cmath>
-#include <iomanip>
-#include <iostream>
-#include <mpi.h>
-#include <string>
-#include <vector>
-
 #include <miso/cuda_compat.hpp>
 #include <miso/eos.hpp>
 #include <miso/grid.hpp>
@@ -24,7 +17,7 @@ template <typename Real> struct Model {
   MPIManager mpi;
   Time<Real> time;
   Grid<Real> grid_global;
-  Grid<Real> grid_local;
+  Grid<Real> grid;
 
   EOS<Real> eos;
   mhd::MHD<Real> mhd;
@@ -37,12 +30,11 @@ template <typename Real> struct Model {
 
   Model(Config &config_)
       : config(config_), mpi(config_), time(config), grid_global(config),
-        grid_local(grid_global, mpi), eos(config),
+        grid(grid_global, mpi), eos(config),
 #ifdef USE_CUDA
-        mhd(grid_local), mhd_d(grid_local, mhd), grid_d(grid_local),
-        cu_shape(grid_local)
+        mhd(grid), mhd_d(grid, mhd), grid_d(grid), cu_shape(grid)
 #else
-        mhd(grid_local)
+        mhd(grid)
 #endif
   {
   }
@@ -80,6 +72,26 @@ template <typename Real> struct Model {
       }
 
       time.n_output++;
+    }
+  }
+
+  /// @brief Main time integration loop
+  void run() {
+    if (config["base"]["continue"].template as<bool>() &&
+        fs::exists(config.time_save_dir + "n_output.txt")) {
+      load_state();
+    }
+
+    MPI_Barrier(mpi::comm());
+
+    save_if_needed();
+    while (time.time < time.tend) {
+      // basic MHD time integration
+      mhd.update();
+
+      // Time is update after all procedures
+      time.update();
+      save_if_needed();
     }
   }
 };

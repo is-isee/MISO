@@ -10,8 +10,8 @@ namespace mhd {
 
 constexpr int n_var = 9;
 
-template <typename Real> struct MHDCore;
 template <typename Real> struct MHD;
+template <typename Real> struct MHDCore;
 template <typename Real> struct MHDCoreDevice;
 
 enum class Face { Pos, Neg };
@@ -429,11 +429,9 @@ __global__ void unpack_z_recv(MHDCoreDevice<Real> qq_trgt,
 template <typename Real> struct MHDDevice {
   MHDCoreDevice<Real> qq, qq_argm, qq_rslt;
   MHDBufferDevice<Real> buff;
-  Real cfl_number;
 
-  MHDDevice(const Grid<Real> &grid, const MHD<Real> &mhd)
-      : cfl_number(mhd.cfl_number), qq(grid), qq_argm(grid), qq_rslt(grid),
-        buff(grid) {}
+  MHDDevice(const Grid<Real> &grid)
+      : qq(grid), qq_argm(grid), qq_rslt(grid), buff(grid) {}
 
   // destructor (by default GPU memory is freed when MHDDevice is destroyed)
   ~MHDDevice() {}
