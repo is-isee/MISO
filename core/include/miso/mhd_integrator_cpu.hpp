@@ -4,19 +4,18 @@
 #include <cmath>
 #include <filesystem>
 #include <initializer_list>
-#include <mpi.h>
 
 #include <miso/constants.hpp>
-#include <miso/mhd.hpp>
+#include <miso/env.hpp>
 #include <miso/mhd_artificial_viscosity_cpu.hpp>
-#include <miso/model.hpp>
+#include <miso/mhd_cpu.hpp>
 #include <miso/mpi_types.hpp>
 
 namespace miso {
 namespace mhd {
+namespace cpu {
 
 /// @brief Calculate 4th order space-centered derivative for qq
-/// @relatedalso TimeIntegrator
 /// @tparam Real
 /// @param qq variables
 /// @param dxyzi grid spacing in x, y, z direction (grid.dx, grid.dy, grid.dz)
@@ -41,7 +40,6 @@ inline Real space_centered_4th(const Array3D<Real> &qq, Real dxyzi, int i, int j
 };
 
 /// @brief Calculate 4th order space-centered derivative for qq1*qq2
-/// @relatedalso TimeIntegrator
 /// @tparam Real
 /// @param qq1 variables
 /// @param qq2 variables
@@ -68,7 +66,6 @@ inline Real space_centered_4th(const Array3D<Real> &qq1, const Array3D<Real> &qq
 };
 
 /// @brief Calculate 4th order space-centered derivative for qq1*qq2*qq3
-/// @relatedalso TimeIntegrator
 /// @tparam Real
 /// @param qq1 variables
 /// @param qq2 variables
@@ -120,28 +117,17 @@ template <typename Real> struct NoSource {
 };
 
 /// @brief Class for time integration of MHD equations
-/// @tparam Real
-template <typename Real, typename BoundaryCondition,
-          typename Source = NoSource<Real>>
-struct TimeIntegrator {
-  /// @brief Disallow copying and assignment
-  TimeIntegrator(const TimeIntegrator &) = delete;
-  /// @brief Disallow copying and assignment
-  TimeIntegrator &operator=(const TimeIntegrator &) = delete;
-  /// @brief Model class object
-  Model<Real> &model;
-  /// @brief Config class object
-  Config &config;
-  /// @brief Time class object
-  Time<Real> &time;
+template <typename Real, typename BoundaryCondition, typename EOS,
+          typename Source>
+struct Integrator {
   /// @brief Grid class object
   Grid<Real> &grid;
   /// @brief EOS class object
-  EOS<Real> &eos;
+  EOS eos;
   /// @brief MHD class object
-  MHD<Real> &mhd;
-  /// @brief MPIManager class object
-  MPIManager &mpi;
+  Fields<Real> &qq;
+  /// @brief Work space
+  Fields<Real> qq_argm, qq_rslt;
 
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
@@ -167,12 +153,9 @@ struct TimeIntegrator {
   /// @brief damping time scape for divergence B
   Real tau_divb;
 
-  /// @brief Constructor for TimeIntegrator
-  /// @param model_
-  TimeIntegrator(Model<Real> &model_)
-      : model(model_), config(model_.config), time(model_.time),
-        grid(model_.grid_local), eos(model_.eos), mhd(model_.mhd),
-        mpi(model_.mpi), bc(model_), artdiff(model_),
+  /// @brief Constructor
+  Integrator(WorkSpace<Real> &ws, HaloExchanger<Real> &halo_exchanger)
+      : grid(ws.grid_local), eos(ws.config), ws(ws), bc(ws), artdiff(ws),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
@@ -361,29 +344,29 @@ struct TimeIntegrator {
 
   /// @brief Runge-Kutta 4th order time integration step
   void runge_kutta_4step() {
-    MHDCore<Real> &qq = mhd.qq;
-    MHDCore<Real> &qq_argm = mhd.qq_argm;
-    MHDCore<Real> &qq_rslt = mhd.qq_rslt;
+    auto &qq = ws.qq;
+    auto &qq_argm = ws.qq_argm;
+    auto &qq_rslt = ws.qq_rslt;
 
     update_sc4(qq, qq, qq_rslt, time.dt / 4.0);
     qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm);
-    mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    ws.mpi_exchange_halo(qq_argm, grid, mpi);
 
     update_sc4(qq, qq_argm, qq_rslt, time.dt / 3.0);
     qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm);
-    mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    ws.mpi_exchange_halo(qq_argm, grid, mpi);
 
     update_sc4(qq, qq_argm, qq_rslt, time.dt / 2.0);
     qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm);
-    mhd.mpi_exchange_halo(qq_argm, grid, mpi);
+    ws.mpi_exchange_halo(qq_argm, grid, mpi);
 
     update_sc4(qq, qq_argm, qq_rslt, time.dt);
     qq.copy_from(qq_rslt);
     bc.apply(qq);
-    mhd.mpi_exchange_halo(qq, grid, mpi);
+    ws.mpi_exchange_halo(qq, grid, mpi);
   }
 
   /// @brief Apply artificial viscosity
@@ -391,22 +374,22 @@ struct TimeIntegrator {
     artdiff.characteristic_velocity_eval();
 
     // x direction
-    artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dxi, "x");
-    mhd.qq.copy_from(mhd.qq_rslt);
-    bc.apply(mhd.qq);
-    mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
+    artdiff.update(ws.qq, ws.qq_rslt, artdiff.cc, grid.dxi, "x");
+    ws.qq.copy_from(ws.qq_rslt);
+    bc.apply(ws.qq);
+    ws.mpi_exchange_halo(ws.qq, grid, mpi);
 
     // y direction
-    artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dyi, "y");
-    mhd.qq.copy_from(mhd.qq_rslt);
-    bc.apply(mhd.qq);
-    mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
+    artdiff.update(ws.qq, ws.qq_rslt, artdiff.cc, grid.dyi, "y");
+    ws.qq.copy_from(ws.qq_rslt);
+    bc.apply(ws.qq);
+    ws.mpi_exchange_halo(ws.qq, grid, mpi);
 
     // z direction
-    artdiff.update(mhd.qq, mhd.qq_rslt, artdiff.cc, grid.dzi, "z");
-    mhd.qq.copy_from(mhd.qq_rslt);
-    bc.apply(mhd.qq);
-    mhd.mpi_exchange_halo(mhd.qq, grid, mpi);
+    artdiff.update(ws.qq, ws.qq_rslt, artdiff.cc, grid.dzi, "z");
+    ws.qq.copy_from(ws.qq_rslt);
+    bc.apply(ws.qq);
+    ws.mpi_exchange_halo(ws.qq, grid, mpi);
   }
 
   /// @brief Calculate time spacing based on CFL condition
@@ -418,17 +401,17 @@ struct TimeIntegrator {
         for (int k = grid.k_margin; k < grid.k_total - grid.k_margin; ++k) {
           // clang-format off
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(eos.gm*(eos.gm-1.0)*mhd.qq.ei(i,j,k));
+          Real cs = std::sqrt(eos.gm*(eos.gm-1.0)*ws.qq.ei(i,j,k));
           Real vv = std::sqrt(
-            + mhd.qq.vx(i,j,k)*mhd.qq.vx(i,j,k)
-            + mhd.qq.vy(i,j,k)*mhd.qq.vy(i,j,k)
-            + mhd.qq.vz(i,j,k)*mhd.qq.vz(i,j,k)
+            + ws.qq.vx(i,j,k)*ws.qq.vx(i,j,k)
+            + ws.qq.vy(i,j,k)*ws.qq.vy(i,j,k)
+            + ws.qq.vz(i,j,k)*ws.qq.vz(i,j,k)
           );
           Real ca = std::sqrt( (
-            + mhd.qq.bx(i,j,k)*mhd.qq.bx(i,j,k)
-            + mhd.qq.by(i,j,k)*mhd.qq.by(i,j,k)
-            + mhd.qq.bz(i,j,k)*mhd.qq.bz(i,j,k)
-          )/mhd.qq.ro(i,j,k)*pii4<Real>);
+            + ws.qq.bx(i,j,k)*ws.qq.bx(i,j,k)
+            + ws.qq.by(i,j,k)*ws.qq.by(i,j,k)
+            + ws.qq.bz(i,j,k)*ws.qq.bz(i,j,k)
+          )/ws.qq.ro(i,j,k)*pii4<Real>);
 
           // in masked region, cfl condition is not applied
           Real total_vel = (cs + vv + ca)*grid.mask(i,j,k) + slow_speed*(1.0 - grid.mask(i,j,k));
@@ -440,7 +423,7 @@ struct TimeIntegrator {
     }
     Real dt_global;
     MPI_Allreduce(&time.dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN,
-                  mpi.cart_comm);
+                  mpi::comm());
     time.dt = dt_global;
   }
 
@@ -451,30 +434,19 @@ struct TimeIntegrator {
     tau_divb = 2.0 * time.dt;
   }
 
-  /// @brief Main time integration loop
-  void run() {
-    if (config["base"]["continue"].template as<bool>() &&
-        fs::exists(config.time_save_dir + "n_output.txt")) {
-      model.load_state();
-    }
-
-    MPI_Barrier(mpi.cart_comm);
-
-    model.save_if_needed();
-    while (time.time < time.tend) {
-
-      // basic MHD time integration
-      cfl_condition();
-      divb_parameters_set();
-      runge_kutta_4step();
-      apply_artificial_viscosity();
-
-      // Time is update after all procedures
-      time.update();
-      model.save_if_needed();
-    }
+  /// @brief Update MHD equations by one time step
+  void update() {
+    cfl_condition();
+    divb_parameters_set();
+    runge_kutta_4step();
+    apply_artificial_viscosity();
   }
+
+  // Prohibit copy and assignment
+  Integrator(const Integrator &) = delete;
+  Integrator &operator=(const Integrator &) = delete;
 };
 
+}  // namespace cpu
 }  // namespace mhd
 }  // namespace miso

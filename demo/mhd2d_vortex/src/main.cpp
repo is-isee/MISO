@@ -35,7 +35,7 @@ void initial_condition(miso::Model<Real> &model) {
 }
 
 struct PeriodicBC {
-  explicit PeriodicBC(miso::Model<Real> &model) {}
+  explicit PeriodicBC(miso::MHD<Real> &mhd) {}
 
   // Periodic boundary condition is applied by MPI communication.
   // Be sure to set "periodic" in domain field in config.yaml.
