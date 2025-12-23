@@ -4,6 +4,7 @@
 
 #include <miso/array3d_cpu.hpp>
 #include <miso/config.hpp>
+#include <miso/env.hpp>
 #include <miso/mpi_manager.hpp>
 
 namespace miso {
@@ -171,24 +172,23 @@ template <typename Real> struct Grid {
   }
 
   /// @brief Constructor to initialize the grid for MPI-GLOBAL geometry
-  /// @param yaml_obj
-  Grid(const YAML::Node &yaml_obj)
-      : i_size(yaml_obj["grid"]["i_size"].template as<int>()),
-        j_size(yaml_obj["grid"]["j_size"].template as<int>()),
-        k_size(yaml_obj["grid"]["k_size"].template as<int>()),
-        margin(yaml_obj["grid"]["margin"].template as<int>()),
-        xmin(yaml_obj["grid"]["xmin"].template as<Real>()),
-        xmax(yaml_obj["grid"]["xmax"].template as<Real>()),
-        ymin(yaml_obj["grid"]["ymin"].template as<Real>()),
-        ymax(yaml_obj["grid"]["ymax"].template as<Real>()),
-        zmin(yaml_obj["grid"]["zmin"].template as<Real>()),
-        zmax(yaml_obj["grid"]["zmax"].template as<Real>()) {
+  Grid(const Config &config)
+      : i_size(config["grid"]["i_size"].template as<int>()),
+        j_size(config["grid"]["j_size"].template as<int>()),
+        k_size(config["grid"]["k_size"].template as<int>()),
+        margin(config["grid"]["margin"].template as<int>()),
+        xmin(config["grid"]["xmin"].template as<Real>()),
+        xmax(config["grid"]["xmax"].template as<Real>()),
+        ymin(config["grid"]["ymin"].template as<Real>()),
+        ymax(config["grid"]["ymax"].template as<Real>()),
+        zmin(config["grid"]["zmin"].template as<Real>()),
+        zmax(config["grid"]["zmax"].template as<Real>()) {
     global_initialize();
   }
 
   ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
   /// @param grid_global Global grid object
-  Grid(const Grid<Real> &grid_global, const MPITopology &mpi) {
+  Grid(const Grid<Real> &grid_global, const MPIManager &mpi) {
     i_size = grid_global.i_size / mpi.x_procs;
     j_size = grid_global.j_size / mpi.y_procs;
     k_size = grid_global.k_size / mpi.z_procs;
@@ -255,7 +255,7 @@ template <typename Real> struct Grid {
   /// @brief save grid data to a binary file
   /// @param config
   void save(const Config &config) const {
-    if (config.mpi_rt.is_root()) {
+    if (mpi::is_root()) {
       std::ofstream ofs_bin(config.save_dir + "/grid.bin", std::ios::binary);
       assert(ofs_bin.is_open());
 

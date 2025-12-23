@@ -53,7 +53,7 @@ int main() {
 
   ContextManager ctx(argc, argv);
   Config config(config_dir + "config.yaml", ctx.mpi_rt);
-  MPITopology mpi;
+  MPIManager mpi;
   mpi.setup_mpi(config.yaml_obj);
   Model<Real> model(config);
   model.save_metadata();

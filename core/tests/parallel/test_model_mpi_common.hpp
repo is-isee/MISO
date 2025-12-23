@@ -13,21 +13,20 @@ void run_test_model() {
   using namespace miso;
 
   // assuming current path is build/tests
-  MPITopology mpi;
+  Env env;
   std::string config_dir = CONFIG_DIR;
 
-  Config config(config_dir + "config_model.yaml", mpi);
-  mpi.setup_mpi(config.yaml_obj);
-  Time<Real> time(config.yaml_obj);
-  Grid<Real> grid_global(config.yaml_obj);
+  Config config(config_dir + "config_model.yaml");
+  MPIManager mpi(config);
+  Time<Real> time(config);
+  Grid<Real> grid_global(config);
 
   Grid<Real> grid_local(grid_global, mpi);
   EOS<Real> eos(config);
   mhd::MHD<Real> mhd(grid_local);
   rt::RT<Real> rt(grid_local, 24);
 
-  miso::Context<Real> model(config, time, grid_global, grid_local, eos, mhd, rt,
-                            mpi);
+  Model<Real> model(config);
 
   // Check dimensions
   REQUIRE(model.grid_global.i_size == grid_global.i_size);

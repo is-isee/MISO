@@ -1,12 +1,10 @@
 #pragma once
 
 #include <cassert>
-#include <filesystem>
 #include <fstream>
 #include <string>
 #include <type_traits>
 
-#include <mpi.h>
 #include <yaml-cpp/yaml.h>
 
 #include <miso/env.hpp>
@@ -14,15 +12,6 @@
 #include <miso/utility.hpp>
 
 namespace miso {
-
-/// @brief Create directories if they do not exist (only on root process)
-void create_directories(const std::string &dir_path) {
-  if (!mpi::is_root()) {
-    return;
-  }
-  namespace fs = std::filesystem;
-  fs::create_directories(dir_path);
-}
 
 /// @brief Configuration class for MHD simulations
 struct Config {
@@ -36,11 +25,8 @@ struct Config {
   std::string time_save_dir;
   /// @brief Directories for saving MHD results
   std::string mhd_save_dir;
-  /// @brief Directories for saving MPI-related information
-  std::string mpi_save_dir;
 
-  Config(const std::string &load_filepath_)
-      : load_filepath(load_filepath_), mpi_rt(mpi_env_) {
+  Config(const std::string &load_filepath_) : load_filepath(load_filepath_) {
     std::string yaml_str;
     if (mpi::is_root()) {
       assert(!load_filepath.empty());
@@ -84,14 +70,15 @@ struct Config {
 
     fs::path config_path = fs::absolute(load_filepath);
     fs::path config_dir = config_path.parent_path();
-
     save_dir =
         (config_dir / yaml_obj["base"]["save_dir"].template as<std::string>())
             .string();
-    create_directories(save_dir);
-    mhd_save_dir =
-        save_dir + yaml_obj["mhd"]["mhd_save_dir"].template as<std::string>();
-    create_directories(mhd_save_dir);
+    util::create_directories(save_dir);
+  }
+
+  /// @brief Accessor for YAML configuration object
+  const YAML::Node operator[](const std::string &key) const {
+    return yaml_obj[key];
   }
 
   /// @brief  Save the configuration to a YAML file

@@ -13,7 +13,7 @@ struct StandardBoundaryCondition {
   Config &config;
   GridType &grid;
   EOS<Real> &eos;
-  MPITopology &mpi;
+  MPIManager &mpi;
 
   StandardBoundaryCondition(Model<Real> &model)
       : config(model.config),

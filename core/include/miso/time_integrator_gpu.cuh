@@ -474,7 +474,7 @@ struct TimeIntegrator {
   EOS<Real> &eos;
   MHD<Real> &mhd;
   MHDDevice<Real> &mhd_d;
-  MPITopology &mpi;
+  MPIManager &mpi;
   CudaKernelShape<Real> &cu_shape;
   MHDStreams &mhd_streams;
   TimeStep<Real> time_step;
@@ -501,8 +501,7 @@ struct TimeIntegrator {
         ht_d(grid.i_total, grid.j_total, grid.k_total),
         vb_d(grid.i_total, grid.j_total, grid.k_total), cu_shape(model_.cu_shape),
         mhd_streams(model_.mhd_streams), time_step(model_.cu_shape), bc(model_) {
-    cfl_number =
-        config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
+    cfl_number = config["time_integrator"]["cfl_number"].template as<Real>();
   }
 
   // core function for MHD time integration
@@ -620,7 +619,7 @@ struct TimeIntegrator {
   }
 
   void run() {
-    if (config.yaml_obj["base"]["continue"].template as<bool>() &&
+    if (config["base"]["continue"].template as<bool>() &&
         fs::exists(config.time_save_dir + "n_output.txt")) {
       model.load_state();
     }

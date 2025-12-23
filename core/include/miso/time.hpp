@@ -39,21 +39,18 @@ template <typename Real> struct Time {
   }
 
   /// @brief Default constructor
-  /// @param yaml_obj YAML node read in Config class
   Time(const Config &config)
-      : tend(config.yaml_obj["time"]["tend"].template as<Real>()),
-        dt_output(config.yaml_obj["time"]["dt_output"].template as<Real>()),
-        n_output_digits(
-            config.yaml_obj["time"]["n_output_digits"].template as<int>()) {
+      : tend(config["time"]["tend"].template as<Real>()),
+        dt_output(config["time"]["dt_output"].template as<Real>()),
+        n_output_digits(config["time"]["n_output_digits"].template as<int>()) {
     assert(tend > 0);
     assert(dt_output > 0);
 
     initialize();
 
-    time_save_dir =
-        config.save_dir +
-        config.yaml_obj["time"]["time_save_dir"].template as<std::string>();
-    create_directories(time_save_dir);
+    time_save_dir = config.save_dir +
+                    config["time"]["time_save_dir"].template as<std::string>();
+    util::create_directories(time_save_dir);
   }
 
   /// @brief update time parameters
@@ -101,9 +98,9 @@ template <typename Real> struct Time {
       ifs >> n_step;
     }
 
-    MPI_Bcast(&time, 1, mpi_type<Real>(), 0, mpi::comm);
-    MPI_Bcast(&n_output, 1, MPI_INT, 0, mpi::comm);
-    MPI_Bcast(&n_step, 1, MPI_INT, 0, mpi::comm);
+    MPI_Bcast(&time, 1, mpi_type<Real>(), 0, mpi::world::comm);
+    MPI_Bcast(&n_output, 1, MPI_INT, 0, mpi::world::comm);
+    MPI_Bcast(&n_step, 1, MPI_INT, 0, mpi::world::comm);
   }
 };
 

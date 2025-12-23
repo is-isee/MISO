@@ -30,12 +30,12 @@ inline int size = -1;
 struct Env {
   bool owns_mpi = false;
 
-  Env(int &argc, char **&argv) {
+  void setup(int *argc, char ***argv) {
     int is_mpi_initialized = false;
     MPI_Initialized(&is_mpi_initialized);
     if (!is_mpi_initialized) {
       owns_mpi = true;
-      MPI_Init(&argc, &argv);
+      MPI_Init(argc, argv);
     }
     world::comm = MPI_COMM_WORLD;
     MPI_Comm_rank(world::comm, &world::rank);
@@ -46,6 +46,9 @@ struct Env {
     MPI_Comm_size(local::comm, &local::size);
     world::is_initialized = true;
   }
+
+  Env() { setup(nullptr, nullptr); }
+  Env(int &argc, char **&argv) { setup(&argc, &argv); }
 
   ~Env() noexcept {
     if (local::comm != MPI_COMM_NULL) {
@@ -165,6 +168,15 @@ struct Env {
 #ifdef USE_CUDA
   cuda::Env cuda_env;
 #endif
+
+  Env()
+#ifdef USE_CUDA
+      : mpi_env(), cuda_env()
+#else
+      : mpi_env()
+#endif
+  {
+  }
 
   Env(int &argc, char **&argv)
 #ifdef USE_CUDA

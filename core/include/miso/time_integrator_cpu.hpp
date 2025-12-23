@@ -140,8 +140,8 @@ struct TimeIntegrator {
   EOS<Real> &eos;
   /// @brief MHD class object
   MHD<Real> &mhd;
-  /// @brief MPITopology class object
-  MPITopology &mpi;
+  /// @brief MPIManager class object
+  MPIManager &mpi;
 
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
@@ -177,8 +177,7 @@ struct TimeIntegrator {
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total) {
-    cfl_number =
-        config.yaml_obj["time_integrator"]["cfl_number"].template as<Real>();
+    cfl_number = config["time_integrator"]["cfl_number"].template as<Real>();
   }
 
   /// @brief  Update MHD equations using 4th order space-centered scheme
@@ -454,7 +453,7 @@ struct TimeIntegrator {
 
   /// @brief Main time integration loop
   void run() {
-    if (config.yaml_obj["base"]["continue"].template as<bool>() &&
+    if (config["base"]["continue"].template as<bool>() &&
         fs::exists(config.time_save_dir + "n_output.txt")) {
       model.load_state();
     }
