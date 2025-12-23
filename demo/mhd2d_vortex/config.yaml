@@ -25,13 +25,13 @@ grid:
 
 mpi:
   mpi_save_dir: mpi/
-  n_procs_digits: 8
   x_procs: 2
   y_procs: 1
   z_procs: 1
 
 mhd:
   mhd_save_dir: mhd/
+  n_output_digits: 8
 
 eos:
   gm: 1.6666666666666667
