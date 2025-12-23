@@ -1,10 +1,11 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "grid_cpu.hpp"
-#include "grid_gpu.cuh"
 #include <cassert>
 #include <doctest/doctest.h>
 
-__global__ void test_grid_kernel(GridDevice<double> grid_d) {
+#define USE_CUDA
+#include <miso/grid.hpp>
+
+__global__ void test_grid_kernel(miso::GridDevice<double> grid_d) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
@@ -29,10 +30,10 @@ TEST_CASE("Test Grid GPU" * doctest::test_suite("grid")) {
   double zmin = 4.0;
   double zmax = 5.0;
 
-  Grid<double> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax, zmin,
-                    zmax);
+  miso::Grid<double> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax,
+                          zmin, zmax);
   grid.mask.allocate(grid.i_total, grid.j_total, grid.k_total);
-  GridDevice<double> grid_d(grid);
+  miso::GridDevice<double> grid_d(grid);
 
   grid_d.copy_from_host(grid);
 

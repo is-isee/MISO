@@ -21,31 +21,22 @@ if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
-if(USE_CUDA)
-    set(source_suffix "cu")
-else()
-    set(source_suffix "cpp")
-endif()
-
 # App sources
 set(app_name ${project_name})
 set(app_source_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
-file(GLOB_RECURSE app_source_files CONFIGURE_DEPENDS
-     "${app_source_dir}/*.${source_suffix}")
-add_executable(${app_name} ${app_source_files})
+set(app_main ${app_source_dir}/main.cpp)
+add_executable(${app_name} ${app_main})
 target_include_directories(${app_name} PRIVATE ${app_source_dir})
+
+# CUDA runtime
 if(USE_CUDA)
-    target_compile_definitions(${app_name} PRIVATE USE_CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    target_link_libraries(${app_name} PRIVATE CUDA::cudart)
+
+    # Force main.cpp to be treated as CUDA source
+    set_source_files_properties(${app_main} PROPERTIES LANGUAGE CUDA)
+    target_compile_definitions(${app_name} PRIVATE USE_CUDA ON)
 endif()
-
-# Shared sources
-set(shared_src ${CMAKE_CURRENT_SOURCE_DIR}/../shared)
-target_sources(${app_name}
-               PRIVATE ${shared_src}/custom_boundary_condition.${source_suffix})
-
-# MPI
-find_package(MPI REQUIRED)
-target_link_libraries(${app_name} PRIVATE MPI::MPI_CXX)
 
 # MISO library (also fetches dependencies)
 include(FetchContent)
@@ -62,4 +53,3 @@ target_link_libraries(${app_name} PRIVATE MISO::MISO)
 # TODO: SHOULD BE PASSED BY ARGS
 set(config_dir ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(${app_name} PRIVATE CONFIG_DIR="${config_dir}/")
-

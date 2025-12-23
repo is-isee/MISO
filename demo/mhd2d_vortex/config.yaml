@@ -3,7 +3,7 @@ base:
   # if save_dir exiests
   # continue: true -> continue simulation
   # continue: false -> start from scratch
-  continue: true
+  continue: false
 
 time:
   time_save_dir: time/
@@ -25,77 +25,27 @@ grid:
 
 mpi:
   mpi_save_dir: mpi/
-  n_procs_digits: 8
   x_procs: 2
   y_procs: 1
   z_procs: 1
 
 mhd:
   mhd_save_dir: mhd/
+  n_output_digits: 8
+  cfl_number: 1.0
+  artificial_viscosity:
+    ep: 1.5
+    fh: 1.0
+    # for characteristic velocity
+    cs_fac: 0.8
+    ca_fac: 0.8
+    vv_fac: 0.8
 
 eos:
   gm: 1.6666666666666667
 
-time_integrator:
-  cfl_number: 1.0
-
-artificial_viscosity:
-  ep: 1.5
-  fh: 1.0
-  # for characteristic velocity
-  cs_fac: 0.8
-  ca_fac: 0.8
-  vv_fac: 0.8
-boundary_condition:
-  # please use "standard" or "custom" for boundary_type
-  boundary_type: standard
-
+domain:
   periodic:
     x: true
     y: true
     z: true
-
-  ro:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vy:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  by:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ei:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ph:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
