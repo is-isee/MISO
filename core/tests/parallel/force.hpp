@@ -1,17 +1,12 @@
 #pragma once
 
-#include "model.hpp"
-
-#if defined(__CUDACC__)
-#define DEVICE __device__
-#else
-#define DEVICE
-#endif
+#include <miso/model.hpp>
+#include <miso/utility.hpp>
 
 template <typename Real, typename MHDCoreType, typename GridType> struct Force {
   GridType grid;
 
-  explicit Force(Model<Real> &model)
+  explicit Force(miso::Model<Real> &model)
       :
 #ifdef USE_CUDA
         grid(model.grid_d)
@@ -20,8 +15,8 @@ template <typename Real, typename MHDCoreType, typename GridType> struct Force {
 #endif
   {
   }
-  // force is defined in the unit of g/cm^2 s^2 i.e., force per unit volume
-  // i.e., acceleration * density
+
+  // force is defined by force per unit volume (i.e., acceleration * density)
   DEVICE inline Real x(MHDCoreType &qq, int i, int j, int k) {
     // write your custom force here
     return 0.0;

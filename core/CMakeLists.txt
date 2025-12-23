@@ -14,7 +14,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(USE_CUDA "Enable CUDA support" OFF)
 if(USE_CUDA)
     enable_language(CUDA)
-    add_definitions(-DUSE_CUDA)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
@@ -22,8 +21,22 @@ if(USE_CUDA)
     set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
-# External libraries
+# MISO as a header-only library
+add_library(MISO INTERFACE)
+add_library(MISO::MISO ALIAS MISO)
+target_include_directories(MISO INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# CUDA
+if(USE_CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    target_link_libraries(MISO INTERFACE CUDA::cudart)
+endif()
+
+# MPI
 find_package(MPI REQUIRED)
+target_link_libraries(MISO INTERFACE MPI::MPI_CXX)
+
+# yaml-cpp
 find_package(yaml-cpp QUIET)
 if(NOT yaml-cpp_FOUND)
     message(STATUS "yaml-cpp not found; fetching with FetchContent")
@@ -34,12 +47,7 @@ if(NOT yaml-cpp_FOUND)
         GIT_TAG 0.8.0)
     FetchContent_MakeAvailable(yaml-cpp)
 endif()
-
-# MISO as a header-only library
-add_library(MISO INTERFACE)
-add_library(MISO::MISO ALIAS MISO)
-target_include_directories(MISO INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(MISO INTERFACE MPI::MPI_CXX yaml-cpp::yaml-cpp)
+target_link_libraries(MISO INTERFACE yaml-cpp::yaml-cpp)
 
 # Unit tests
 option(ENABLE_TESTING "Enable Testing" ON)

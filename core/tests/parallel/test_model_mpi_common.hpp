@@ -1,31 +1,25 @@
 #pragma once
-
 #include <doctest/doctest.h>
 
-#include "config.hpp"
-#include "grid_cpu.hpp"
-#include "model.hpp"
-#include "types.hpp"
-#include <filesystem>
+#include <miso/config.hpp>
+#include <miso/grid.hpp>
+#include <miso/model.hpp>
+#include <miso/types.hpp>
 
-inline Model<Real> run_test_model() {
-  // Test the Model constructor and accessors
+// Test the Context constructor and accessors
+void run_test_model() {
+  using namespace miso;
 
   // assuming current path is build/tests
-  MPIManager mpi;
+  Env env;
   std::string config_dir = CONFIG_DIR;
-
-  Config config(config_dir + "config_model.yaml", mpi);
-  mpi.setup_mpi(config.yaml_obj);
-  Time<Real> time(config.yaml_obj);
-  Grid<Real> grid_global(config.yaml_obj);
-
+  Config config(config_dir + "config_model.yaml");
+  MPIManager mpi(config);
+  Time<Real> time(config);
+  Grid<Real> grid_global(config);
   Grid<Real> grid_local(grid_global, mpi);
-  EOS<Real> eos = EOS<Real>(config);
-  MHD<Real> mhd = MHD<Real>(grid_local);
-  RT<Real> rt(grid_local, 24);
 
-  Model<Real> model(config, time, grid_global, grid_local, eos, mhd, rt, mpi);
+  Model<Real> model(config);
 
   // Check dimensions
   REQUIRE(model.grid_global.i_size == grid_global.i_size);
@@ -49,5 +43,12 @@ inline Model<Real> run_test_model() {
   REQUIRE(model.time.dt_output == time.dt_output);
   REQUIRE(model.time.n_output_digits == time.n_output_digits);
 
-  return model;
+#ifdef __CUDACC__
+  REQUIRE(model.grid_d.i_total == model.grid_local.i_total);
+  REQUIRE(model.grid_d.j_total == model.grid_local.j_total);
+  REQUIRE(model.grid_d.k_total == model.grid_local.k_total);
+  REQUIRE(model.grid_d.i_margin == model.grid_local.i_margin);
+  REQUIRE(model.grid_d.j_margin == model.grid_local.j_margin);
+  REQUIRE(model.grid_d.k_margin == model.grid_local.k_margin);
+#endif
 }
