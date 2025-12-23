@@ -7,12 +7,12 @@
 #include <mpi.h>
 
 #include <miso/array3d.hpp>
-#include <miso/artificial_viscosity.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_compat.hpp>
 #include <miso/cuda_utils.cuh>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
+#include <miso/mhd_artificial_viscosity.hpp>
 #include <miso/model.hpp>
 #include <miso/mpi_types.hpp>
 #include <miso/utility.hpp>
@@ -501,7 +501,7 @@ struct TimeIntegrator {
         ht_d(grid.i_total, grid.j_total, grid.k_total),
         vb_d(grid.i_total, grid.j_total, grid.k_total), cu_shape(model_.cu_shape),
         mhd_streams(model_.mhd_streams), time_step(model_.cu_shape), bc(model_) {
-    cfl_number = config["time_integrator"]["cfl_number"].template as<Real>();
+    cfl_number = config["mhd"]["cfl_number"].template as<Real>();
   }
 
   // core function for MHD time integration

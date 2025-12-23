@@ -1,6 +1,7 @@
 #pragma once
 
 #include <miso/cuda_compat.hpp>
+#include <miso/grid.hpp>
 
 namespace miso {
 

@@ -5,10 +5,10 @@
 #include <initializer_list>
 #include <string>
 
-#include <miso/artificial_viscosity_core.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_utils.cuh>
 #include <miso/grid_gpu.cuh>
+#include <miso/mhd_artificial_viscosity_core.hpp>
 #include <miso/model.hpp>
 
 namespace miso {
@@ -480,11 +480,11 @@ template <typename Real> struct ArtificialViscosity {
         eos(model.eos), mhd(model.mhd), mhd_d(model.mhd_d), grid_d(model.grid_d),
         cu_shape(model.cu_shape), cc(grid.i_total, grid.j_total, grid.k_total),
         cc_d(grid.i_total, grid.j_total, grid.k_total) {
-    ep = config["artificial_viscosity"]["ep"].template as<Real>();
-    fh = config["artificial_viscosity"]["fh"].template as<Real>();
-    cs_fac = config["artificial_viscosity"]["cs_fac"].template as<Real>();
-    ca_fac = config["artificial_viscosity"]["ca_fac"].template as<Real>();
-    vv_fac = config["artificial_viscosity"]["vv_fac"].template as<Real>();
+    ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
+    fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();
+    cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].template as<Real>();
+    ca_fac = config["mhd"]["artificial_viscosity"]["ca_fac"].template as<Real>();
+    vv_fac = config["mhd"]["artificial_viscosity"]["vv_fac"].template as<Real>();
     assert(ep >= 0);
     assert(fh >= 0);
   }

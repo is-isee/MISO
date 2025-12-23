@@ -59,9 +59,9 @@ class Data:
         for rank in range(self.mpi.n_procs):
             filename = self.conf.mhd_data_dir / (
                 "mhd."
-                + str(n_output).zfill(self.time.n_output_digits)
+                + str(n_output).zfill(self.conf.time.n_output_digits)
                 + "."
-                + str(rank).zfill(self.mpi.n_procs_digits)
+                + str(rank).zfill(self.conf.mhd.n_output_digits)
                 + ".bin"
             )
 

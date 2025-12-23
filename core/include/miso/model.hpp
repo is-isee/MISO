@@ -12,7 +12,6 @@
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
 #include <miso/mpi_manager.hpp>
-#include <miso/radiative_transfer.hpp>
 #include <miso/time.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_utils.cuh>
