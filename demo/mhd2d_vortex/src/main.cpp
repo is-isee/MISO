@@ -3,7 +3,6 @@
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 #include <miso/model.hpp>
-#include <miso/mpi_manager.hpp>
 #include <miso/time_integrator.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
@@ -53,7 +52,6 @@ int main(int argc, char *argv[]) {
 
   Env ctx(argc, argv);
   Config config(config_dir + "config.yaml");
-  MPIManager mpi(config);
   Model<Real> model(config);
   model.save_metadata();
 

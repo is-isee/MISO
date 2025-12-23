@@ -26,9 +26,9 @@ template <typename Real> struct Model {
   Time<Real> time;
   Grid<Real> grid_global;
   Grid<Real> grid_local;
+
   EOS<Real> eos;
   mhd::MHD<Real> mhd;
-
 #ifdef USE_CUDA
   GridDevice<Real> grid_d;
   CudaKernelShape<Real> cu_shape;
@@ -49,7 +49,7 @@ template <typename Real> struct Model {
   }
 
   void save_metadata() {
-    MPI_Barrier(mpi.cart_comm);
+    MPI_Barrier(mpi::comm());
     config.save();
     grid_global.save(config);
     mpi.save();

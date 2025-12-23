@@ -98,9 +98,9 @@ template <typename Real> struct Time {
       ifs >> n_step;
     }
 
-    MPI_Bcast(&time, 1, mpi_type<Real>(), 0, mpi::world::comm);
-    MPI_Bcast(&n_output, 1, MPI_INT, 0, mpi::world::comm);
-    MPI_Bcast(&n_step, 1, MPI_INT, 0, mpi::world::comm);
+    MPI_Bcast(&time, 1, mpi_type<Real>(), 0, mpi::comm());
+    MPI_Bcast(&n_output, 1, MPI_INT, 0, mpi::comm());
+    MPI_Bcast(&n_step, 1, MPI_INT, 0, mpi::comm());
   }
 };
 
