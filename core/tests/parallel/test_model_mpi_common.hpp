@@ -1,7 +1,5 @@
 #pragma once
-
 #include <doctest/doctest.h>
-#include <filesystem>
 
 #include <miso/config.hpp>
 #include <miso/grid.hpp>
@@ -15,16 +13,11 @@ void run_test_model() {
   // assuming current path is build/tests
   Env env;
   std::string config_dir = CONFIG_DIR;
-
   Config config(config_dir + "config_model.yaml");
   MPIManager mpi(config);
   Time<Real> time(config);
   Grid<Real> grid_global(config);
-
   Grid<Real> grid_local(grid_global, mpi);
-  EOS<Real> eos(config);
-  mhd::MHD<Real> mhd(grid_local);
-  rt::RT<Real> rt(grid_local, 24);
 
   Model<Real> model(config);
 

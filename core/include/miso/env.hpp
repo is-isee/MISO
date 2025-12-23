@@ -67,6 +67,15 @@ struct Env {
 /// @brief Check if MPI is initialized.
 inline bool is_initialized() { return world::is_initialized; }
 
+/// @brief Get the global MPI communicator.
+inline MPI_Comm comm() {
+  if (!is_initialized()) {
+    throw std::runtime_error(
+        "mpi::Env must be instantiated at the beginning of the program.");
+  }
+  return world::comm;
+}
+
 /// @brief Get the rank of the current process.
 inline int rank() {
   if (!is_initialized()) {
