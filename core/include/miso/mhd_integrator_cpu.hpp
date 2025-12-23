@@ -6,9 +6,9 @@
 #include <initializer_list>
 #include <mpi.h>
 
-#include <miso/artificial_viscosity_cpu.hpp>
 #include <miso/constants.hpp>
 #include <miso/mhd.hpp>
+#include <miso/mhd_artificial_viscosity_cpu.hpp>
 #include <miso/model.hpp>
 #include <miso/mpi_types.hpp>
 
@@ -177,7 +177,7 @@ struct TimeIntegrator {
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total) {
-    cfl_number = config["time_integrator"]["cfl_number"].template as<Real>();
+    cfl_number = config["mhd"]["cfl_number"].template as<Real>();
   }
 
   /// @brief  Update MHD equations using 4th order space-centered scheme

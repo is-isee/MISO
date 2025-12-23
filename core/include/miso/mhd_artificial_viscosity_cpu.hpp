@@ -40,11 +40,11 @@ template <typename Real> struct ArtificialViscosity {
       : config(model.config), time(model.time), grid(model.grid_local),
         eos(model.eos), mhd(model.mhd),
         cc(grid.i_total, grid.j_total, grid.k_total) {
-    ep = config["artificial_viscosity"]["ep"].template as<Real>();
-    fh = config["artificial_viscosity"]["fh"].template as<Real>();
-    cs_fac = config["artificial_viscosity"]["cs_fac"].template as<Real>();
-    ca_fac = config["artificial_viscosity"]["ca_fac"].template as<Real>();
-    vv_fac = config["artificial_viscosity"]["vv_fac"].template as<Real>();
+    ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
+    fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();
+    cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].template as<Real>();
+    ca_fac = config["mhd"]["artificial_viscosity"]["ca_fac"].template as<Real>();
+    vv_fac = config["mhd"]["artificial_viscosity"]["vv_fac"].template as<Real>();
     assert(ep >= 0);
     assert(fh >= 0);
   }

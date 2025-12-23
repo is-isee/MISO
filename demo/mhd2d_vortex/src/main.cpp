@@ -2,8 +2,8 @@
 
 #include <miso/config.hpp>
 #include <miso/env.hpp>
+#include <miso/mhd_integrator.hpp>
 #include <miso/model.hpp>
-#include <miso/time_integrator.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
 
