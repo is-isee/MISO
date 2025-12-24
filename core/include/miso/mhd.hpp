@@ -34,12 +34,11 @@ struct MHD {
   int n_output_digits;
   std::string mhd_save_dir;
 
-  MHD(Config &config, Time<Real> &time, Grid<Real> &grid,
-      mpi::Manager &mpi_manager)
+  MHD(Config &config, Time<Real> &time, Grid<Real> &grid, mpi::Shape &mpi_shape)
 #ifdef USE_CUDA
       : time(time), grid(grid), qq(grid), qq_d(grid), integrator(mhd)
 #else
-      : time(time), grid(grid), qq(grid), halo_exchanger(grid, mpi_manager),
+      : time(time), grid(grid), qq(grid), halo_exchanger(grid, mpi_shape),
         integrator(config, qq, grid, halo_exchanger)
 #endif
   {
