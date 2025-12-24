@@ -1,11 +1,13 @@
 #pragma once
 
 #include <miso/eos.hpp>
+#include <miso/time.hpp>
 
 #include <miso/mhd_cpu.hpp>
 #ifdef USE_CUDA
 #include <miso/mhd_gpu.cuh>
 #endif
+#include <miso/mhd_integrator.hpp>
 
 namespace miso {
 namespace mhd {
@@ -13,7 +15,6 @@ namespace mhd {
 template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source>
 struct MHD {
-  Config &config;
   Time<Real> &time;
   Grid<Real> &grid;
 
@@ -30,21 +31,28 @@ struct MHD {
   cpu::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #endif
 
+  int n_output_digits;
+  std::string mhd_save_dir;
+
+  MHD(Config &config, Time<Real> &time, Grid<Real> &grid,
+      mpi::Manager &mpi_manager)
 #ifdef USE_CUDA
-  MHD(Config &config, Time<Real> &time, Grid<Real> &grid)
-      : config(config), time(time), grid(grid), qq(grid), qq_d(grid),
-        integrator(mhd) {}
+      : time(time), grid(grid), qq(grid), qq_d(grid), integrator(mhd)
 #else
-  MHD(Config &config, Time<Real> &time, Grid<Real> &grid)
-      : config(config), time(time), grid(grid), qq(grid), integrator(mhd) {}
+      : time(time), grid(grid), qq(grid), halo_exchanger(grid, mpi_manager),
+        integrator(config, qq, grid, halo_exchanger)
 #endif
+  {
+    n_output_digits = config["mhd"]["n_output_digits"].template as<int>();
+    mhd_save_dir = config.save_dir +
+                   config["mhd"]["mhd_save_dir"].template as<std::string>();
+  }
+
+  Real cfl() const { return integrator.cfl(); }
+
+  void update(const Real dt) { integrator.update(dt); }
 
   void save() const {
-    const auto n_output_digits =
-        config["mhd"]["n_output_digits"].template as<int>();
-    const auto mhd_save_dir =
-        config.save_dir +
-        config["mhd"]["mhd_save_dir"].template as<std::string>();
     util::create_directories(mhd_save_dir);
 
     std::string filename =
@@ -69,11 +77,6 @@ struct MHD {
   };
 
   void load() {
-    const auto n_output_digits =
-        config["mhd"]["n_output_digits"].template as<int>();
-    const auto mhd_save_dir =
-        config.save_dir +
-        config["mhd"]["mhd_save_dir"].template as<std::string>();
     std::string filename =
         mhd_save_dir + "mhd." + util::zfill(time.n_output, time.n_output_digits) +
         "." + util::zfill(mpi::rank(), n_output_digits) + ".bin";
@@ -95,10 +98,10 @@ struct MHD {
   };
 };
 
-/// @brief Ideal MHD model type alias
-template <typename Real, typename BoundaryCondition>
-using IdealMHD =
-    MHD<Real, BoundaryCondition, eos::IdealEOS<Real>, NoSource<Real>>;
+// /// @brief Ideal MHD model type alias
+// template <typename Real, typename BoundaryCondition>
+// using IdealMHD =
+//     MHD<Real, BoundaryCondition, eos::IdealEOS<Real>, NoSource<Real>>;
 
 }  // namespace mhd
 }  // namespace miso

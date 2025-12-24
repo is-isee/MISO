@@ -1,19 +1,23 @@
 #include <string>
 
 #include <miso/config.hpp>
+#include <miso/cuda_compat.hpp>
 #include <miso/env.hpp>
-#include <miso/mhd_integrator.hpp>
-#include <miso/model.hpp>
+#include <miso/eos.hpp>
+#include <miso/grid.hpp>
+#include <miso/mhd.hpp>
+#include <miso/mpi_manager.hpp>
+#include <miso/time.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
+#ifdef USE_CUDA
+#include <miso/cuda_utils.cuh>
+#endif
 
-using miso::Real, miso::pi;
+using namespace miso;
 
-void initial_condition(miso::Model<Real> &model) {
-  auto &qq = model.mhd.qq;
-  const auto &grid = model.grid_local;
-  const auto &eos = model.eos;
-
+void initial_condition(mhd::cpu::Fields<Real> &qq, const Grid<Real> &grid,
+                       const eos::IdealEOS<Real> &eos) {
   Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
   Real v0 = 1.0;
 
@@ -37,13 +41,101 @@ void initial_condition(miso::Model<Real> &model) {
 // Periodic boundary condition is applied by MPI communication.
 // Be sure to set "periodic" in domain field of config.yaml.
 struct EmptyBC {
-  explicit EmptyBC(miso::MHD<Real> &mhd) {}
+  explicit EmptyBC(Config &config) {}
 
-#ifdef __CUDACC__
-  void apply(miso::mhd::MHDCoreDevice<Real> &qq) {}
+#ifdef USE_CUDA
+  void apply(mhd::gpu::Fields<Real> &qq) {}
 #else
-  void apply(miso::mhd::MHDCore<Real> &qq) {}
+  void apply(mhd::cpu::Fields<Real> &qq) {}
 #endif
+};
+
+struct Model {
+  Config &config;
+  mpi::Manager mpi_manager;
+  Time<Real> time;
+  Grid<Real> grid_global;
+  Grid<Real> grid;
+
+  eos::IdealEOS<Real> eos;
+  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::cpu::NoSource<Real>> mhd;
+#ifdef USE_CUDA
+  GridDevice<Real> grid_d;
+  CudaKernelShape<Real> cu_shape;
+  mhd::MHDStreams mhd_streams;
+  mhd::MHDDevice<Real> mhd_d;
+#endif
+
+  Model(Config &config)
+      : config(config), mpi_manager(config), time(config), grid_global(config),
+#ifdef USE_CUDA
+        grid(grid_global, mpi_manager), grid_d(grid), cu_shape(grid)
+#else
+        grid(grid_global, mpi_manager), eos(config),
+        mhd(config, time, grid, mpi_manager)
+#endif
+  {
+  }
+
+  void save_metadata() {
+    MPI_Barrier(mpi::comm());
+    config.save();
+    grid_global.save(config);
+    mpi_manager.save();
+  }
+
+  void save_state() {
+#ifdef USE_CUDA
+    mhd_d.qq.copy_to_host(mhd.qq, mhd_streams);
+#endif
+    mhd.save();
+    time.save();
+  }
+
+  void load_state() {
+    time.load();
+    mhd.load();
+  }
+
+  void save_if_needed() {
+    if (time.time >= time.dt_output * time.n_output) {
+      save_state();
+
+      if (mpi::is_root()) {
+        std::cout << std::fixed << std::setprecision(2)
+                  << "time = " << std::setw(6) << time.time
+                  << ";  n_step = " << std::setw(8) << time.n_step
+                  << ";  n_output = " << std::setw(8) << time.n_output
+                  << std::endl;
+      }
+
+      time.n_output++;
+    }
+  }
+
+  /// @brief Main time integration loop
+  void run() {
+    if (config["base"]["continue"].template as<bool>() &&
+        fs::exists(config.time_save_dir + "n_output.txt")) {
+      load_state();
+    }
+
+    save_metadata();
+    initial_condition(mhd.qq, grid, eos);
+
+    MPI_Barrier(mpi::comm());
+
+    save_if_needed();
+    while (time.time < time.tend) {
+      // basic MHD time integration
+      const auto dt = mhd.cfl();
+      mhd.update(dt);
+
+      // Time is update after all procedures
+      time.update(dt);
+      save_if_needed();
+    }
+  }
 };
 
 int main(int argc, char *argv[]) {
@@ -52,10 +144,6 @@ int main(int argc, char *argv[]) {
 
   Env ctx(argc, argv);
   Config config(config_dir + "config.yaml");
-  Model<Real> model(config);
-  model.save_metadata();
-
-  initial_condition(model);
-  mhd::TimeIntegrator<Real, EmptyBC> time_integrator(model);
-  time_integrator.run();
+  Model model(config);
+  model.run();
 }
