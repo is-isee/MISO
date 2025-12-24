@@ -42,7 +42,7 @@ void initial_condition(mhd::cpu::Fields<Real> &qq, const Grid<Real> &grid,
 // Be sure to set "periodic" in domain field of config.yaml.
 struct EmptyBC {
   explicit EmptyBC(Config &config) {}
-  void apply(mhd::FieldsView<Real> &qq) {}
+  void apply(const mhd::FieldsView<Real> &qq) {}
 };
 
 struct Model {
@@ -53,20 +53,22 @@ struct Model {
   Grid<Real> grid;
 
   eos::IdealEOS<Real> eos;
-  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::cpu::NoSource<Real>> mhd;
 #ifdef USE_CUDA
   GridDevice<Real> grid_d;
   CudaKernelShape<Real> cu_shape;
-  mhd::MHDStreams mhd_streams;
-  mhd::MHDDevice<Real> mhd_d;
+  mhd::gpu::Streams mhd_streams;
+  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::gpu::NoSource<Real>> mhd;
+#else
+  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::cpu::NoSource<Real>> mhd;
 #endif
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid_global(config),
-#ifdef USE_CUDA
-        grid(grid_global, mpi_shape), grid_d(grid), cu_shape(grid)
-#else
         grid(grid_global, mpi_shape), eos(config),
+#ifdef USE_CUDA
+        grid_d(grid), cu_shape(grid), mhd_streams(),
+        mhd(config, time, grid, grid_d, mpi_shape, cu_shape, mhd_streams)
+#else
         mhd(config, time, grid, mpi_shape)
 #endif
   {
@@ -81,7 +83,7 @@ struct Model {
 
   void save_state() {
 #ifdef USE_CUDA
-    mhd_d.qq.copy_to_host(mhd.qq, mhd_streams);
+    mhd.qq_d.copy_to_host(mhd.qq, mhd_streams);
 #endif
     mhd.save();
     time.save();
@@ -119,7 +121,7 @@ struct Model {
     initial_condition(mhd.qq, grid, eos);
 #ifdef USE_CUDA
     grid_d.copy_from_host(grid);
-    mhd_d.qq.copy_from_host(mhd.qq, mhd_streams);
+    mhd.qq_d.copy_from_host(mhd.qq, mhd_streams);
 #endif
 
     MPI_Barrier(mpi::comm());

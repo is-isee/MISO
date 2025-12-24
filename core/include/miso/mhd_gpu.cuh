@@ -121,6 +121,9 @@ template <typename Real> struct Fields {
     // clang-format on
   }
 
+  // Shallow-const / shallow-copy
+  FieldsView<Real> view() const noexcept { return FieldsView<Real>(*this); }
+
   // Prohibit copy and move operations
   Fields(const Fields &) = delete;
   Fields &operator=(const Fields &) = delete;
@@ -211,15 +214,6 @@ template <typename Real> struct BuffersView {
   Real *send_y_neg = nullptr;
   Real *send_z_pos = nullptr;
   Real *send_z_neg = nullptr;
-
-  template <typename BuffersType>
-  explicit BuffersView(BuffersType &buff)
-      : recv_x_pos(buff.recv_x_pos), recv_x_neg(buff.recv_x_neg),
-        recv_y_pos(buff.recv_y_pos), recv_y_neg(buff.recv_y_neg),
-        recv_z_pos(buff.recv_z_pos), recv_z_neg(buff.recv_z_neg),
-        send_x_pos(buff.send_x_pos), send_x_neg(buff.send_x_neg),
-        send_y_pos(buff.send_y_pos), send_y_neg(buff.send_y_neg),
-        send_z_pos(buff.send_z_pos), send_z_neg(buff.send_z_neg) {}
 };
 
 /// @brief MHD communication buffers on GPU
@@ -237,7 +231,7 @@ template <typename Real> struct Buffers {
   Real *send_z_pos = nullptr;
   Real *send_z_neg = nullptr;
 
-  Buffers(const Grid<Real> &grid) {
+  Buffers(const GridDevice<Real> &grid) {
     const auto buff_x_size =
         sizeof(Real) * grid.i_margin * grid.j_total * grid.k_total * n_vars;
     const auto buff_y_size =
@@ -275,7 +269,11 @@ template <typename Real> struct Buffers {
   }
 
   // Shallow-const / shallow-copy
-  BuffersView<Real> view() const noexcept { return BuffersView<Real>(*this); }
+  BuffersView<Real> view() const noexcept {
+    return BuffersView<Real>{recv_x_pos, recv_x_neg, recv_y_pos, recv_y_neg,
+                             recv_z_pos, recv_z_neg, send_x_pos, send_x_neg,
+                             send_y_pos, send_y_neg, send_z_pos, send_z_neg};
+  }
 
   // Prohibit copy and move operations
   Buffers(const Buffers &) = delete;
@@ -461,7 +459,7 @@ __global__ void unpack_z_recv(FieldsView<Real> qq_trgt,
 };
 
 template <typename Real> struct HaloExchanger {
-  BuffersView<Real> buff;
+  Buffers<Real> buff;
   GridDevice<Real> &grid;
   mpi::Shape &mpi_shape;
   CudaKernelShape<Real> &cu_shape;
