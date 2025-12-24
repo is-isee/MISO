@@ -3,7 +3,7 @@
 
 #include <miso/cuda_utils.cuh>
 #include <miso/grid_gpu.cuh>
-#include <miso/mpi_manager.hpp>
+#include <miso/mpi_shape.hpp>
 
 namespace miso {
 namespace mhd {

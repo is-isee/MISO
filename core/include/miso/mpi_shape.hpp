@@ -4,9 +4,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <mpi.h>
-#include <yaml-cpp/yaml.h>
-
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 
@@ -20,7 +17,7 @@ inline void check_mpi_error(int merr, const char *msg, MPI_Comm comm) {
   }
 }
 
-struct Manager {
+struct Shape {
   MPI_Comm cart_comm = MPI_COMM_NULL;
   int myrank = -1;
   int n_procs = -1;
@@ -31,7 +28,7 @@ struct Manager {
   int x_procs_neg, y_procs_neg, z_procs_neg;
   std::string mpi_save_dir;
 
-  Manager(const Config &config) {
+  Shape(const Config &config) {
     mpi_save_dir = config.save_dir +
                    config["mpi"]["mpi_save_dir"].template as<std::string>();
     util::create_directories(mpi_save_dir);
@@ -76,7 +73,7 @@ struct Manager {
     check_mpi_error(merr, "MPI_Cart_shift z", cart_comm);
   }
 
-  ~Manager() {
+  ~Shape() {
     if (cart_comm != MPI_COMM_NULL) {
       MPI_Comm_free(&cart_comm);
     }

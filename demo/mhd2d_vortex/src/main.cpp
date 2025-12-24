@@ -6,7 +6,7 @@
 #include <miso/eos.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
-#include <miso/mpi_manager.hpp>
+#include <miso/mpi_shape.hpp>
 #include <miso/time.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
@@ -52,7 +52,7 @@ struct EmptyBC {
 
 struct Model {
   Config &config;
-  mpi::Manager mpi_manager;
+  mpi::Shape mpi_shape;
   Time<Real> time;
   Grid<Real> grid_global;
   Grid<Real> grid;
@@ -67,12 +67,12 @@ struct Model {
 #endif
 
   Model(Config &config)
-      : config(config), mpi_manager(config), time(config), grid_global(config),
+      : config(config), mpi_shape(config), time(config), grid_global(config),
 #ifdef USE_CUDA
-        grid(grid_global, mpi_manager), grid_d(grid), cu_shape(grid)
+        grid(grid_global, mpi_shape), grid_d(grid), cu_shape(grid)
 #else
-        grid(grid_global, mpi_manager), eos(config),
-        mhd(config, time, grid, mpi_manager)
+        grid(grid_global, mpi_shape), eos(config),
+        mhd(config, time, grid, mpi_shape)
 #endif
   {
   }
@@ -81,7 +81,7 @@ struct Model {
     MPI_Barrier(mpi::comm());
     config.save();
     grid_global.save(config);
-    mpi_manager.save();
+    mpi_shape.save();
   }
 
   void save_state() {

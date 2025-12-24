@@ -5,7 +5,7 @@
 #include <miso/array3d_cpu.hpp>
 #include <miso/config.hpp>
 #include <miso/env.hpp>
-#include <miso/mpi_manager.hpp>
+#include <miso/mpi_shape.hpp>
 
 namespace miso {
 
@@ -188,10 +188,10 @@ template <typename Real> struct Grid {
 
   ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
   /// @param grid_global Global grid object
-  Grid(const Grid<Real> &grid_global, const mpi::Manager &mpi) {
-    i_size = grid_global.i_size / mpi.x_procs;
-    j_size = grid_global.j_size / mpi.y_procs;
-    k_size = grid_global.k_size / mpi.z_procs;
+  Grid(const Grid<Real> &grid_global, const mpi::Shape &mpi_shape) {
+    i_size = grid_global.i_size / mpi_shape.x_procs;
+    j_size = grid_global.j_size / mpi_shape.y_procs;
+    k_size = grid_global.k_size / mpi_shape.z_procs;
 
     margin = grid_global.margin;
 
@@ -207,9 +207,9 @@ template <typename Real> struct Grid {
     j_total = j_size + 2 * j_margin;
     k_total = k_size + 2 * k_margin;
 
-    i_stt = mpi.coord[0] * i_size;
-    j_stt = mpi.coord[1] * j_size;
-    k_stt = mpi.coord[2] * k_size;
+    i_stt = mpi_shape.coord[0] * i_size;
+    j_stt = mpi_shape.coord[1] * j_size;
+    k_stt = mpi_shape.coord[2] * k_size;
 
     x.resize(i_total);
     dx.resize(i_total);

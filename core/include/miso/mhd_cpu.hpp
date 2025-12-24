@@ -6,7 +6,7 @@
 #include <miso/array3d_cpu.hpp>
 #include <miso/array4d_cpu.hpp>
 #include <miso/grid_cpu.hpp>
-#include <miso/mpi_manager.hpp>
+#include <miso/mpi_shape.hpp>
 #include <miso/mpi_types.hpp>
 #include <miso/utility.hpp>
 
@@ -51,9 +51,9 @@ template <typename Real> struct HaloExchanger {
   Array4D<Real> send_z_pos, send_z_neg;
 
   Grid<Real> &grid;
-  mpi::Manager &mpi_shape;
+  mpi::Shape &mpi_shape;
 
-  HaloExchanger(Grid<Real> &grid, mpi::Manager &mpi_shape)
+  HaloExchanger(Grid<Real> &grid, mpi::Shape &mpi_shape)
       : recv_x_pos(grid.i_margin, grid.j_total, grid.k_total, 9),
         recv_x_neg(grid.i_margin, grid.j_total, grid.k_total, 9),
         recv_y_pos(grid.i_total, grid.j_margin, grid.k_total, 9),

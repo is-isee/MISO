@@ -1,6 +1,6 @@
 #pragma once
 
-#include <miso/mpi_manager.hpp>
+#include <miso/mpi_shape.hpp>
 #include <miso/utility.hpp>
 
 namespace miso {
@@ -105,17 +105,17 @@ HOST_DEVICE inline void periodic_index(int i, int i_total, int i_margin,
 
 template <typename Real>
 bool is_physical_boundary(const Direction direction, const Side side,
-                          const mpi::Manager &mpi_manager) {
+                          const mpi::Shape &mpi_shape) {
   switch (direction) {
   case Direction::X:
-    return (side == Side::INNER) ? (mpi_manager.x_procs_neg == MPI_PROC_NULL)
-                                 : (mpi_manager.x_procs_pos == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi_shape.x_procs_neg == MPI_PROC_NULL)
+                                 : (mpi_shape.x_procs_pos == MPI_PROC_NULL);
   case Direction::Y:
-    return (side == Side::INNER) ? (mpi_manager.y_procs_neg == MPI_PROC_NULL)
-                                 : (mpi_manager.y_procs_pos == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi_shape.y_procs_neg == MPI_PROC_NULL)
+                                 : (mpi_shape.y_procs_pos == MPI_PROC_NULL);
   case Direction::Z:
-    return (side == Side::INNER) ? (mpi_manager.z_procs_neg == MPI_PROC_NULL)
-                                 : (mpi_manager.z_procs_pos == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi_shape.z_procs_neg == MPI_PROC_NULL)
+                                 : (mpi_shape.z_procs_pos == MPI_PROC_NULL);
   }
   return false;
 }
