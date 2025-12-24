@@ -105,17 +105,17 @@ HOST_DEVICE inline void periodic_index(int i, int i_total, int i_margin,
 
 template <typename Real>
 bool is_physical_boundary(const Direction direction, const Side side,
-                          const MPIManager &mpi) {
+                          const mpi::Manager &mpi_manager) {
   switch (direction) {
   case Direction::X:
-    return (side == Side::INNER) ? (mpi.x_procs_neg == MPI_PROC_NULL)
-                                 : (mpi.x_procs_pos == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi_manager.x_procs_neg == MPI_PROC_NULL)
+                                 : (mpi_manager.x_procs_pos == MPI_PROC_NULL);
   case Direction::Y:
-    return (side == Side::INNER) ? (mpi.y_procs_neg == MPI_PROC_NULL)
-                                 : (mpi.y_procs_pos == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi_manager.y_procs_neg == MPI_PROC_NULL)
+                                 : (mpi_manager.y_procs_pos == MPI_PROC_NULL);
   case Direction::Z:
-    return (side == Side::INNER) ? (mpi.z_procs_neg == MPI_PROC_NULL)
-                                 : (mpi.z_procs_pos == MPI_PROC_NULL);
+    return (side == Side::INNER) ? (mpi_manager.z_procs_neg == MPI_PROC_NULL)
+                                 : (mpi_manager.z_procs_pos == MPI_PROC_NULL);
   }
   return false;
 }
