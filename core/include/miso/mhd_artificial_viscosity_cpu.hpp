@@ -76,17 +76,17 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
       i0_ = 2 * grid.is;
       i1_ = grid.i_total - 2 * grid.is;
       is = grid.is;
-      dxyzi = grid.dxi;
+      dxyzi = grid.dxi.data();
     } else if (direction == "y") {
       j0_ = 2 * grid.js;
       j1_ = grid.j_total - 2 * grid.js;
       js = grid.js;
-      dxyzi = grid.dyi;
+      dxyzi = grid.dyi.data();
     } else if (direction == "z") {
       k0_ = 2 * grid.ks;
       k1_ = grid.k_total - 2 * grid.ks;
       ks = grid.ks;
-      dxyzi = grid.dzi;
+      dxyzi = grid.dzi.data();
     }
 
     Real qql2, qql1, qqc, qqr1, qqr2;

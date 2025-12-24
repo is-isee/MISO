@@ -35,6 +35,12 @@ template <typename Real> struct FieldsView {
   //       i_total(fields.i_total), j_total(fields.j_total),
   //       k_total(fields.k_total)  {}
 
+  HOST_DEVICE
+  FieldsView(Real *ro, Real *vx, Real *vy, Real *vz, Real *bx, Real *by, Real *bz,
+             Real *ei, Real *ph, int i_total, int j_total, int k_total) noexcept
+      : ro(ro), vx(vx), vy(vy), vz(vz), bx(bx), by(by), bz(bz), ei(ei), ph(ph),
+        i_total(i_total), j_total(j_total), k_total(k_total) {}
+
   template <typename FieldsType>
   explicit HOST_DEVICE FieldsView(FieldsType &fields) noexcept
       : ro(fields.ro), vx(fields.vx), vy(fields.vy), vz(fields.vz), bx(fields.bx),

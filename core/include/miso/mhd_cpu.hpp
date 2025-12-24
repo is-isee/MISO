@@ -29,8 +29,17 @@ template <typename Real> struct Fields {
         ei(grid.i_total, grid.j_total, grid.k_total),
         ph(grid.i_total, grid.j_total, grid.k_total) {}
 
-  // Shallow-const / shallow-copy
-  FieldsView<Real> view() const noexcept { return FieldsView<Real>(*this); }
+  // Shallow-copy
+  FieldsView<const Real> view() const noexcept {
+    return FieldsView<const Real>(
+        ro.data(), vx.data(), vy.data(), vz.data(), bx.data(), by.data(),
+        bz.data(), ei.data(), ph.data(), ro.size_x(), ro.size_y(), ro.size_z());
+  }
+  FieldsView<Real> view() noexcept {
+    return FieldsView<Real>(ro.data(), vx.data(), vy.data(), vz.data(), bx.data(),
+                            by.data(), bz.data(), ei.data(), ph.data(),
+                            ro.size_x(), ro.size_y(), ro.size_z());
+  }
 
   void copy_from(const Fields &other) {
     ro.copy_from(other.ro);
