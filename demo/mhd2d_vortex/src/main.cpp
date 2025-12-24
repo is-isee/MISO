@@ -54,11 +54,12 @@ struct Model {
 
   eos::IdealEOS<Real> eos;
 #ifdef USE_CUDA
-  GridDevice<Real> grid_d;
   CudaKernelShape<Real> cu_shape;
   mhd::gpu::Streams mhd_streams;
+  mhd::gpu::ExecContext exec_ctx;
   mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::gpu::NoSource<Real>> mhd;
 #else
+  mhd::cpu::ExecContext exec_ctx;
   mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::cpu::NoSource<Real>> mhd;
 #endif
 
@@ -66,10 +67,10 @@ struct Model {
       : config(config), mpi_shape(config), time(config), grid_global(config),
         grid(grid_global, mpi_shape), eos(config),
 #ifdef USE_CUDA
-        grid_d(grid), cu_shape(grid), mhd_streams(),
-        mhd(config, time, grid, grid_d, mpi_shape, cu_shape, mhd_streams)
+        cu_shape(grid), mhd_streams(), exec_ctx{mpi_shape, cu_shape, mhd_streams},
+        mhd(config, time, grid, exec_ctx)
 #else
-        mhd(config, time, grid, mpi_shape)
+        exec_ctx{mpi_shape}, mhd(config, time, grid, exec_ctx)
 #endif
   {
   }
@@ -120,7 +121,6 @@ struct Model {
     save_metadata();
     initial_condition(mhd.qq, grid, eos);
 #ifdef USE_CUDA
-    grid_d.copy_from_host(grid);
     mhd.qq_d.copy_from_host(mhd.qq, mhd_streams);
 #endif
 

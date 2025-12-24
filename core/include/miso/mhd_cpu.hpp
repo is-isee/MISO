@@ -15,6 +15,11 @@ namespace miso {
 namespace mhd {
 namespace cpu {
 
+/// @brief Execution context for MHD on CPU
+struct ExecContext {
+  mpi::Shape &mpi_shape;
+};
+
 template <typename Real> struct Fields {
   Array3D<Real> ro, vx, vy, vz, bx, by, bz, ei, ph;
 
@@ -66,7 +71,7 @@ template <typename Real> struct HaloExchanger {
   Grid<Real> &grid;
   mpi::Shape &mpi_shape;
 
-  HaloExchanger(Grid<Real> &grid, mpi::Shape &mpi_shape)
+  HaloExchanger(Grid<Real> &grid, ExecContext &exec_ctx)
       : recv_x_pos(grid.i_margin, grid.j_total, grid.k_total, 9),
         recv_x_neg(grid.i_margin, grid.j_total, grid.k_total, 9),
         recv_y_pos(grid.i_total, grid.j_margin, grid.k_total, 9),
@@ -79,7 +84,7 @@ template <typename Real> struct HaloExchanger {
         send_y_neg(grid.i_total, grid.j_margin, grid.k_total, 9),
         send_z_pos(grid.i_total, grid.j_total, grid.k_margin, 9),
         send_z_neg(grid.i_total, grid.j_total, grid.k_margin, 9), grid(grid),
-        mpi_shape(mpi_shape) {}
+        mpi_shape(exec_ctx.mpi_shape) {}
 
   void apply(Fields<Real> &qq_trgt) {
     std::array<Array3D<Real> *, 9> vars = {&qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy,

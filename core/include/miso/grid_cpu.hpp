@@ -87,6 +87,8 @@ template <typename Real> struct Grid {
   Real min_dxyz;
 
   /// @brief mask array
+  /// @details This array is **not allocated** for global grid construction,
+  ///          but allocated for MPI-local grids.
   Array3D<Real> mask;
 
   inline int idx(int i, int j, int k) const {

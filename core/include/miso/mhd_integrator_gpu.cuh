@@ -453,6 +453,11 @@ template <typename Real> struct NoSource {
 template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source = NoSource<Real>>
 struct Integrator {
+  /// @brief CUDA kernel shape
+  CudaKernelShape<Real> &cu_shape;
+  /// @brief CUDA streams for MHD variables
+  Streams &mhd_streams;
+
   /// @brief Spatial grid
   GridDevice<Real> &grid;
   /// @brief Equation of states
@@ -463,7 +468,7 @@ struct Integrator {
   Fields<Real> qq_argm, qq_rslt;
 
   /// @brief Halo exchanger
-  HaloExchanger<Real> &halo_exchanger;
+  HaloExchanger<Real> halo_exchanger;
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
   /// @brief Body source for MHD equations
@@ -471,10 +476,6 @@ struct Integrator {
   /// @brief Artificial viscosity for MHD equations
   ArtificialViscosity<Real, EOS> artdiff;
 
-  /// @brief CUDA kernel shape
-  CudaKernelShape<Real> &cu_shape;
-  /// @brief CUDA streams for MHD variables
-  Streams &cu_streams;
   /// @brief Workspace for timestep calculation
   TimeStep<Real> time_step;
 
@@ -497,12 +498,12 @@ struct Integrator {
   Real tau_divb;
 
   Integrator(Config &config, Fields<Real> &qq, GridDevice<Real> &grid,
-             HaloExchanger<Real> &halo_exchanger, CudaKernelShape<Real> &cu_shape,
-             Streams &cu_streams)
-      : grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
-        halo_exchanger(halo_exchanger), bc(config),
-        artdiff(config, grid, eos, cu_shape), cu_shape(cu_shape),
-        cu_streams(cu_streams), time_step(cu_shape),
+             ExecContext &exec_ctx)
+      : cu_shape(exec_ctx.cu_shape), mhd_streams(exec_ctx.mhd_streams),
+        grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
+        halo_exchanger(grid, exec_ctx), bc(config),
+        artdiff(config, grid, eos, exec_ctx.cu_shape),
+        time_step(exec_ctx.cu_shape),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
@@ -561,22 +562,22 @@ struct Integrator {
   /// @brief Runge-Kutta 4th order time integration step
   void runge_kutta_4step(const Real dt) {
     update_sc4(qq, qq, qq_rslt, dt / 4.0);
-    qq_argm.copy_from_device(qq_rslt, cu_streams);
+    qq_argm.copy_from_device(qq_rslt, mhd_streams);
     bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 3.0);
-    qq_argm.copy_from_device(qq_rslt, cu_streams);
+    qq_argm.copy_from_device(qq_rslt, mhd_streams);
     bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 2.0);
-    qq_argm.copy_from_device(qq_rslt, cu_streams);
+    qq_argm.copy_from_device(qq_rslt, mhd_streams);
     bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt);
-    qq.copy_from_device(qq_rslt, cu_streams);
+    qq.copy_from_device(qq_rslt, mhd_streams);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }
@@ -587,19 +588,19 @@ struct Integrator {
 
     // x direction
     artdiff.update(qq, qq_rslt, Direction::X, dt);
-    qq.copy_from_device(qq_rslt, cu_streams);
+    qq.copy_from_device(qq_rslt, mhd_streams);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // y direction
     artdiff.update(qq, qq_rslt, Direction::Y, dt);
-    qq.copy_from_device(qq_rslt, cu_streams);
+    qq.copy_from_device(qq_rslt, mhd_streams);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // z direction
     artdiff.update(qq, qq_rslt, Direction::Z, dt);
-    qq.copy_from_device(qq_rslt, cu_streams);
+    qq.copy_from_device(qq_rslt, mhd_streams);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }
@@ -616,6 +617,9 @@ struct Integrator {
     time_step.copy_to_host();
     auto dt = *std::min_element(time_step.min_values_host,
                                 time_step.min_values_host + time_step.n_blocks);
+    auto dt_max =
+        *std::max_element(time_step.min_values_host,
+                          time_step.min_values_host + time_step.n_blocks);
     Real dt_global;
     MPI_Allreduce(&dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN, mpi::comm());
     return dt_global;

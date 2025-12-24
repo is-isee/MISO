@@ -19,7 +19,7 @@ struct MHD {
   Time<Real> &time;
   Grid<Real> &grid;
 #ifdef USE_CUDA
-  GridDevice<Real> &grid_d;
+  GridDevice<Real> grid_d;
 #endif
 
   cpu::Fields<Real> qq;  // Required for cpu and gpu both
@@ -28,28 +28,25 @@ struct MHD {
 #endif
 
 #ifdef USE_CUDA
-  gpu::Streams &mhd_streams;
-  gpu::HaloExchanger<Real> halo_exchanger;
+  gpu::ExecContext exec_ctx;
   gpu::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #else
-  cpu::HaloExchanger<Real> halo_exchanger;
+  cpu::ExecContext exec_ctx;
   cpu::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #endif
 
   int n_output_digits;
   std::string mhd_save_dir;
 
-#ifdef USE_CUDA
+  template <typename ExecContextType>
   MHD(Config &config, Time<Real> &time, Grid<Real> &grid,
-      GridDevice<Real> &grid_d, mpi::Shape &mpi_shape,
-      CudaKernelShape<Real> &cu_shape, gpu::Streams &mhd_streams)
-      : time(time), grid(grid), grid_d(grid_d), qq(grid), qq_d(grid_d),
-        mhd_streams(mhd_streams), halo_exchanger(grid_d, mpi_shape, cu_shape),
-        integrator(config, qq_d, grid_d, halo_exchanger, cu_shape, mhd_streams)
+      ExecContextType &exec_ctx)
+#ifdef USE_CUDA
+      : time(time), grid(grid), grid_d(grid), qq(grid), qq_d(grid_d),
+        exec_ctx(exec_ctx), integrator(config, qq_d, grid_d, exec_ctx)
 #else
-  MHD(Config &config, Time<Real> &time, Grid<Real> &grid, mpi::Shape &mpi_shape)
-      : time(time), grid(grid), qq(grid), halo_exchanger(grid, mpi_shape),
-        integrator(config, qq, grid, halo_exchanger)
+      : time(time), grid(grid), qq(grid), exec_ctx(exec_ctx),
+        integrator(config, qq, grid, exec_ctx)
 #endif
   {
     n_output_digits = config["mhd"]["n_output_digits"].template as<int>();
