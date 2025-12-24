@@ -29,7 +29,10 @@ template <typename Real> struct GridDevice {
     CUDA_CHECK(cudaMalloc(&dxi, sizeof(Real) * i_total));
     CUDA_CHECK(cudaMalloc(&dyi, sizeof(Real) * j_total));
     CUDA_CHECK(cudaMalloc(&dzi, sizeof(Real) * k_total));
-    CUDA_CHECK(cudaMalloc(&mask, sizeof(Real) * i_total * j_total * k_total));
+    if (grid.mask.size() > 0) {
+      CUDA_CHECK(cudaMalloc(&mask, sizeof(Real) * i_total * j_total * k_total));
+    }
+    copy_from_host(grid);
   }
 
   ~GridDevice() {
@@ -48,16 +51,6 @@ template <typename Real> struct GridDevice {
 
   // Shallow-const / shallow-copy
   GridView<Real> view() const noexcept { return GridView<Real>(*this); }
-
-  // DEVICE inline int idx(int i, int j, int k) const {
-  //   return (i * j_total + j) * k_total + k;
-  // }
-
-  // Prohibit copy and move
-  GridDevice(const GridDevice &) = delete;
-  GridDevice &operator=(const GridDevice &) = delete;
-  GridDevice(GridDevice &&) = delete;
-  GridDevice &operator=(GridDevice &&) = delete;
 
   void copy_from_host(const Grid<Real> &grid_h) {
     CUDA_CHECK(cudaMemcpy(x, grid_h.x.data(), sizeof(Real) * i_total,
@@ -78,9 +71,11 @@ template <typename Real> struct GridDevice {
                           cudaMemcpyHostToDevice));
     CUDA_CHECK(cudaMemcpy(dzi, grid_h.dzi.data(), sizeof(Real) * k_total,
                           cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(mask, grid_h.mask.data(),
-                          sizeof(Real) * i_total * j_total * k_total,
-                          cudaMemcpyHostToDevice));
+    if (grid_h.mask.size() > 0 && mask != nullptr) {
+      CUDA_CHECK(cudaMemcpy(mask, grid_h.mask.data(),
+                            sizeof(Real) * i_total * j_total * k_total,
+                            cudaMemcpyHostToDevice));
+    }
   }
 
   void copy_to_host(Grid<Real> &grid_h) {
@@ -102,10 +97,18 @@ template <typename Real> struct GridDevice {
                           cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(grid_h.dzi.data(), dzi, sizeof(Real) * k_total,
                           cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaMemcpy(grid_h.mask.data(), mask,
-                          sizeof(Real) * i_total * j_total * k_total,
-                          cudaMemcpyDeviceToHost));
+    if (grid_h.mask.size() > 0 && mask != nullptr) {
+      CUDA_CHECK(cudaMemcpy(grid_h.mask.data(), mask,
+                            sizeof(Real) * i_total * j_total * k_total,
+                            cudaMemcpyDeviceToHost));
+    }
   }
+
+  // Prohibit copy and move
+  GridDevice(const GridDevice &) = delete;
+  GridDevice &operator=(const GridDevice &) = delete;
+  GridDevice(GridDevice &&) = delete;
+  GridDevice &operator=(GridDevice &&) = delete;
 };
 
 }  // namespace miso

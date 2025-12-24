@@ -125,7 +125,7 @@ struct Integrator {
   Fields<Real> qq_argm, qq_rslt;
 
   /// @brief Halo exchanger
-  HaloExchanger<Real> &halo_exchanger;
+  HaloExchanger<Real> halo_exchanger;
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
   /// @brief Body source for MHD equations
@@ -153,9 +153,9 @@ struct Integrator {
 
   /// @brief Constructor
   Integrator(Config &config, Fields<Real> &qq, Grid<Real> &grid,
-             HaloExchanger<Real> &halo_exchanger)
+             ExecContext &exec_ctx)
       : grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
-        halo_exchanger(halo_exchanger), bc(config), artdiff(config, grid, eos),
+        halo_exchanger(grid, exec_ctx), bc(config), artdiff(config, grid, eos),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),

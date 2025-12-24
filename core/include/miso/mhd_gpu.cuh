@@ -81,6 +81,13 @@ struct Streams {
   Streams &operator=(Streams &&) = delete;
 };
 
+/// @brief Execution context for MHD on GPU
+struct ExecContext {
+  mpi::Shape &mpi_shape;
+  CudaKernelShape<Real> &cu_shape;
+  Streams &mhd_streams;
+};
+
 /// @brief MHD variables on GPU
 template <typename Real> struct Fields {
   Real *ro = nullptr;
@@ -469,9 +476,9 @@ template <typename Real> struct HaloExchanger {
   mpi::Shape &mpi_shape;
   CudaKernelShape<Real> &cu_shape;
 
-  explicit HaloExchanger(GridDevice<Real> &grid, mpi::Shape &mpi_shape,
-                         CudaKernelShape<Real> &cu_shape)
-      : buff(grid), grid(grid), mpi_shape(mpi_shape), cu_shape(cu_shape) {}
+  explicit HaloExchanger(GridDevice<Real> &grid, ExecContext &exec_ctx)
+      : buff(grid), grid(grid), mpi_shape(exec_ctx.mpi_shape),
+        cu_shape(exec_ctx.cu_shape) {}
 
   void apply(Fields<Real> &qq_trgt) {
     MPI_Request reqs[12];
