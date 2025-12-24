@@ -19,22 +19,21 @@ template <typename Real> struct Model {
   Grid<Real> grid_global;
   Grid<Real> grid;
 
-  EOS<Real> eos;
-  mhd::MHD<Real> mhd;
-#ifdef USE_CUDA
-  GridDevice<Real> grid_d;
-  CudaKernelShape<Real> cu_shape;
-  mhd::MHDStreams mhd_streams;
-  mhd::MHDDevice<Real> mhd_d;
-#endif
+  //   EOS eos;
+  //   mhd::MHD<Real, EOS> mhd;
+  // #ifdef USE_CUDA
+  //   GridDevice<Real> grid_d;
+  //   CudaKernelShape<Real> cu_shape;
+  //   mhd::MHDStreams mhd_streams;
+  //   mhd::MHDDevice<Real> mhd_d;
+  // #endif
 
   Model(Config &config_)
       : config(config_), mpi(config_), time(config), grid_global(config),
-        grid(grid_global, mpi), eos(config),
 #ifdef USE_CUDA
-        mhd(grid), mhd_d(grid, mhd), grid_d(grid), cu_shape(grid)
+        grid(grid_global, mpi), grid_d(grid), cu_shape(grid)
 #else
-        mhd(grid)
+        grid(grid_global, mpi)
 #endif
   {
   }

@@ -11,8 +11,7 @@
 #include <miso/env.hpp>
 
 namespace miso {
-
-namespace fs = std::filesystem;
+namespace mpi {
 
 inline void check_mpi_error(int merr, const char *msg, MPI_Comm comm) {
   if (merr != MPI_SUCCESS) {
@@ -21,7 +20,7 @@ inline void check_mpi_error(int merr, const char *msg, MPI_Comm comm) {
   }
 }
 
-struct MPIManager {
+struct Manager {
   MPI_Comm cart_comm = MPI_COMM_NULL;
   int myrank = -1;
   int n_procs = -1;
@@ -32,7 +31,7 @@ struct MPIManager {
   int x_procs_neg, y_procs_neg, z_procs_neg;
   std::string mpi_save_dir;
 
-  MPIManager(const Config &config) {
+  Manager(const Config &config) {
     mpi_save_dir = config.save_dir +
                    config["mpi"]["mpi_save_dir"].template as<std::string>();
     util::create_directories(mpi_save_dir);
@@ -77,7 +76,7 @@ struct MPIManager {
     check_mpi_error(merr, "MPI_Cart_shift z", cart_comm);
   }
 
-  ~MPIManager() {
+  ~Manager() {
     if (cart_comm != MPI_COMM_NULL) {
       MPI_Comm_free(&cart_comm);
     }
@@ -99,4 +98,5 @@ struct MPIManager {
   }
 };
 
+}  // namespace mpi
 }  // namespace miso

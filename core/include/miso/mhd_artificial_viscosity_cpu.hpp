@@ -1,25 +1,19 @@
 #pragma once
 
-#include <algorithm>
-#include <cassert>
-#include <initializer_list>
-#include <string>
-
-#include <miso/artificial_viscosity_core.hpp>
 #include <miso/constants.hpp>
-#include <miso/model.hpp>
+#include <miso/mhd_artificial_viscosity_core.hpp>
+#include <miso/mhd_cpu.hpp>
 
 namespace miso {
 namespace mhd {
+namespace cpu {
 
 /// @brief Artificial viscosity class for mhd simulations
 /// @tparam T Type of the data (Real)
-template <typename Real> struct ArtificialViscosity {
+template <typename Real, typename EOS> struct ArtificialViscosity {
   Config &config;
-  Time<Real> &time;
   Grid<Real> &grid;
-  EOS<Real> &eos;
-  MHD<Real> &mhd;
+  EOS &eos;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
   Array3D<Real> cc;
@@ -36,8 +30,8 @@ template <typename Real> struct ArtificialViscosity {
 
   /// @brief Constructor for ArtificialViscosity
   /// @param model
-  ArtificialViscosity(MHD<Real> &mhd)
-      : config(config), time(time), grid(grid), eos(eos), mhd(mhd),
+  ArtificialViscosity(Config &config, Grid<Real> &grid, EOS &eos)
+      : config(config), grid(grid), eos(eos),
         cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();
@@ -49,27 +43,27 @@ template <typename Real> struct ArtificialViscosity {
   }
 
   /// @brief Evaluate the characteristic velocity
-  void characteristic_velocity_eval() {
+  void characteristic_velocity_eval(const Fields<Real> &qq) {
     for (int i = 0; i < grid.i_total; ++i) {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(eos.gm * (eos.gm - 1.0) * mhd.qq.ei(i, j, k));
-          Real vv = std::sqrt(+mhd.qq.vx(i, j, k) * mhd.qq.vx(i, j, k) +
-                              mhd.qq.vy(i, j, k) * mhd.qq.vy(i, j, k) +
-                              mhd.qq.vz(i, j, k) * mhd.qq.vz(i, j, k));
-          Real ca = std::sqrt((+mhd.qq.bx(i, j, k) * mhd.qq.bx(i, j, k) +
-                               mhd.qq.by(i, j, k) * mhd.qq.by(i, j, k) +
-                               mhd.qq.bz(i, j, k) * mhd.qq.bz(i, j, k)) /
-                              mhd.qq.ro(i, j, k) * pii4<Real>);
+          Real cs = std::sqrt(eos.gm * (eos.gm - 1.0) * qq.ei(i, j, k));
+          Real vv = std::sqrt(+qq.vx(i, j, k) * qq.vx(i, j, k) +
+                              qq.vy(i, j, k) * qq.vy(i, j, k) +
+                              qq.vz(i, j, k) * qq.vz(i, j, k));
+          Real ca = std::sqrt((+qq.bx(i, j, k) * qq.bx(i, j, k) +
+                               qq.by(i, j, k) * qq.by(i, j, k) +
+                               qq.bz(i, j, k) * qq.bz(i, j, k)) /
+                              qq.ro(i, j, k) * pii4<Real>);
           cc(i, j, k) = cs * cs_fac + vv * vv_fac + ca * ca_fac;
         }
       }
     }
   }
 
-  void update(MHDCore<Real> &qq, MHDCore<Real> &qq_rslt, Array3D<Real> &cc,
-              std::vector<Real> &dxyzi, std::string direction) {
+  void update(Fields<Real> &qq, Fields<Real> &qq_rslt, std::vector<Real> &dxyzi,
+              std::string direction, const Real dt) {
     int i0_ = 0;
     int i1_ = grid.i_total;
     int is = 0;
@@ -128,7 +122,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.ro(i, j, k) =
               qq.ro(i, j, k) -
-              (fro_up - fro_dw) * dxyzi[i * is + j * js + k * ks] * time.dt;
+              (fro_up - fro_dw) * dxyzi[i * is + j * js + k * ks] * dt;
 
           // x momentum
           // clang-format off
@@ -156,7 +150,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.vx(i, j, k) =
               (qq.ro(i, j, k) * qq.vx(i, j, k) -
-               (frx_up - frx_dw) * dxyzi[i * is + j * js + k * ks] * time.dt) /
+               (frx_up - frx_dw) * dxyzi[i * is + j * js + k * ks] * dt) /
               qq_rslt.ro(i, j, k);
 
           // y momentum
@@ -185,7 +179,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.vy(i, j, k) =
               (qq.ro(i, j, k) * qq.vy(i, j, k) -
-               (fry_up - fry_dw) * dxyzi[i * is + j * js + k * ks] * time.dt) /
+               (fry_up - fry_dw) * dxyzi[i * is + j * js + k * ks] * dt) /
               qq_rslt.ro(i, j, k);
 
           // z momentum
@@ -213,7 +207,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.vz(i, j, k) =
               (qq.ro(i, j, k) * qq.vz(i, j, k) -
-               (frz_up - frz_dw) * dxyzi[i * is + j * js + k * ks] * time.dt) /
+               (frz_up - frz_dw) * dxyzi[i * is + j * js + k * ks] * dt) /
               qq_rslt.ro(i, j, k);
 
           // x magnetic field
@@ -235,7 +229,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.bx(i, j, k) =
               qq.bx(i, j, k) -
-              (fbx_up - fbx_dw) * dxyzi[i * is + j * js + k * ks] * time.dt;
+              (fbx_up - fbx_dw) * dxyzi[i * is + j * js + k * ks] * dt;
 
           // y magnetic field
           qql2 = qq.by(i - 2 * is, j - 2 * js, k - 2 * ks);
@@ -256,7 +250,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.by(i, j, k) =
               qq.by(i, j, k) -
-              (fby_up - fby_dw) * dxyzi[i * is + j * js + k * ks] * time.dt;
+              (fby_up - fby_dw) * dxyzi[i * is + j * js + k * ks] * dt;
 
           // z magnetic field
           qql2 = qq.bz(i - 2 * is, j - 2 * js, k - 2 * ks);
@@ -277,7 +271,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.bz(i, j, k) =
               qq.bz(i, j, k) -
-              (fbz_up - fbz_dw) * dxyzi[i * is + j * js + k * ks] * time.dt;
+              (fbz_up - fbz_dw) * dxyzi[i * is + j * js + k * ks] * dt;
 
           // z magnetic field
           qql2 = qq.ph(i - 2 * is, j - 2 * js, k - 2 * ks);
@@ -298,7 +292,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.ph(i, j, k) =
               qq.ph(i, j, k) -
-              (fph_up - fph_dw) * dxyzi[i * is + j * js + k * ks] * time.dt;
+              (fph_up - fph_dw) * dxyzi[i * is + j * js + k * ks] * dt;
 
           // total energy
           qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
@@ -331,7 +325,7 @@ template <typename Real> struct ArtificialViscosity {
 
           qq_rslt.ei(i, j, k) =
               (Et -
-               (fei_up - fei_dw) * dxyzi[i * is + j * js + k * ks] * time.dt -
+               (fei_up - fei_dw) * dxyzi[i * is + j * js + k * ks] * dt -
                0.5 * qq_rslt.ro(i, j, k) *
                    (qq_rslt.vx(i, j, k) * qq_rslt.vx(i, j, k) +
                     qq_rslt.vy(i, j, k) * qq_rslt.vy(i, j, k) +
@@ -346,5 +340,6 @@ template <typename Real> struct ArtificialViscosity {
   }
 };
 
+}  // namespace cpu
 }  // namespace mhd
 }  // namespace miso

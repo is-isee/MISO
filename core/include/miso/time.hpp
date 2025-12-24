@@ -19,8 +19,6 @@ template <typename Real> struct Time {
   Real tend;
   /// @brief output time interval
   Real dt_output;
-  /// @brief time step size
-  Real dt;
   /// @brief time step number
   int n_step;
   /// @brief time step number for output
@@ -32,7 +30,6 @@ template <typename Real> struct Time {
 
   /// @brief Initialize time parameters
   void initialize() {
-    dt = 0;
     time = 0;
     n_step = 0;
     n_output = 0;
@@ -54,14 +51,13 @@ template <typename Real> struct Time {
   }
 
   /// @brief update time parameters
-  void update() {
+  void update(const Real dt) {
     time += dt;
     n_step++;
   };
 
   /// @brief Save time parameters to file
-  /// @param config
-  void save(const Config &config) const {
+  void save() const {
     if (mpi::is_root()) {
       std::ostringstream fname;
       fname << time_save_dir << "/time." << util::zfill(n_output, n_output_digits)
@@ -80,7 +76,7 @@ template <typename Real> struct Time {
 
   /// @brief Load time parameters from file
   /// @param config
-  void load(const Config &config) {
+  void load() {
     if (mpi::is_root()) {
       std::ifstream ifs_step(time_save_dir + "/n_output.txt");
       ifs_step >> n_output;

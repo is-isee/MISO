@@ -96,22 +96,22 @@ inline Real space_centered_4th(const Array3D<Real> &qq1, const Array3D<Real> &qq
 /// @details Volumetric heat / force terms are expected.
 template <typename Real> struct NoSource {
   /// External force: x-direction
-  inline Real vx(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real vx(const Fields<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 
   /// External force: y-direction
-  inline Real vy(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real vy(const Fields<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 
   /// External force: z-direction
-  inline Real vz(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real vz(const Fields<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 
   /// External heating
-  inline Real ei(const MHDCore<Real> &, int, int, int) const noexcept {
+  inline Real ei(const Fields<Real> &, int, int, int) const noexcept {
     return 0.0;
   }
 };
@@ -128,13 +128,15 @@ struct Integrator {
   Fields<Real> &qq;
   /// @brief Work space
   Fields<Real> qq_argm, qq_rslt;
+  /// @brief Halo exchanger
+  HaloExchanger<Real> &halo_exchanger;
 
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
   /// @brief Body source for MHD equations
   Source source;
   /// @brief Artificial viscosity for MHD equations
-  ArtificialViscosity<Real> artdiff;
+  ArtificialViscosity<Real, EOS> artdiff;
 
   /// @brief gas pressure
   Array3D<Real> pr;
@@ -154,8 +156,10 @@ struct Integrator {
   Real tau_divb;
 
   /// @brief Constructor
-  Integrator(WorkSpace<Real> &ws, HaloExchanger<Real> &halo_exchanger)
-      : grid(ws.grid_local), eos(ws.config), ws(ws), bc(ws), artdiff(ws),
+  Integrator(Config &config, Fields<Real> &qq, Grid<Real> &grid,
+             HaloExchanger<Real> &halo_exchanger)
+      : grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
+        halo_exchanger(halo_exchanger), bc(config), artdiff(config, grid, eos),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
@@ -168,8 +172,8 @@ struct Integrator {
   /// @param qq_argm argument MHD core variables (n = n + 1/2, n + 1/3, etc.)
   /// @param qq_rslt resulting MHD core variables (n = n + 1)
   /// @param dt time spacing (note that this is not the same as actual time spacing)
-  void update_sc4(MHDCore<Real> &qq_orgn, MHDCore<Real> &qq_argm,
-                  MHDCore<Real> &qq_rslt, Real dt) {
+  void update_sc4(Fields<Real> &qq_orgn, Fields<Real> &qq_argm,
+                  Fields<Real> &qq_rslt, const Real dt) {
     for (int i = 0; i < grid.i_total; ++i) {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
@@ -343,103 +347,97 @@ struct Integrator {
   }
 
   /// @brief Runge-Kutta 4th order time integration step
-  void runge_kutta_4step() {
-    auto &qq = ws.qq;
-    auto &qq_argm = ws.qq_argm;
-    auto &qq_rslt = ws.qq_rslt;
-
-    update_sc4(qq, qq, qq_rslt, time.dt / 4.0);
+  void runge_kutta_4step(const Real dt) {
+    update_sc4(qq, qq, qq_rslt, dt / 4.0);
     qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm);
-    ws.mpi_exchange_halo(qq_argm, grid, mpi);
+    halo_exchanger.apply(qq_argm);
 
-    update_sc4(qq, qq_argm, qq_rslt, time.dt / 3.0);
+    update_sc4(qq, qq_argm, qq_rslt, dt / 3.0);
     qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm);
-    ws.mpi_exchange_halo(qq_argm, grid, mpi);
+    halo_exchanger.apply(qq_argm);
 
-    update_sc4(qq, qq_argm, qq_rslt, time.dt / 2.0);
+    update_sc4(qq, qq_argm, qq_rslt, dt / 2.0);
     qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm);
-    ws.mpi_exchange_halo(qq_argm, grid, mpi);
+    halo_exchanger.apply(qq_argm);
 
-    update_sc4(qq, qq_argm, qq_rslt, time.dt);
+    update_sc4(qq, qq_argm, qq_rslt, dt);
     qq.copy_from(qq_rslt);
     bc.apply(qq);
-    ws.mpi_exchange_halo(qq, grid, mpi);
+    halo_exchanger.apply(qq);
   }
 
   /// @brief Apply artificial viscosity
-  void apply_artificial_viscosity() {
-    artdiff.characteristic_velocity_eval();
+  void apply_artificial_viscosity(const Real dt) {
+    artdiff.characteristic_velocity_eval(qq);
 
     // x direction
-    artdiff.update(ws.qq, ws.qq_rslt, artdiff.cc, grid.dxi, "x");
-    ws.qq.copy_from(ws.qq_rslt);
-    bc.apply(ws.qq);
-    ws.mpi_exchange_halo(ws.qq, grid, mpi);
+    artdiff.update(qq, qq_rslt, grid.dxi, "x", dt);
+    qq.copy_from(qq_rslt);
+    bc.apply(qq);
+    halo_exchanger.apply(qq);
 
     // y direction
-    artdiff.update(ws.qq, ws.qq_rslt, artdiff.cc, grid.dyi, "y");
-    ws.qq.copy_from(ws.qq_rslt);
-    bc.apply(ws.qq);
-    ws.mpi_exchange_halo(ws.qq, grid, mpi);
+    artdiff.update(qq, qq_rslt, grid.dyi, "y", dt);
+    qq.copy_from(qq_rslt);
+    bc.apply(qq);
+    halo_exchanger.apply(qq);
 
     // z direction
-    artdiff.update(ws.qq, ws.qq_rslt, artdiff.cc, grid.dzi, "z");
-    ws.qq.copy_from(ws.qq_rslt);
-    bc.apply(ws.qq);
-    ws.mpi_exchange_halo(ws.qq, grid, mpi);
+    artdiff.update(qq, qq_rslt, grid.dzi, "z", dt);
+    qq.copy_from(qq_rslt);
+    bc.apply(qq);
+    halo_exchanger.apply(qq);
   }
 
   /// @brief Calculate time spacing based on CFL condition
-  void cfl_condition() {
-    time.dt = 1.e10;
+  Real cfl() const {
+    Real dt = 1.e10;
     Real slow_speed = 1.e-10;
     for (int i = grid.i_margin; i < grid.i_total - grid.i_margin; ++i) {
       for (int j = grid.j_margin; j < grid.j_total - grid.j_margin; ++j) {
         for (int k = grid.k_margin; k < grid.k_total - grid.k_margin; ++k) {
           // clang-format off
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(eos.gm*(eos.gm-1.0)*ws.qq.ei(i,j,k));
+          Real cs = std::sqrt(eos.gm*(eos.gm-1.0)*qq.ei(i,j,k));
           Real vv = std::sqrt(
-            + ws.qq.vx(i,j,k)*ws.qq.vx(i,j,k)
-            + ws.qq.vy(i,j,k)*ws.qq.vy(i,j,k)
-            + ws.qq.vz(i,j,k)*ws.qq.vz(i,j,k)
+            + qq.vx(i,j,k)*qq.vx(i,j,k)
+            + qq.vy(i,j,k)*qq.vy(i,j,k)
+            + qq.vz(i,j,k)*qq.vz(i,j,k)
           );
           Real ca = std::sqrt( (
-            + ws.qq.bx(i,j,k)*ws.qq.bx(i,j,k)
-            + ws.qq.by(i,j,k)*ws.qq.by(i,j,k)
-            + ws.qq.bz(i,j,k)*ws.qq.bz(i,j,k)
-          )/ws.qq.ro(i,j,k)*pii4<Real>);
+            + qq.bx(i,j,k)*qq.bx(i,j,k)
+            + qq.by(i,j,k)*qq.by(i,j,k)
+            + qq.bz(i,j,k)*qq.bz(i,j,k)
+          )/qq.ro(i,j,k)*pii4<Real>);
 
           // in masked region, cfl condition is not applied
           Real total_vel = (cs + vv + ca)*grid.mask(i,j,k) + slow_speed*(1.0 - grid.mask(i,j,k));
-          time.dt = std::min(time.dt,
+          dt = std::min(dt,
             cfl_number*std::min<Real>({grid.dx[i], grid.dy[j], grid.dz[k]})/total_vel);
           // clang-format on
         }
       }
     }
     Real dt_global;
-    MPI_Allreduce(&time.dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN,
-                  mpi::comm());
-    time.dt = dt_global;
+    MPI_Allreduce(&dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN, mpi::comm());
+    return dt_global;
   }
 
   /// @brief Set parameters for divergence B cleaning
-  void divb_parameters_set() {
-    ch_divb = 0.8 * cfl_number * grid.min_dxyz / time.dt;
+  void divb_parameters_set(const Real dt) {
+    ch_divb = 0.8 * cfl_number * grid.min_dxyz / dt;
     ch_divb_square = ch_divb * ch_divb;
-    tau_divb = 2.0 * time.dt;
+    tau_divb = 2.0 * dt;
   }
 
   /// @brief Update MHD equations by one time step
-  void update() {
-    cfl_condition();
-    divb_parameters_set();
-    runge_kutta_4step();
-    apply_artificial_viscosity();
+  void update(const Real dt) {
+    divb_parameters_set(dt);
+    runge_kutta_4step(dt);
+    apply_artificial_viscosity(dt);
   }
 
   // Prohibit copy and assignment
