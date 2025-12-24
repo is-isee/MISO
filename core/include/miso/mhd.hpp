@@ -1,6 +1,7 @@
 #pragma once
 
 #include <miso/eos.hpp>
+#include <miso/grid.hpp>
 #include <miso/time.hpp>
 
 #include <miso/mhd_cpu.hpp>
@@ -17,6 +18,9 @@ template <typename Real, typename BoundaryCondition, typename EOS,
 struct MHD {
   Time<Real> &time;
   Grid<Real> &grid;
+#ifdef USE_CUDA
+  GridDevice<Real> &grid_d;
+#endif
 
   cpu::Fields<Real> qq;  // Required for cpu and gpu both
 #ifdef USE_CUDA
@@ -24,7 +28,7 @@ struct MHD {
 #endif
 
 #ifdef USE_CUDA
-  gpu::Streams cu_streams;
+  gpu::Streams &mhd_streams;
   gpu::HaloExchanger<Real> halo_exchanger;
   gpu::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #else
@@ -36,11 +40,12 @@ struct MHD {
   std::string mhd_save_dir;
 
 #ifdef USE_CUDA
-  MHD(Config &config, Time<Real> &time, Grid<Real> &grid, mpi::Shape &mpi_shape,
-      CudaKernelShape<Real> &cu_shape)
-      : time(time), grid(grid), qq(grid), qq_d(grid), cu_streams(),
-        halo_exchanger(grid, mpi_shape, cu_shape),
-        integrator(config, qq, grid, halo_exchanger, cu_shape, cu_streams)
+  MHD(Config &config, Time<Real> &time, Grid<Real> &grid,
+      GridDevice<Real> &grid_d, mpi::Shape &mpi_shape,
+      CudaKernelShape<Real> &cu_shape, gpu::Streams &mhd_streams)
+      : time(time), grid(grid), grid_d(grid_d), qq(grid), qq_d(grid_d),
+        mhd_streams(mhd_streams), halo_exchanger(grid_d, mpi_shape, cu_shape),
+        integrator(config, qq_d, grid_d, halo_exchanger, cu_shape, mhd_streams)
 #else
   MHD(Config &config, Time<Real> &time, Grid<Real> &grid, mpi::Shape &mpi_shape)
       : time(time), grid(grid), qq(grid), halo_exchanger(grid, mpi_shape),

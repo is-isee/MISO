@@ -32,14 +32,14 @@ template <typename Real> struct TimeStep {
     CUDA_CHECK(cudaFree(min_values_device));
   }
 
-  void copy_to_host() {
+  void copy_to_host() const {
     CUDA_CHECK(cudaMemcpy(min_values_host, min_values_device,
                           sizeof(Real) * n_blocks, cudaMemcpyDeviceToHost));
   }
 };
 
 template <typename Real>
-__global__ void cfl_kernel(FieldsView<Real> qq, GridDevice<Real> grid,
+__global__ void cfl_kernel(FieldsView<Real> qq, GridView<Real> grid,
                            Real *dt_mins, Real cfl_number, Real eos_gm) {
   extern __shared__ Real dt_min_shared_in_block[];
 
@@ -91,7 +91,7 @@ __global__ void cfl_kernel(FieldsView<Real> qq, GridDevice<Real> grid,
 template <typename Real>
 __device__ inline Real space_centered_4th(const Real *qq1, Real dxyzi, int i,
                                           int j, int k, int is, int js, int ks,
-                                          const GridDevice<Real> &grid) {
+                                          const GridView<Real> &grid) {
   // clang-format off
   return (     -qq1[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] +
           8.0 * qq1[grid.idx(i +     is, j +     js, k +     ks)] -
@@ -104,7 +104,7 @@ __device__ inline Real space_centered_4th(const Real *qq1, Real dxyzi, int i,
 template <typename Real>
 __device__ inline Real
 space_centered_4th(const Real *qq1, const Real *qq2, Real dxyzi, int i, int j,
-                   int k, int is, int js, int ks, const GridDevice<Real> &grid) {
+                   int k, int is, int js, int ks, const GridView<Real> &grid) {
 
   // clang-format off
   return (    - qq1[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
@@ -123,7 +123,7 @@ template <typename Real>
 __device__ inline Real space_centered_4th(const Real *qq1, const Real *qq2,
                                           const Real *qq3, Real dxyzi, int i,
                                           int j, int k, int is, int js, int ks,
-                                          const GridDevice<Real> &grid) {
+                                          const GridView<Real> &grid) {
   // clang-format off
   return (    - qq1[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
                 qq2[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
@@ -145,7 +145,7 @@ template <typename Real>
 __global__ void pr_bb_ht_vb_kernel(FieldsView<Real> qq_argm,
                                    Array3DDevice<Real> pr, Array3DDevice<Real> bb,
                                    Array3DDevice<Real> ht, Array3DDevice<Real> vb,
-                                   GridDevice<Real> grid, Real eos_gm) {
+                                   GridView<Real> grid, Real eos_gm) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
@@ -182,7 +182,7 @@ __global__ void pr_bb_ht_vb_kernel(FieldsView<Real> qq_argm,
 
 template <typename Real>
 __device__ inline bool compute_index_within_margin(int &i, int &j, int &k,
-                                                   const GridDevice<Real> &grid) {
+                                                   const GridView<Real> &grid) {
   i = blockIdx.x * blockDim.x + threadIdx.x + grid.i_margin;
   j = blockIdx.y * blockDim.y + threadIdx.y + grid.j_margin;
   k = blockIdx.z * blockDim.z + threadIdx.z + grid.k_margin;
@@ -195,7 +195,7 @@ __device__ inline bool compute_index_within_margin(int &i, int &j, int &k,
 template <typename Real>
 __global__ void
 update_ro_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+                 FieldsView<Real> qq_rslt, GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -216,7 +216,7 @@ __global__ void update_vx_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_argm,
                                  FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
                                  Array3DDevice<Real> bb, Source source,
-                                 GridDevice<Real> grid, Real dt) {
+                                 GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -244,7 +244,7 @@ __global__ void update_vy_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_argm,
                                  FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
                                  Array3DDevice<Real> bb, Source source,
-                                 GridDevice<Real> grid, Real dt) {
+                                 GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -272,7 +272,7 @@ __global__ void update_vz_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_argm,
                                  FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
                                  Array3DDevice<Real> bb, Source source,
-                                 GridDevice<Real> grid, Real dt) {
+                                 GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -298,7 +298,7 @@ __global__ void update_vz_kernel(FieldsView<Real> qq_orgn,
 template <typename Real>
 __global__ void
 update_bx_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+                 FieldsView<Real> qq_rslt, GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -318,7 +318,7 @@ update_bx_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
 template <typename Real>
 __global__ void
 update_by_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+                 FieldsView<Real> qq_rslt, GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -338,7 +338,7 @@ update_by_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
 template <typename Real>
 __global__ void
 update_bz_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+                 FieldsView<Real> qq_rslt, GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -359,7 +359,7 @@ template <typename Real>
 __global__ void update_ph_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_argm,
                                  FieldsView<Real> qq_rslt, Real ch_divb_square,
-                                 Real tau_divb, GridDevice<Real> grid, Real dt) {
+                                 Real tau_divb, GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -382,7 +382,7 @@ __global__ void update_ei_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
                                  Array3DDevice<Real> bb, Array3DDevice<Real> ht,
                                  Array3DDevice<Real> vb, Source source,
-                                 GridDevice<Real> grid, Real dt) {
+                                 GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -562,22 +562,22 @@ struct Integrator {
   void runge_kutta_4step(const Real dt) {
     update_sc4(qq, qq, qq_rslt, dt / 4.0);
     qq_argm.copy_from_device(qq_rslt, cu_streams);
-    bc.apply(qq_argm);
+    bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 3.0);
     qq_argm.copy_from_device(qq_rslt, cu_streams);
-    bc.apply(qq_argm);
+    bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 2.0);
     qq_argm.copy_from_device(qq_rslt, cu_streams);
-    bc.apply(qq_argm);
+    bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt);
     qq.copy_from_device(qq_rslt, cu_streams);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }
 
@@ -588,19 +588,19 @@ struct Integrator {
     // x direction
     artdiff.update(qq, qq_rslt, "x", dt);
     qq.copy_from_device(qq_rslt, cu_streams);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // y direction
     artdiff.update(qq, qq_rslt, "y", dt);
     qq.copy_from_device(qq_rslt, cu_streams);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // z direction
     artdiff.update(qq, qq_rslt, "z", dt);
     qq.copy_from_device(qq_rslt, cu_streams);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }
 
