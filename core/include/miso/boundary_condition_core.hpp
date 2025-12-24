@@ -1,12 +1,11 @@
 #pragma once
 
 #include <miso/mpi_shape.hpp>
+#include <miso/types.hpp>
 #include <miso/utility.hpp>
 
 namespace miso {
 namespace bnd {
-
-enum class Direction { X, Y, Z };
 
 inline std::string direction_to_string(Direction direction) {
   switch (direction) {

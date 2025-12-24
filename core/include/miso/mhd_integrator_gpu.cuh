@@ -586,19 +586,19 @@ struct Integrator {
     artdiff.characteristic_velocity_eval(qq);
 
     // x direction
-    artdiff.update(qq, qq_rslt, "x", dt);
+    artdiff.update(qq, qq_rslt, Direction::X, dt);
     qq.copy_from_device(qq_rslt, cu_streams);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // y direction
-    artdiff.update(qq, qq_rslt, "y", dt);
+    artdiff.update(qq, qq_rslt, Direction::Y, dt);
     qq.copy_from_device(qq_rslt, cu_streams);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // z direction
-    artdiff.update(qq, qq_rslt, "z", dt);
+    artdiff.update(qq, qq_rslt, Direction::Z, dt);
     qq.copy_from_device(qq_rslt, cu_streams);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);

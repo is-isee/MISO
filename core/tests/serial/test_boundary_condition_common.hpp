@@ -20,7 +20,7 @@ inline void run_boundary_condition_tests() {
   // Test the range_set function
   int i0_, i1_, j0_, j1_, k0_, k1_;
 
-  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, bnd::Direction::X, grid);
+  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, Direction::X, grid);
   REQUIRE(i0_ == 0);
   REQUIRE(i1_ == grid.i_margin);
   REQUIRE(j0_ == 0);
@@ -28,7 +28,7 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k0_ == 0);
   REQUIRE(k1_ == grid.k_total);
 
-  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, bnd::Direction::Y, grid);
+  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, Direction::Y, grid);
   REQUIRE(i0_ == 0);
   REQUIRE(i1_ == grid.i_total);
   REQUIRE(j0_ == 0);
@@ -36,7 +36,7 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k0_ == 0);
   REQUIRE(k1_ == grid.k_total);
 
-  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, bnd::Direction::Z, grid);
+  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, Direction::Z, grid);
   REQUIRE(i0_ == 0);
   REQUIRE(i1_ == grid.i_total);
   REQUIRE(j0_ == 0);
@@ -72,12 +72,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::X,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::X,
                        bnd::Side::INNER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, bnd::Direction::X,
-                       bnd::Side::INNER);
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::X, bnd::Side::INNER);
 #endif
 
   for (int j = 0; j < grid.j_total; ++j) {
@@ -89,11 +88,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::X,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::X,
                        bnd::Side::INNER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, bnd::Direction::X,
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::X,
                        bnd::Side::INNER);
 #endif
 
@@ -106,12 +105,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::X,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::X,
                        bnd::Side::OUTER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, bnd::Direction::X,
-                       bnd::Side::OUTER);
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::X, bnd::Side::OUTER);
 #endif
 
   for (int j = 0; j < grid.j_total; ++j) {
@@ -123,11 +121,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::X,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::X,
                        bnd::Side::OUTER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, bnd::Direction::X,
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::X,
                        bnd::Side::OUTER);
 #endif
 
@@ -158,12 +156,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Y,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Y,
                        bnd::Side::INNER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, bnd::Direction::Y,
-                       bnd::Side::INNER);
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Y, bnd::Side::INNER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
@@ -175,11 +172,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Y,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Y,
                        bnd::Side::INNER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, bnd::Direction::Y,
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Y,
                        bnd::Side::INNER);
 #endif
 
@@ -192,12 +189,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Y,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Y,
                        bnd::Side::OUTER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, bnd::Direction::Y,
-                       bnd::Side::OUTER);
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Y, bnd::Side::OUTER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
@@ -209,11 +205,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Y,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Y,
                        bnd::Side::OUTER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, bnd::Direction::Y,
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Y,
                        bnd::Side::OUTER);
 #endif
 
@@ -244,12 +240,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Z,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Z,
                        bnd::Side::INNER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, bnd::Direction::Z,
-                       bnd::Side::INNER);
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Z, bnd::Side::INNER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
@@ -261,11 +256,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Z,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Z,
                        bnd::Side::INNER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, bnd::Direction::Z,
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Z,
                        bnd::Side::INNER);
 #endif
 
@@ -278,12 +273,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, bnd::Direction::Z,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Z,
                        bnd::Side::OUTER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, bnd::Direction::Z,
-                       bnd::Side::OUTER);
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Z, bnd::Side::OUTER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
@@ -295,11 +289,11 @@ inline void run_boundary_condition_tests() {
 
 #ifdef USE_CUDA
   qq_d.copy_from_host(qq, cu_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, bnd::Direction::Z,
+  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Z,
                        bnd::Side::OUTER);
   qq_d.copy_to_host(qq, cu_streams);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, bnd::Direction::Z,
+  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Z,
                        bnd::Side::OUTER);
 #endif
 
