@@ -60,7 +60,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
     }
   }
 
-  void update(Fields<Real> &qq, Fields<Real> &qq_rslt, std::string direction,
+  void update(Fields<Real> &qq, Fields<Real> &qq_rslt, Direction direction,
               const Real dt) {
     int i0_ = 0;
     int i1_ = grid.i_total;
@@ -72,17 +72,17 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
     int k1_ = grid.k_total;
     int ks = 0;
     Real *dxyzi = nullptr;
-    if (direction == "x") {
+    if (direction == Direction::X) {
       i0_ = 2 * grid.is;
       i1_ = grid.i_total - 2 * grid.is;
       is = grid.is;
       dxyzi = grid.dxi.data();
-    } else if (direction == "y") {
+    } else if (direction == Direction::Y) {
       j0_ = 2 * grid.js;
       j1_ = grid.j_total - 2 * grid.js;
       js = grid.js;
       dxyzi = grid.dyi.data();
-    } else if (direction == "z") {
+    } else if (direction == Direction::Z) {
       k0_ = 2 * grid.ks;
       k1_ = grid.k_total - 2 * grid.ks;
       ks = grid.ks;
