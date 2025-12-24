@@ -6,6 +6,7 @@
 #include <miso/array3d_cpu.hpp>
 #include <miso/array4d_cpu.hpp>
 #include <miso/grid_cpu.hpp>
+#include <miso/mhd_view.hpp>
 #include <miso/mpi_shape.hpp>
 #include <miso/mpi_types.hpp>
 #include <miso/utility.hpp>
@@ -27,6 +28,9 @@ template <typename Real> struct Fields {
         bz(grid.i_total, grid.j_total, grid.k_total),
         ei(grid.i_total, grid.j_total, grid.k_total),
         ph(grid.i_total, grid.j_total, grid.k_total) {}
+
+  // Shallow-const / shallow-copy
+  FieldsView<Real> view() const noexcept { return FieldsView<Real>(*this); }
 
   void copy_from(const Fields &other) {
     ro.copy_from(other.ro);
