@@ -214,6 +214,15 @@ template <typename Real> struct BuffersView {
   Real *send_y_neg = nullptr;
   Real *send_z_pos = nullptr;
   Real *send_z_neg = nullptr;
+
+  template <typename BuffersType>
+  explicit BuffersView(const BuffersType &buffers)
+      : recv_x_pos(buffers.recv_x_pos), recv_x_neg(buffers.recv_x_neg),
+        recv_y_pos(buffers.recv_y_pos), recv_y_neg(buffers.recv_y_neg),
+        recv_z_pos(buffers.recv_z_pos), recv_z_neg(buffers.recv_z_neg),
+        send_x_pos(buffers.send_x_pos), send_x_neg(buffers.send_x_neg),
+        send_y_pos(buffers.send_y_pos), send_y_neg(buffers.send_y_neg),
+        send_z_pos(buffers.send_z_pos), send_z_neg(buffers.send_z_neg) {}
 };
 
 /// @brief MHD communication buffers on GPU
@@ -269,11 +278,7 @@ template <typename Real> struct Buffers {
   }
 
   // Shallow-const / shallow-copy
-  BuffersView<Real> view() const noexcept {
-    return BuffersView<Real>{recv_x_pos, recv_x_neg, recv_y_pos, recv_y_neg,
-                             recv_z_pos, recv_z_neg, send_x_pos, send_x_neg,
-                             send_y_pos, send_y_neg, send_z_pos, send_z_neg};
-  }
+  BuffersView<Real> view() const noexcept { return BuffersView<Real>(*this); }
 
   // Prohibit copy and move operations
   Buffers(const Buffers &) = delete;
