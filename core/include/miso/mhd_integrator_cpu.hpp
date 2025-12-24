@@ -346,22 +346,22 @@ struct Integrator {
   void runge_kutta_4step(const Real dt) {
     update_sc4(qq, qq, qq_rslt, dt / 4.0);
     qq_argm.copy_from(qq_rslt);
-    bc.apply(qq_argm);
+    bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 3.0);
     qq_argm.copy_from(qq_rslt);
-    bc.apply(qq_argm);
+    bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 2.0);
     qq_argm.copy_from(qq_rslt);
-    bc.apply(qq_argm);
+    bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt);
     qq.copy_from(qq_rslt);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }
 
@@ -372,19 +372,19 @@ struct Integrator {
     // x direction
     artdiff.update(qq, qq_rslt, "x", dt);
     qq.copy_from(qq_rslt);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // y direction
     artdiff.update(qq, qq_rslt, "y", dt);
     qq.copy_from(qq_rslt);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // z direction
     artdiff.update(qq, qq_rslt, "z", dt);
     qq.copy_from(qq_rslt);
-    bc.apply(qq);
+    bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }
 
