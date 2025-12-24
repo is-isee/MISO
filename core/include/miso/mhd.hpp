@@ -24,6 +24,7 @@ struct MHD {
 #endif
 
 #ifdef USE_CUDA
+  gpu::Streams cu_streams;
   gpu::HaloExchanger<Real> halo_exchanger;
   gpu::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #else
@@ -34,10 +35,14 @@ struct MHD {
   int n_output_digits;
   std::string mhd_save_dir;
 
-  MHD(Config &config, Time<Real> &time, Grid<Real> &grid, mpi::Shape &mpi_shape)
 #ifdef USE_CUDA
-      : time(time), grid(grid), qq(grid), qq_d(grid), integrator(mhd)
+  MHD(Config &config, Time<Real> &time, Grid<Real> &grid, mpi::Shape &mpi_shape,
+      CudaKernelShape<Real> &cu_shape)
+      : time(time), grid(grid), qq(grid), qq_d(grid), cu_streams(),
+        halo_exchanger(grid, mpi_shape, cu_shape),
+        integrator(config, qq, grid, halo_exchanger, cu_shape, cu_streams)
 #else
+  MHD(Config &config, Time<Real> &time, Grid<Real> &grid, mpi::Shape &mpi_shape)
       : time(time), grid(grid), qq(grid), halo_exchanger(grid, mpi_shape),
         integrator(config, qq, grid, halo_exchanger)
 #endif
@@ -53,7 +58,6 @@ struct MHD {
 
   void save() const {
     util::create_directories(mhd_save_dir);
-
     std::string filename =
         mhd_save_dir + "mhd." + util::zfill(time.n_output, time.n_output_digits) +
         "." + util::zfill(mpi::rank(), n_output_digits) + ".bin";

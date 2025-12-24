@@ -8,17 +8,16 @@
 #include <cmath>
 #include <cstdio>
 #include <fstream>
-#include <mpi.h>
 #include <string>
 #include <vector>
 
-#include <miso/angular_quadrature.hpp>
 #include <miso/array3d_cpu.hpp>
 #include <miso/array4d_cpu.hpp>
 #include <miso/env.hpp>
 #include <miso/grid_cpu.hpp>
-#include <miso/mpi_manager.hpp>
+#include <miso/mpi_shape.hpp>
 #include <miso/mpi_types.hpp>
+#include <miso/rt_angular_quadrature.hpp>
 #include <miso/utility.hpp>
 
 namespace miso {
@@ -150,22 +149,21 @@ template <typename Real> struct RT {
   };
 
   /// @brief Exchange halo data between MPI processes
-  void mpi_exchange_halo(const Grid<Real> &grid, const MPIManager &mpi_manager) {
-    mpi_exchange_halo_z(grid, mpi_manager);
-    mpi_exchange_halo_y(grid, mpi_manager);
-    mpi_exchange_halo_x(grid, mpi_manager);
+  void mpi_exchange_halo(const Grid<Real> &grid, const mpi::Shape &mpi_shape) {
+    mpi_exchange_halo_z(grid, mpi_shape);
+    mpi_exchange_halo_y(grid, mpi_shape);
+    mpi_exchange_halo_x(grid, mpi_shape);
   }
 
   /// @brief Exchange halo data (x-direction)
-  void mpi_exchange_halo_x(const Grid<Real> &grid,
-                           const MPIManager &mpi_manager) {
+  void mpi_exchange_halo_x(const Grid<Real> &grid, const mpi::Shape &mpi_shape) {
     if (grid.i_size == 1) {
       return;
     }
     MPI_Request reqs[4];
     int req_count = 0;
 
-    if (mpi_manager.x_procs_pos != MPI_PROC_NULL) {
+    if (mpi_shape.x_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_x[i_ray] >= 0.0) {
           for (int j = 0; j < grid.j_total; ++j) {
@@ -176,14 +174,14 @@ template <typename Real> struct RT {
         }
       }
       MPI_Isend(send_buff_x_pos.data(), send_buff_x_pos.size(), mpi_type<Real>(),
-                mpi_manager.x_procs_pos, 1100, mpi_manager.cart_comm,
+                mpi_shape.x_procs_pos, 1100, mpi_shape.cart_comm,
                 &reqs[req_count++]);
       MPI_Irecv(recv_buff_x_pos.data(), recv_buff_x_pos.size(), mpi_type<Real>(),
-                mpi_manager.x_procs_pos, 1200, mpi_manager.cart_comm,
+                mpi_shape.x_procs_pos, 1200, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
 
-    if (mpi_manager.x_procs_neg != MPI_PROC_NULL) {
+    if (mpi_shape.x_procs_neg != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_x[i_ray] < 0.0) {
           for (int j = 0; j < grid.j_total; ++j) {
@@ -194,10 +192,10 @@ template <typename Real> struct RT {
         }
       }
       MPI_Isend(send_buff_x_neg.data(), send_buff_x_neg.size(), mpi_type<Real>(),
-                mpi_manager.x_procs_neg, 1200, mpi_manager.cart_comm,
+                mpi_shape.x_procs_neg, 1200, mpi_shape.cart_comm,
                 &reqs[req_count++]);
       MPI_Irecv(recv_buff_x_neg.data(), recv_buff_x_neg.size(), mpi_type<Real>(),
-                mpi_manager.x_procs_neg, 1100, mpi_manager.cart_comm,
+                mpi_shape.x_procs_neg, 1100, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
 
@@ -205,7 +203,7 @@ template <typename Real> struct RT {
       MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
     }
 
-    if (mpi_manager.x_procs_pos != MPI_PROC_NULL) {
+    if (mpi_shape.x_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_x[i_ray] < 0.0) {
           for (int j = 0; j < grid.j_total; ++j) {
@@ -217,7 +215,7 @@ template <typename Real> struct RT {
       }
     }
 
-    if (mpi_manager.x_procs_neg != MPI_PROC_NULL) {
+    if (mpi_shape.x_procs_neg != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_x[i_ray] >= 0.0) {
           for (int j = 0; j < grid.j_total; ++j) {
@@ -231,15 +229,14 @@ template <typename Real> struct RT {
   }
 
   /// @brief Exchange halo data (y-direction)
-  void mpi_exchange_halo_y(const Grid<Real> &grid,
-                           const MPIManager &mpi_manager) {
+  void mpi_exchange_halo_y(const Grid<Real> &grid, const mpi::Shape &mpi_shape) {
     if (grid.j_size == 1) {
       return;
     }
     MPI_Request reqs[4];
     int req_count = 0;
 
-    if (mpi_manager.y_procs_pos != MPI_PROC_NULL) {
+    if (mpi_shape.y_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_y[i_ray] >= 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -250,14 +247,14 @@ template <typename Real> struct RT {
         }
       }
       MPI_Isend(send_buff_y_pos.data(), send_buff_y_pos.size(), mpi_type<Real>(),
-                mpi_manager.y_procs_pos, 1300, mpi_manager.cart_comm,
+                mpi_shape.y_procs_pos, 1300, mpi_shape.cart_comm,
                 &reqs[req_count++]);
       MPI_Irecv(recv_buff_y_pos.data(), recv_buff_y_pos.size(), mpi_type<Real>(),
-                mpi_manager.y_procs_pos, 1400, mpi_manager.cart_comm,
+                mpi_shape.y_procs_pos, 1400, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
 
-    if (mpi_manager.y_procs_neg != MPI_PROC_NULL) {
+    if (mpi_shape.y_procs_neg != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_y[i_ray] < 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -268,10 +265,10 @@ template <typename Real> struct RT {
         }
       }
       MPI_Isend(send_buff_y_neg.data(), send_buff_y_neg.size(), mpi_type<Real>(),
-                mpi_manager.y_procs_neg, 1400, mpi_manager.cart_comm,
+                mpi_shape.y_procs_neg, 1400, mpi_shape.cart_comm,
                 &reqs[req_count++]);
       MPI_Irecv(recv_buff_y_neg.data(), recv_buff_y_neg.size(), mpi_type<Real>(),
-                mpi_manager.y_procs_neg, 1300, mpi_manager.cart_comm,
+                mpi_shape.y_procs_neg, 1300, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
 
@@ -279,7 +276,7 @@ template <typename Real> struct RT {
       MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
     }
 
-    if (mpi_manager.y_procs_pos != MPI_PROC_NULL) {
+    if (mpi_shape.y_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_y[i_ray] < 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -291,7 +288,7 @@ template <typename Real> struct RT {
       }
     }
 
-    if (mpi_manager.y_procs_neg != MPI_PROC_NULL) {
+    if (mpi_shape.y_procs_neg != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_y[i_ray] >= 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -305,15 +302,14 @@ template <typename Real> struct RT {
   }
 
   /// @brief Exchange halo data (z-direction)
-  void mpi_exchange_halo_z(const Grid<Real> &grid,
-                           const MPIManager &mpi_manager) {
+  void mpi_exchange_halo_z(const Grid<Real> &grid, const mpi::Shape &mpi_shape) {
     if (grid.k_size == 1) {
       return;
     }
     MPI_Request reqs[4];
     int req_count = 0;
 
-    if (mpi_manager.z_procs_pos != MPI_PROC_NULL) {
+    if (mpi_shape.z_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_z[i_ray] >= 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -324,14 +320,14 @@ template <typename Real> struct RT {
         }
       }
       MPI_Isend(send_buff_z_pos.data(), send_buff_z_pos.size(), mpi_type<Real>(),
-                mpi_manager.z_procs_pos, 1500, mpi_manager.cart_comm,
+                mpi_shape.z_procs_pos, 1500, mpi_shape.cart_comm,
                 &reqs[req_count++]);
       MPI_Irecv(recv_buff_z_pos.data(), recv_buff_z_pos.size(), mpi_type<Real>(),
-                mpi_manager.z_procs_pos, 1600, mpi_manager.cart_comm,
+                mpi_shape.z_procs_pos, 1600, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
 
-    if (mpi_manager.z_procs_neg != MPI_PROC_NULL) {
+    if (mpi_shape.z_procs_neg != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_z[i_ray] < 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -342,10 +338,10 @@ template <typename Real> struct RT {
         }
       }
       MPI_Isend(send_buff_z_neg.data(), send_buff_z_neg.size(), mpi_type<Real>(),
-                mpi_manager.z_procs_neg, 1600, mpi_manager.cart_comm,
+                mpi_shape.z_procs_neg, 1600, mpi_shape.cart_comm,
                 &reqs[req_count++]);
       MPI_Irecv(recv_buff_z_neg.data(), recv_buff_z_neg.size(), mpi_type<Real>(),
-                mpi_manager.z_procs_neg, 1500, mpi_manager.cart_comm,
+                mpi_shape.z_procs_neg, 1500, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
 
@@ -353,7 +349,7 @@ template <typename Real> struct RT {
       MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
     }
 
-    if (mpi_manager.z_procs_pos != MPI_PROC_NULL) {
+    if (mpi_shape.z_procs_pos != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_z[i_ray] < 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -365,7 +361,7 @@ template <typename Real> struct RT {
       }
     }
 
-    if (mpi_manager.z_procs_neg != MPI_PROC_NULL) {
+    if (mpi_shape.z_procs_neg != MPI_PROC_NULL) {
       for (int i_ray = 0; i_ray < ang_quad.num_rays; ++i_ray) {
         if (ang_quad.mu_z[i_ray] >= 0.0) {
           for (int i = 0; i < grid.i_total; ++i) {
@@ -557,18 +553,18 @@ template <typename Real> struct RT {
   /// @brief Solve radiative transfer equation
   /// @details All necessary information should be stored in the `rte_t` object.
   template <typename BoundaryCondition>
-  void solve(const Grid<Real> &grid, const MPIManager &mpi_manager,
+  void solve(const Grid<Real> &grid, const mpi::Shape &mpi_shape,
              const Real tolerance, const int max_iters, BoundaryCondition &&bc) {
     for (int iter = 0; iter < max_iters; ++iter) {
       rint_old.copy_from(rint);
-      mpi_exchange_halo(grid, mpi_manager);
-      std::forward<BoundaryCondition>(bc)(*this, grid, mpi_manager);
+      mpi_exchange_halo(grid, mpi_shape);
+      std::forward<BoundaryCondition>(bc)(*this, grid, mpi_shape);
       single_sweep(grid);
 
       const Real max_diff = get_max_diff(grid);
       Real global_max_diff = 0.0;
       MPI_Allreduce(&max_diff, &global_max_diff, 1, mpi_type<Real>(), MPI_MAX,
-                    mpi_manager.cart_comm);
+                    mpi_shape.cart_comm);
       std::printf("%f %f\n", static_cast<double>(max_diff),
                   static_cast<double>(global_max_diff));
       if (global_max_diff < tolerance)
