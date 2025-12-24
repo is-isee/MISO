@@ -5,7 +5,7 @@
 #define USE_CUDA
 #include <miso/grid.hpp>
 
-__global__ void test_grid_kernel(miso::GridDevice<double> grid_d) {
+__global__ void test_grid_kernel(miso::GridView<double> grid_d) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
@@ -37,7 +37,8 @@ TEST_CASE("Test Grid GPU" * doctest::test_suite("grid")) {
 
   grid_d.copy_from_host(grid);
 
-  test_grid_kernel<<<dim3(1, 1, 1), dim3(i_size, j_size, k_size)>>>(grid_d);
+  test_grid_kernel<<<dim3(1, 1, 1), dim3(i_size, j_size, k_size)>>>(
+      grid_d.view());
   grid_d.copy_to_host(grid);
 
   for (int i = 0; i < i_size; ++i) {

@@ -1,10 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <cmath>
-#include <filesystem>
-#include <initializer_list>
-
 #include <miso/constants.hpp>
 #include <miso/env.hpp>
 #include <miso/mhd_artificial_viscosity_cpu.hpp>
@@ -120,17 +115,17 @@ template <typename Real> struct NoSource {
 template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source>
 struct Integrator {
-  /// @brief Grid class object
+  /// @brief Spatial grid
   Grid<Real> &grid;
-  /// @brief EOS class object
+  /// @brief Equation of states
   EOS eos;
-  /// @brief MHD class object
+  /// @brief MHD state
   Fields<Real> &qq;
-  /// @brief Work space
+  /// @brief Workspace
   Fields<Real> qq_argm, qq_rslt;
+
   /// @brief Halo exchanger
   HaloExchanger<Real> &halo_exchanger;
-
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
   /// @brief Body source for MHD equations
@@ -146,6 +141,7 @@ struct Integrator {
   Array3D<Real> ht;
   /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
   Array3D<Real> vb;
+
   /// @brief CFL number
   Real cfl_number;
   /// @brief propagation speed fo divergence B
@@ -167,7 +163,7 @@ struct Integrator {
     cfl_number = config["mhd"]["cfl_number"].template as<Real>();
   }
 
-  /// @brief  Update MHD equations using 4th order space-centered scheme
+  /// @brief Update MHD equations using 4th order space-centered scheme
   /// @param qq_orgn original MHD core variables (n = n)
   /// @param qq_argm argument MHD core variables (n = n + 1/2, n + 1/3, etc.)
   /// @param qq_rslt resulting MHD core variables (n = n + 1)
@@ -374,19 +370,19 @@ struct Integrator {
     artdiff.characteristic_velocity_eval(qq);
 
     // x direction
-    artdiff.update(qq, qq_rslt, grid.dxi, "x", dt);
+    artdiff.update(qq, qq_rslt, "x", dt);
     qq.copy_from(qq_rslt);
     bc.apply(qq);
     halo_exchanger.apply(qq);
 
     // y direction
-    artdiff.update(qq, qq_rslt, grid.dyi, "y", dt);
+    artdiff.update(qq, qq_rslt, "y", dt);
     qq.copy_from(qq_rslt);
     bc.apply(qq);
     halo_exchanger.apply(qq);
 
     // z direction
-    artdiff.update(qq, qq_rslt, grid.dzi, "z", dt);
+    artdiff.update(qq, qq_rslt, "z", dt);
     qq.copy_from(qq_rslt);
     bc.apply(qq);
     halo_exchanger.apply(qq);
@@ -440,9 +436,11 @@ struct Integrator {
     apply_artificial_viscosity(dt);
   }
 
-  // Prohibit copy and assignment
+  // Prohibit copy and move
   Integrator(const Integrator &) = delete;
   Integrator &operator=(const Integrator &) = delete;
+  Integrator(Integrator &&) = delete;
+  Integrator &operator=(Integrator &&) = delete;
 };
 
 }  // namespace cpu

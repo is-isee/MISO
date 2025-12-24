@@ -1,24 +1,16 @@
 #pragma once
 
-#include <algorithm>
-#include <cmath>
-#include <filesystem>
-#include <initializer_list>
-#include <mpi.h>
-
-#include <miso/array3d.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_compat.hpp>
 #include <miso/cuda_utils.cuh>
-#include <miso/grid.hpp>
-#include <miso/mhd.hpp>
-#include <miso/mhd_artificial_viscosity.hpp>
-#include <miso/model.hpp>
+#include <miso/env.hpp>
+#include <miso/mhd_artificial_viscosity_gpu.cuh>
+#include <miso/mhd_gpu.cuh>
 #include <miso/mpi_types.hpp>
-#include <miso/utility.hpp>
 
 namespace miso {
 namespace mhd {
+namespace gpu {
 
 template <typename Real> struct TimeStep {
   Real *min_values_device = nullptr;
@@ -47,9 +39,8 @@ template <typename Real> struct TimeStep {
 };
 
 template <typename Real>
-__global__ void cfl_condition_kernel(MHDCoreDevice<Real> qq,
-                                     GridDevice<Real> grid, Real *dt_mins,
-                                     Real cfl_number, Real eos_gm) {
+__global__ void cfl_kernel(FieldsView<Real> qq, GridDevice<Real> grid,
+                           Real *dt_mins, Real cfl_number, Real eos_gm) {
   extern __shared__ Real dt_min_shared_in_block[];
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -151,7 +142,7 @@ __device__ inline Real space_centered_4th(const Real *qq1, const Real *qq2,
 // clang-format on
 
 template <typename Real>
-__global__ void pr_bb_ht_vb_kernel(MHDCoreDevice<Real> qq_argm,
+__global__ void pr_bb_ht_vb_kernel(FieldsView<Real> qq_argm,
                                    Array3DDevice<Real> pr, Array3DDevice<Real> bb,
                                    Array3DDevice<Real> ht, Array3DDevice<Real> vb,
                                    GridDevice<Real> grid, Real eos_gm) {
@@ -203,8 +194,8 @@ __device__ inline bool compute_index_within_margin(int &i, int &j, int &k,
 
 template <typename Real>
 __global__ void
-update_ro_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+update_ro_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
+                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -221,11 +212,11 @@ update_ro_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
 }
 
 template <typename Real, typename Source>
-__global__ void update_vx_kernel(MHDCoreDevice<Real> qq_orgn,
-                                 MHDCoreDevice<Real> qq_argm,
-                                 MHDCoreDevice<Real> qq_rslt,
-                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
-                                 Source source, GridDevice<Real> grid, Real dt) {
+__global__ void update_vx_kernel(FieldsView<Real> qq_orgn,
+                                 FieldsView<Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
+                                 Array3DDevice<Real> bb, Source source,
+                                 GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -249,11 +240,11 @@ __global__ void update_vx_kernel(MHDCoreDevice<Real> qq_orgn,
 }
 
 template <typename Real, typename Source>
-__global__ void update_vy_kernel(MHDCoreDevice<Real> qq_orgn,
-                                 MHDCoreDevice<Real> qq_argm,
-                                 MHDCoreDevice<Real> qq_rslt,
-                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
-                                 Source source, GridDevice<Real> grid, Real dt) {
+__global__ void update_vy_kernel(FieldsView<Real> qq_orgn,
+                                 FieldsView<Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
+                                 Array3DDevice<Real> bb, Source source,
+                                 GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -277,11 +268,11 @@ __global__ void update_vy_kernel(MHDCoreDevice<Real> qq_orgn,
 }
 
 template <typename Real, typename Source>
-__global__ void update_vz_kernel(MHDCoreDevice<Real> qq_orgn,
-                                 MHDCoreDevice<Real> qq_argm,
-                                 MHDCoreDevice<Real> qq_rslt,
-                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
-                                 Source source, GridDevice<Real> grid, Real dt) {
+__global__ void update_vz_kernel(FieldsView<Real> qq_orgn,
+                                 FieldsView<Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
+                                 Array3DDevice<Real> bb, Source source,
+                                 GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -301,13 +292,13 @@ __global__ void update_vz_kernel(MHDCoreDevice<Real> qq_orgn,
                              + space_centered_4th(qq_argm.bz, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
              + source.vz(qq_argm, i, j, k)
           )) / qq_rslt.ro[grid.idx(i, j, k)];
+  // clang-format on
 }
-// clang-format on
 
 template <typename Real>
 __global__ void
-update_bx_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+update_bx_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
+                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -321,13 +312,13 @@ update_bx_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
             + space_centered_4th(qq_argm.vx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
             + space_centered_4th(qq_argm.vx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
             - space_centered_4th(qq_argm.ph, grid.dxi[i], i, j, k, grid.is, 0, 0, grid));
+  // clang-format on
 }
-// clang-format on
 
 template <typename Real>
 __global__ void
-update_by_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+update_by_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
+                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -341,13 +332,13 @@ update_by_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
             + space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
             + space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
             - space_centered_4th(qq_argm.ph, grid.dyi[j], i, j, k, 0, grid.js, 0, grid));
+  // clang-format on
 }
-// clang-format on
 
 template <typename Real>
 __global__ void
-update_bz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
-                 MHDCoreDevice<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
+update_bz_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
+                 FieldsView<Real> qq_rslt, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -365,9 +356,9 @@ update_bz_kernel(MHDCoreDevice<Real> qq_orgn, MHDCoreDevice<Real> qq_argm,
 }
 
 template <typename Real>
-__global__ void update_ph_kernel(MHDCoreDevice<Real> qq_orgn,
-                                 MHDCoreDevice<Real> qq_argm,
-                                 MHDCoreDevice<Real> qq_rslt, Real ch_divb_square,
+__global__ void update_ph_kernel(FieldsView<Real> qq_orgn,
+                                 FieldsView<Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Real ch_divb_square,
                                  Real tau_divb, GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
@@ -386,12 +377,12 @@ __global__ void update_ph_kernel(MHDCoreDevice<Real> qq_orgn,
 }
 
 template <typename Real, typename Source>
-__global__ void update_ei_kernel(MHDCoreDevice<Real> qq_orgn,
-                                 MHDCoreDevice<Real> qq_argm,
-                                 MHDCoreDevice<Real> qq_rslt,
-                                 Array3DDevice<Real> pr, Array3DDevice<Real> bb,
-                                 Array3DDevice<Real> ht, Array3DDevice<Real> vb,
-                                 Source source, GridDevice<Real> grid, Real dt) {
+__global__ void update_ei_kernel(FieldsView<Real> qq_orgn,
+                                 FieldsView<Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
+                                 Array3DDevice<Real> bb, Array3DDevice<Real> ht,
+                                 Array3DDevice<Real> vb, Source source,
+                                 GridDevice<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -435,55 +426,68 @@ __global__ void update_ei_kernel(MHDCoreDevice<Real> qq_orgn,
 /// @details Volumetric heat / force terms are expected.
 template <typename Real> struct NoSource {
   /// External force: x-direction
-  inline Real HOST_DEVICE vx(const MHDCoreDevice<Real> &, int, int,
+  inline Real HOST_DEVICE vx(const FieldsView<Real> &, int, int,
                              int) const noexcept {
     return 0.0;
   }
 
   /// External force: y-direction
-  inline Real HOST_DEVICE vy(const MHDCoreDevice<Real> &, int, int,
+  inline Real HOST_DEVICE vy(const FieldsView<Real> &, int, int,
                              int) const noexcept {
     return 0.0;
   }
 
   /// External force: z-direction
-  inline Real HOST_DEVICE vz(const MHDCoreDevice<Real> &, int, int,
+  inline Real HOST_DEVICE vz(const FieldsView<Real> &, int, int,
                              int) const noexcept {
     return 0.0;
   }
 
   /// External heating
-  inline Real HOST_DEVICE ei(const MHDCoreDevice<Real> &, int, int,
+  inline Real HOST_DEVICE ei(const FieldsView<Real> &, int, int,
                              int) const noexcept {
     return 0.0;
   }
 };
 
-template <typename Real, typename BoundaryCondition,
+template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source = NoSource<Real>>
-struct TimeIntegrator {
-  // Disallow copying and assignment since this class manages resources
-  TimeIntegrator(const TimeIntegrator &) = delete;
-  TimeIntegrator &operator=(const TimeIntegrator &) = delete;
+struct Integrator {
+  /// @brief Spatial grid
+  GridDevice<Real> &grid;
+  /// @brief Equation of states
+  EOS eos;
+  /// @brief MHD state
+  Fields<Real> &qq;
+  /// @brief Workspace
+  Fields<Real> qq_argm, qq_rslt;
 
-  Model<Real> &model;
-  Config &config;
-  Time<Real> &time;
-  Grid<Real> &grid;
-  GridDevice<Real> &grid_d;
-  EOS<Real> &eos;
-  MHD<Real> &mhd;
-  MHDDevice<Real> &mhd_d;
-  MPIManager &mpi;
-  CudaKernelShape<Real> &cu_shape;
-  MHDStreams &mhd_streams;
-  TimeStep<Real> time_step;
+  /// @brief Halo exchanger
+  HaloExchanger<Real> &halo_exchanger;
+  /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
+  /// @brief Body source for MHD equations
   Source source;
-  ArtificialViscosity<Real> artdiff;
+  /// @brief Artificial viscosity for MHD equations
+  ArtificialViscosity<Real, EOS> artdiff;
 
-  // Array3D<Real> pr, bb, ht, vb;
-  Array3DDevice<Real> pr_d, bb_d, ht_d, vb_d;
+  /// @brief CUDA kernel shape
+  CudaKernelShape<Real> &cu_shape;
+  /// @brief CUDA streams for MHD variables
+  Streams &cu_streams;
+  /// @brief Workspace for timestep calculation
+  TimeStep<Real> time_step;
+
+  /// @brief gas pressure
+  Array3DDevice<Real> pr;
+  /// @brief magnetic field strength bx*bx + by*by + bz*bz
+  Array3DDevice<Real> bb;
+  /// @brief enthalpy + 2*magnetic energy + kinetic energy
+  Array3DDevice<Real> ht;
+  /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
+  Array3DDevice<Real> vb;
+
+  /// @brief CFL number
   Real cfl_number;
   /// @brief propagation speed fo divergence B
   Real ch_divb;
@@ -492,159 +496,152 @@ struct TimeIntegrator {
   /// @brief damping time scape for divergence B
   Real tau_divb;
 
-  TimeIntegrator(Model<Real> &model_)
-      : model(model_), config(model_.config), time(model_.time),
-        grid(model_.grid_local), grid_d(model_.grid_d), eos(model_.eos),
-        mhd(model_.mhd), mhd_d(model_.mhd_d), artdiff(model_), mpi(model_.mpi),
-        pr_d(grid.i_total, grid.j_total, grid.k_total),
-        bb_d(grid.i_total, grid.j_total, grid.k_total),
-        ht_d(grid.i_total, grid.j_total, grid.k_total),
-        vb_d(grid.i_total, grid.j_total, grid.k_total), cu_shape(model_.cu_shape),
-        mhd_streams(model_.mhd_streams), time_step(model_.cu_shape), bc(model_) {
+  Integrator(Config &config, Fields<Real> &qq, GridDevice<Real> &grid,
+             HaloExchanger<Real> &halo_exchanger, CudaKernelShape<Real> &cu_shape,
+             Streams &cu_streams)
+      : grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
+        halo_exchanger(halo_exchanger), bc(config),
+        artdiff(config, grid, eos, cu_shape), cu_shape(cu_shape),
+        cu_streams(cu_streams), time_step(cu_shape),
+        pr(grid.i_total, grid.j_total, grid.k_total),
+        bb(grid.i_total, grid.j_total, grid.k_total),
+        ht(grid.i_total, grid.j_total, grid.k_total),
+        vb(grid.i_total, grid.j_total, grid.k_total) {
     cfl_number = config["mhd"]["cfl_number"].template as<Real>();
   }
 
-  // core function for MHD time integration
-  void update_sc4(const MHDCoreDevice<Real> &qq_orgn,
-                  const MHDCoreDevice<Real> &qq_argm,
-                  MHDCoreDevice<Real> &qq_rslt, Real dt) {
+  /// @brief Update MHD equations using 4th order space-centered scheme
+  void update_sc4(Fields<Real> &qq_orgn, Fields<Real> &qq_argm,
+                  Fields<Real> &qq_rslt, const Real dt) {
     pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_argm, pr_d, bb_d, ht_d, vb_d, grid_d, eos.gm);
+        qq_argm.view(), pr, bb, ht, vb, grid.view(), eos.gm);
     CUDA_CHECK(cudaGetLastError());
 
     update_ro_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_vx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, source, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
+        grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_vy_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, source, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
+        grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_vz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, source, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
+        grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_bx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_by_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_bz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_ph_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, ch_divb_square, tau_divb, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), ch_divb_square, tau_divb,
+        grid.view(), dt);
     CUDA_CHECK(cudaGetLastError());
 
     update_ei_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn, qq_argm, qq_rslt, pr_d, bb_d, ht_d, vb_d, source, grid_d, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, ht, vb, source,
+        grid.view(), dt);
   }
 
-  void runge_kutta_4step() {
-    // Runge-Kutta 1st step
-    update_sc4(mhd_d.qq, mhd_d.qq, mhd_d.qq_rslt, time.dt / 4.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, mhd_streams);
-    bc.apply(mhd_d.qq_argm);
-    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
+  /// @brief Runge-Kutta 4th order time integration step
+  void runge_kutta_4step(const Real dt) {
+    update_sc4(qq, qq, qq_rslt, dt / 4.0);
+    qq_argm.copy_from_device(qq_rslt, cu_streams);
+    bc.apply(qq_argm);
+    halo_exchanger.apply(qq_argm);
 
-    // Runge-Kutta 2nd step
-    update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 3.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, mhd_streams);
-    bc.apply(mhd_d.qq_argm);
-    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
+    update_sc4(qq, qq_argm, qq_rslt, dt / 3.0);
+    qq_argm.copy_from_device(qq_rslt, cu_streams);
+    bc.apply(qq_argm);
+    halo_exchanger.apply(qq_argm);
 
-    // Runge-Kutta 3rd step
-    update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt / 2.0);
-    mhd_d.qq_argm.copy_from_device(mhd_d.qq_rslt, mhd_streams);
-    bc.apply(mhd_d.qq_argm);
-    mhd_d.mpi_exchange_halo(mhd_d.qq_argm, grid_d, mpi, cu_shape);
+    update_sc4(qq, qq_argm, qq_rslt, dt / 2.0);
+    qq_argm.copy_from_device(qq_rslt, cu_streams);
+    bc.apply(qq_argm);
+    halo_exchanger.apply(qq_argm);
 
-    // Runge-Kutta 4th step
-    update_sc4(mhd_d.qq, mhd_d.qq_argm, mhd_d.qq_rslt, time.dt);
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
-    bc.apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
+    update_sc4(qq, qq_argm, qq_rslt, dt);
+    qq.copy_from_device(qq_rslt, cu_streams);
+    bc.apply(qq);
+    halo_exchanger.apply(qq);
   }
 
-  void apply_artificial_viscosity() {
-    artdiff.characteristic_velocity_eval();
+  /// @brief Apply artificial viscosity
+  void apply_artificial_viscosity(const Real dt) {
+    artdiff.characteristic_velocity_eval(qq);
 
     // x direction
-    artdiff.update(grid.dxi, grid_d.dxi, "x");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
-    bc.apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
+    artdiff.update(qq, qq_rslt, "x", dt);
+    qq.copy_from_device(qq_rslt, cu_streams);
+    bc.apply(qq);
+    halo_exchanger.apply(qq);
 
     // y direction
-    artdiff.update(grid.dyi, grid_d.dyi, "y");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
-    bc.apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
+    artdiff.update(qq, qq_rslt, "y", dt);
+    qq.copy_from_device(qq_rslt, cu_streams);
+    bc.apply(qq);
+    halo_exchanger.apply(qq);
 
     // z direction
-    artdiff.update(grid.dzi, grid_d.dzi, "z");
-    mhd_d.qq.copy_from_device(mhd_d.qq_rslt, mhd_streams);
-    bc.apply(mhd_d.qq);
-    mhd_d.mpi_exchange_halo(mhd_d.qq, grid_d, mpi, cu_shape);
+    artdiff.update(qq, qq_rslt, "z", dt);
+    qq.copy_from_device(qq_rslt, cu_streams);
+    bc.apply(qq);
+    halo_exchanger.apply(qq);
   }
 
-  void cfl_condition() {
-    cfl_condition_kernel<Real>
+  /// @brief Calculate time spacing based on CFL condition
+  Real cfl() const {
+    cfl_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim, time_step.shared_mem_size>>>(
-            mhd_d.qq, grid_d, time_step.min_values_device, cfl_number, eos.gm);
+            qq.view(), grid.view(), time_step.min_values_device, cfl_number,
+            eos.gm);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
 
     time_step.copy_to_host();
-    time.dt = *std::min_element(time_step.min_values_host,
+    auto dt = *std::min_element(time_step.min_values_host,
                                 time_step.min_values_host + time_step.n_blocks);
     Real dt_global;
-    MPI_Allreduce(&time.dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN,
-                  mpi.cart_comm);
-    time.dt = dt_global;
+    MPI_Allreduce(&dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN, mpi::comm());
+    return dt_global;
   }
 
-  void divb_parameters_set() {
-    ch_divb = 0.8 * cfl_number * grid.min_dxyz / time.dt;
+  /// @brief Set parameters for divergence B cleaning
+  void divb_parameters_set(const Real dt) {
+    ch_divb = 0.8 * cfl_number * grid.min_dxyz / dt;
     ch_divb_square = ch_divb * ch_divb;
-    tau_divb = 2.0 * time.dt;
+    tau_divb = 2.0 * dt;
   }
 
-  void run() {
-    if (config["base"]["continue"].template as<bool>() &&
-        fs::exists(config.time_save_dir + "n_output.txt")) {
-      model.load_state();
-    }
-
-    MPI_Barrier(mpi.cart_comm);
-
-    grid_d.copy_from_host(grid);
-    mhd_d.qq.copy_from_host(mhd.qq, mhd_streams);
-    model.save_if_needed();
-
-    while (time.time < time.tend) {
-      // basic MHD time integration
-      cfl_condition();
-      divb_parameters_set();
-      runge_kutta_4step();
-      apply_artificial_viscosity();
-
-      // Update time after all procedures
-      time.update();
-
-      // Output snapshot if needed
-      model.save_if_needed();
-    }
+  /// @brief Update MHD equations by one time step
+  void update(const Real dt) {
+    divb_parameters_set(dt);
+    runge_kutta_4step(dt);
+    apply_artificial_viscosity(dt);
   }
+
+  // Prohibit copy and move
+  Integrator(const Integrator &) = delete;
+  Integrator &operator=(const Integrator &) = delete;
+  Integrator(Integrator &&) = delete;
+  Integrator &operator=(Integrator &&) = delete;
 };
 
+}  // namespace gpu
 }  // namespace mhd
 }  // namespace miso

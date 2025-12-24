@@ -42,12 +42,7 @@ void initial_condition(mhd::cpu::Fields<Real> &qq, const Grid<Real> &grid,
 // Be sure to set "periodic" in domain field of config.yaml.
 struct EmptyBC {
   explicit EmptyBC(Config &config) {}
-
-#ifdef USE_CUDA
-  void apply(mhd::gpu::Fields<Real> &qq) {}
-#else
-  void apply(mhd::cpu::Fields<Real> &qq) {}
-#endif
+  void apply(mhd::FieldsView<Real> &qq) {}
 };
 
 struct Model {
@@ -122,6 +117,10 @@ struct Model {
 
     save_metadata();
     initial_condition(mhd.qq, grid, eos);
+#ifdef USE_CUDA
+    grid_d.copy_from_host(grid);
+    mhd_d.qq.copy_from_host(mhd.qq, mhd_streams);
+#endif
 
     MPI_Barrier(mpi::comm());
 

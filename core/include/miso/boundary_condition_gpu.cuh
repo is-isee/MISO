@@ -2,12 +2,13 @@
 
 #include <miso/boundary_condition_core.hpp>
 #include <miso/grid_gpu.cuh>
+#include <miso/grid_view.hpp>
 
 namespace miso {
 namespace bnd {
 
 template <typename Real>
-__global__ void symmetric_kernel(Real *arr, GridDevice<Real> grid, Real sign,
+__global__ void symmetric_kernel(Real *arr, GridView<Real> grid, Real sign,
                                  Direction direction, Side side) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -46,7 +47,7 @@ void symmetric(Real *arr, const GridDevice<Real> &grid, Real *fac, Real sign,
                 (grid.k_total + block_dim.z - 1) / block_dim.z);
 
   symmetric_kernel<Real>
-      <<<grid_dim, block_dim>>>(arr, grid, sign, direction, side);
+      <<<grid_dim, block_dim>>>(arr, grid.view(), sign, direction, side);
   CUDA_CHECK(cudaGetLastError());
   CUDA_CHECK(cudaDeviceSynchronize());
 };

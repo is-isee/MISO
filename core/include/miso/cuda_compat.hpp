@@ -1,4 +1,4 @@
-/// @brief CUDA compatibility macros and functions
+/// @brief Macros and functions for CUDA compatibility
 #pragma once
 
 #ifdef USE_CUDA
@@ -11,10 +11,11 @@
 #define GLOBAL __global__
 
 // clang-format off
-#define CUDA_CHECK(ans) { miso::gpuAssert((ans), __FILE__, __LINE__); }
+#define CUDA_CHECK(ans) { miso::cuda::gpuAssert((ans), __FILE__, __LINE__); }
 // clang-format on
 
 namespace miso {
+namespace cuda {
 
 inline void gpuAssert(cudaError_t code, const char *file, int line,
                       bool abort = true) {
@@ -26,6 +27,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line,
   }
 };
 
+}  // namespace cuda
 }  // namespace miso
 
 #else

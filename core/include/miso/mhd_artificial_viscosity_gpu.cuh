@@ -1,26 +1,20 @@
 #pragma once
 
-#include <algorithm>
-#include <cassert>
-#include <initializer_list>
-#include <string>
-
 #include <miso/constants.hpp>
 #include <miso/cuda_utils.cuh>
 #include <miso/grid_gpu.cuh>
 #include <miso/mhd_artificial_viscosity_core.hpp>
-#include <miso/model.hpp>
+#include <miso/mhd_gpu.cuh>
 
 namespace miso {
 namespace mhd {
 namespace artificial_viscosity {
 
 template <typename Real>
-__global__ void characteristic_velocity_eval_kernel(Array3DDevice<Real> cc_d,
-                                                    MHDCoreDevice<Real> qq,
-                                                    GridDevice<Real> grid,
-                                                    Real eos_gm, Real cs_fac,
-                                                    Real ca_fac, Real vv_fac) {
+__global__ void
+characteristic_velocity_eval_kernel(Array3DDevice<Real> cc_d, FieldsView<Real> qq,
+                                    GridView<Real> grid, Real eos_gm, Real cs_fac,
+                                    Real ca_fac, Real vv_fac) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -42,11 +36,11 @@ __global__ void characteristic_velocity_eval_kernel(Array3DDevice<Real> cc_d,
 }
 
 template <typename Real>
-__global__ void
-update_ro_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_ro_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -85,11 +79,11 @@ update_ro_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_vx_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_vx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -133,11 +127,11 @@ update_vx_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_vy_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_vy_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -181,11 +175,11 @@ update_vy_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_vz_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_vz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -229,11 +223,11 @@ update_vz_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_bx_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_bx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -270,11 +264,11 @@ update_bx_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_by_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_by_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -312,11 +306,11 @@ update_by_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_bz_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_bz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -354,11 +348,11 @@ update_bz_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_ph_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_ph_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -395,11 +389,11 @@ update_ph_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
 }
 
 template <typename Real>
-__global__ void
-update_ei_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
-                 Array3DDevice<Real> cc, GridDevice<Real> grid, Real *dxyzi,
-                 int i0_, int i1_, int j0_, int j1_, int k0_, int k1_, int is,
-                 int js, int ks, Real ep, Real fh, Real dt) {
+__global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
+                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
+                                 int k0_, int k1_, int is, int js, int ks,
+                                 Real ep, Real fh, Real dt) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -458,28 +452,33 @@ update_ei_kernel(MHDCoreDevice<Real> qq, MHDCoreDevice<Real> qq_rslt,
         qq_rslt.ro[grid.idx(i, j, k)];
   }
 }
+
 }  // namespace artificial_viscosity
 
-template <typename Real> struct ArtificialViscosity {
-  Config &config;
-  Time<Real> &time;
-  Grid<Real> &grid;
-  GridDevice<Real> &grid_d;
-  EOS<Real> &eos;
-  MHD<Real> &mhd;
-  MHDDevice<Real> &mhd_d;
+namespace gpu {
+
+template <typename Real, typename EOS> struct ArtificialViscosity {
+  GridDevice<Real> &grid;
+  EOS &eos;
   CudaKernelShape<Real> &cu_shape;
 
-  Array3DDevice<Real> cc_d;
-  Array3D<Real> cc;
-  Real ep, fh;
-  Real cs_fac, ca_fac, vv_fac;
+  /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
+  Array3DDevice<Real> cc;
+  /// @brief Parameters for generalized minmod limiter
+  Real ep;
+  /// @brief Parameters for amplitude of artificial viscosity flux
+  Real fh;
+  /// @brief Characteristic velocity factor for sound speed
+  Real cs_fac;
+  /// @brief Characteristic velocity factor for Alfvén speed
+  Real ca_fac;
+  /// @brief Characteristic velocity factor for fluid velocity
+  Real vv_fac;
 
-  ArtificialViscosity(Model<Real> &model)
-      : config(model.config), time(model.time), grid(model.grid_local),
-        eos(model.eos), mhd(model.mhd), mhd_d(model.mhd_d), grid_d(model.grid_d),
-        cu_shape(model.cu_shape), cc(grid.i_total, grid.j_total, grid.k_total),
-        cc_d(grid.i_total, grid.j_total, grid.k_total) {
+  ArtificialViscosity(Config &config, GridDevice<Real> &grid, EOS &eos,
+                      CudaKernelShape<Real> &cu_shape)
+      : grid(grid), eos(eos), cu_shape(cu_shape),
+        cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();
     cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].template as<Real>();
@@ -489,13 +488,14 @@ template <typename Real> struct ArtificialViscosity {
     assert(fh >= 0);
   }
 
-  void characteristic_velocity_eval() {
+  void characteristic_velocity_eval(const Fields<Real> &qq) {
     artificial_viscosity::characteristic_velocity_eval_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            cc_d, mhd_d.qq, grid_d, eos.gm, cs_fac, ca_fac, vv_fac);
+            cc, qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
   }
 
-  void update(std::vector<Real> &dxyzi, Real *dxyzi_d, std::string direction) {
+  void update(Fields<Real> &qq, Fields<Real> &qq_rslt, std::string direction,
+              const Real dt) {
     int i0_ = 0;
     int i1_ = grid.i_total;
     int is = 0;
@@ -505,67 +505,71 @@ template <typename Real> struct ArtificialViscosity {
     int k0_ = 0;
     int k1_ = grid.k_total;
     int ks = 0;
-
+    Real *dxyzi = nullptr;
     if (direction == "x") {
       i0_ = 2 * grid.is;
       i1_ = grid.i_total - 2 * grid.is;
       is = grid.is;
+      dxyzi = grid.dxi;
     } else if (direction == "y") {
       j0_ = 2 * grid.js;
       j1_ = grid.j_total - 2 * grid.js;
       js = grid.js;
+      dxyzi = grid.dyi;
     } else if (direction == "z") {
       k0_ = 2 * grid.ks;
       k1_ = grid.k_total - 2 * grid.ks;
       ks = grid.ks;
+      dxyzi = grid.dzi;
     }
 
     artificial_viscosity::update_ro_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_vx_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_vy_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_vz_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_bx_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_by_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_bz_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_ph_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_ei_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            mhd_d.qq, mhd_d.qq_rslt, cc_d, grid_d, dxyzi_d, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, time.dt);
+            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
+            k0_, k1_, is, js, ks, ep, fh, dt);
   }
 };
 
+}  // namespace gpu
 }  // namespace mhd
 }  // namespace miso

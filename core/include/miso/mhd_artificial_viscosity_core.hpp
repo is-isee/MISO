@@ -4,7 +4,6 @@
 
 namespace miso {
 namespace mhd {
-
 namespace artificial_viscosity {
 
 ///@brief inline functions for generalized minmod limiter
