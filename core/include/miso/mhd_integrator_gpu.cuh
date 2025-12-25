@@ -47,7 +47,6 @@ __global__ void cfl_kernel(FieldsView<Real> qq, GridView<Real> grid,
   int k = blockIdx.z * blockDim.z + threadIdx.z;
 
   Real dt = 1.e10;
-  Real slow_speed = 1.e-10;
   if (i >= grid.i_margin && i < grid.i_total - grid.i_margin &&
       j >= grid.j_margin && j < grid.j_total - grid.j_margin &&
       k >= grid.k_margin && k < grid.k_total - grid.k_margin) {
@@ -60,7 +59,7 @@ __global__ void cfl_kernel(FieldsView<Real> qq, GridView<Real> grid,
                          + qq.by[grid.idx(i, j, k)] * qq.by[grid.idx(i, j, k)]
                          + qq.bz[grid.idx(i, j, k)] * qq.bz[grid.idx(i, j, k)]) /
                         qq.ro[grid.idx(i, j, k)] * pii4<Real>);
-    Real total_vel = (cs + vv + ca)*grid.mask[grid.idx(i, j, k)] + slow_speed*(1.0 - grid.mask[grid.idx(i, j, k)]);
+    Real total_vel = (cs + vv + ca);
     // clang-format on
     dt = cfl_number * util::min3(grid.dx[i], grid.dy[j], grid.dz[k]) / total_vel;
   }
@@ -141,10 +140,10 @@ __device__ inline Real space_centered_4th(const Real *qq1, const Real *qq2,
 // clang-format on
 
 template <typename Real>
-__global__ void pr_bb_ht_vb_kernel(FieldsView<Real> qq_argm,
-                                   Array3DDevice<Real> pr, Array3DDevice<Real> bb,
-                                   Array3DDevice<Real> ht, Array3DDevice<Real> vb,
-                                   GridView<Real> grid, Real eos_gm) {
+__global__ void pr_bb_ht_vb_kernel(FieldsView<Real> qq_argm, Array3DView<Real> pr,
+                                   Array3DView<Real> bb, Array3DView<Real> ht,
+                                   Array3DView<Real> vb, GridView<Real> grid,
+                                   Real eos_gm) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
@@ -213,8 +212,8 @@ update_ro_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
 template <typename Real, typename Source>
 __global__ void update_vx_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_argm,
-                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
-                                 Array3DDevice<Real> bb, Source source,
+                                 FieldsView<Real> qq_rslt, Array3DView<Real> pr,
+                                 Array3DView<Real> bb, Source source,
                                  GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
@@ -241,8 +240,8 @@ __global__ void update_vx_kernel(FieldsView<Real> qq_orgn,
 template <typename Real, typename Source>
 __global__ void update_vy_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_argm,
-                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
-                                 Array3DDevice<Real> bb, Source source,
+                                 FieldsView<Real> qq_rslt, Array3DView<Real> pr,
+                                 Array3DView<Real> bb, Source source,
                                  GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
@@ -269,8 +268,8 @@ __global__ void update_vy_kernel(FieldsView<Real> qq_orgn,
 template <typename Real, typename Source>
 __global__ void update_vz_kernel(FieldsView<Real> qq_orgn,
                                  FieldsView<Real> qq_argm,
-                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
-                                 Array3DDevice<Real> bb, Source source,
+                                 FieldsView<Real> qq_rslt, Array3DView<Real> pr,
+                                 Array3DView<Real> bb, Source source,
                                  GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
@@ -376,12 +375,11 @@ __global__ void update_ph_kernel(FieldsView<Real> qq_orgn,
 }
 
 template <typename Real, typename Source>
-__global__ void update_ei_kernel(FieldsView<Real> qq_orgn,
-                                 FieldsView<Real> qq_argm,
-                                 FieldsView<Real> qq_rslt, Array3DDevice<Real> pr,
-                                 Array3DDevice<Real> bb, Array3DDevice<Real> ht,
-                                 Array3DDevice<Real> vb, Source source,
-                                 GridView<Real> grid, Real dt) {
+__global__ void
+update_ei_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
+                 FieldsView<Real> qq_rslt, Array3DView<Real> pr,
+                 Array3DView<Real> bb, Array3DView<Real> ht, Array3DView<Real> vb,
+                 Source source, GridView<Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -514,7 +512,8 @@ struct Integrator {
   void update_sc4(Fields<Real> &qq_orgn, Fields<Real> &qq_argm,
                   Fields<Real> &qq_rslt, const Real dt) {
     pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_argm.view(), pr, bb, ht, vb, grid.view(), eos.gm);
+        qq_argm.view(), pr.view(), bb.view(), ht.view(), vb.view(), grid.view(),
+        eos.gm);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ro_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
@@ -522,18 +521,18 @@ struct Integrator {
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_vx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
-        grid.view(), dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr.view(), bb.view(),
+        source, grid.view(), dt);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_vy_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
-        grid.view(), dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr.view(), bb.view(),
+        source, grid.view(), dt);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_vz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
-        grid.view(), dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr.view(), bb.view(),
+        source, grid.view(), dt);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_bx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
@@ -554,8 +553,9 @@ struct Integrator {
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ei_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, ht, vb, source,
-        grid.view(), dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr.view(), bb.view(),
+        ht.view(), vb.view(), source, grid.view(), dt);
+    MISO_CUDA_CHECK(cudaGetLastError());
   }
 
   /// @brief Runge-Kutta 4th order time integration step

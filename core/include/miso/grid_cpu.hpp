@@ -3,7 +3,6 @@
 #include <cassert>
 #include <vector>
 
-#include <miso/array3d_cpu.hpp>
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 #include <miso/mpi_util.hpp>
@@ -86,11 +85,6 @@ template <typename Real> struct Grid {
 
   /// @brief global minimum value of dx, dy, dz
   Real min_dxyz;
-
-  /// @brief mask array
-  /// @details This array is **not allocated** for global grid construction,
-  ///          but allocated for MPI-local grids.
-  Array3D<Real> mask;
 
   inline int idx(int i, int j, int k) const {
     return (i * j_total + j) * k_total + k;
@@ -242,17 +236,6 @@ template <typename Real> struct Grid {
       dzi[k] = grid_global.dzi[k_stt + k];
     }
     min_dxyz = grid_global.min_dxyz;
-
-    mask.allocate(i_total, j_total, k_total);
-
-    // set mask value, default is 1 (fluid)
-    for (int i = 0; i < i_total; ++i) {
-      for (int j = 0; j < j_total; ++j) {
-        for (int k = 0; k < k_total; ++k) {
-          mask(i, j, k) = 1;
-        }
-      }
-    }
   }
 
   /// @brief save grid data to a binary file

@@ -10,19 +10,9 @@ namespace mhd {
 namespace impl_host {
 
 /// @brief Calculate 4th order space-centered derivative for qq
-/// @tparam Real
-/// @param qq variables
-/// @param dxyzi grid spacing in x, y, z direction (grid.dx, grid.dy, grid.dz)
-/// @param i i index
-/// @param j j index
-/// @param k k index
-/// @param is i skip
-/// @param js j skip
-/// @param ks k skip
-/// @return Array3D<Real> derivative value
 template <typename Real>
-inline Real space_centered_4th(const Array3D<Real> &qq, Real dxyzi, int i, int j,
-                               int k, int is, int js, int ks) {
+inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq, Real dxyzi,
+                               int i, int j, int k, int is, int js, int ks) {
   // clang-format off
   return (
     -     qq(i + 2*is, j + 2*js, k + 2*ks)
@@ -34,21 +24,10 @@ inline Real space_centered_4th(const Array3D<Real> &qq, Real dxyzi, int i, int j
 };
 
 /// @brief Calculate 4th order space-centered derivative for qq1*qq2
-/// @tparam Real
-/// @param qq1 variables
-/// @param qq2 variables
-/// @param dxyzi grid spacing in x, y, z direction (grid.dx, grid.dy, grid.dz)
-/// @param i i index
-/// @param j j index
-/// @param k k index
-/// @param is i skip
-/// @param js j skip
-/// @param ks k skip
-/// @return Array3D<Real> derivative value
 template <typename Real>
-inline Real space_centered_4th(const Array3D<Real> &qq1, const Array3D<Real> &qq2,
-                               Real dxyzi, int i, int j, int k, int is, int js,
-                               int ks) {
+inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq1,
+                               const Array3D<Real, HostSpace> &qq2, Real dxyzi,
+                               int i, int j, int k, int is, int js, int ks) {
   // clang-format off
   return (
     -     qq1(i + 2*is, j + 2*js, k + 2*ks)*qq2(i + 2*is, j + 2*js, k + 2*ks)
@@ -60,22 +39,11 @@ inline Real space_centered_4th(const Array3D<Real> &qq1, const Array3D<Real> &qq
 };
 
 /// @brief Calculate 4th order space-centered derivative for qq1*qq2*qq3
-/// @tparam Real
-/// @param qq1 variables
-/// @param qq2 variables
-/// @param qq3 variables
-/// @param dxyzi grid spacing in x, y, z direction (grid.dx, grid.dy, grid.dz)
-/// @param i i index
-/// @param j j index
-/// @param k k index
-/// @param is i skip
-/// @param js j skip
-/// @param ks k skip
-/// @return Array3D<Real> derivative value
 template <typename Real>
-inline Real space_centered_4th(const Array3D<Real> &qq1, const Array3D<Real> &qq2,
-                               const Array3D<Real> &qq3, Real dxyzi, int i, int j,
-                               int k, int is, int js, int ks) {
+inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq1,
+                               const Array3D<Real, HostSpace> &qq2,
+                               const Array3D<Real, HostSpace> &qq3, Real dxyzi,
+                               int i, int j, int k, int is, int js, int ks) {
   // clang-format off
   return (
     -     qq1(i + 2*is, j + 2*js, k + 2*ks)*qq2(i + 2*is, j + 2*js, k + 2*ks)*qq3(i + 2*is, j + 2*js, k + 2*ks)
@@ -133,13 +101,13 @@ struct Integrator {
   ArtificialViscosity<Real, EOS> artdiff;
 
   /// @brief gas pressure
-  Array3D<Real> pr;
+  Array3D<Real, HostSpace> pr;
   /// @brief magnetic field strength bx*bx + by*by + bz*bz
-  Array3D<Real> bb;
+  Array3D<Real, HostSpace> bb;
   /// @brief enthalpy + 2*magnetic energy + kinetic energy
-  Array3D<Real> ht;
+  Array3D<Real, HostSpace> ht;
   /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
-  Array3D<Real> vb;
+  Array3D<Real, HostSpace> vb;
 
   /// @brief CFL number
   Real cfl_number;
@@ -163,10 +131,6 @@ struct Integrator {
   }
 
   /// @brief Update MHD equations using 4th order space-centered scheme
-  /// @param qq_orgn original MHD core variables (n = n)
-  /// @param qq_argm argument MHD core variables (n = n + 1/2, n + 1/3, etc.)
-  /// @param qq_rslt resulting MHD core variables (n = n + 1)
-  /// @param dt time spacing (note that this is not the same as actual time spacing)
   void update_sc4(Fields<Real> &qq_orgn, Fields<Real> &qq_argm,
                   Fields<Real> &qq_rslt, const Real dt) {
     for (int i = 0; i < grid.i_total; ++i) {
@@ -390,7 +354,6 @@ struct Integrator {
   /// @brief Calculate time spacing based on CFL condition
   Real cfl() const {
     Real dt = 1.e10;
-    Real slow_speed = 1.e-10;
     for (int i = grid.i_margin; i < grid.i_total - grid.i_margin; ++i) {
       for (int j = grid.j_margin; j < grid.j_total - grid.j_margin; ++j) {
         for (int k = grid.k_margin; k < grid.k_total - grid.k_margin; ++k) {
@@ -408,8 +371,7 @@ struct Integrator {
             + qq.bz(i,j,k)*qq.bz(i,j,k)
           )/qq.ro(i,j,k)*pii4<Real>);
 
-          // in masked region, cfl condition is not applied
-          Real total_vel = (cs + vv + ca)*grid.mask(i,j,k) + slow_speed*(1.0 - grid.mask(i,j,k));
+          Real total_vel = cs + vv + ca;
           dt = std::min(dt,
             cfl_number*std::min<Real>({grid.dx[i], grid.dy[j], grid.dz[k]})/total_vel);
           // clang-format on

@@ -53,7 +53,7 @@ public:
 };
 
 /// @brief 3D Array in general memory space.
-template <typename T, typename MemorySpace> class Array3D;
+template <typename T, typename MemorySpace = HostSpace> class Array3D;
 
 /// @brief 3D Array in host memory.
 template <typename T> class Array3D<T, HostSpace> {
@@ -68,6 +68,16 @@ public:
   }
 
   ~Array3D() { delete[] data_; }
+
+  /// @brief Get a lightweight view of the array.
+  Array3DView<T> view() noexcept {
+    return Array3DView<T>(data_, i_total_, j_total_, k_total_);
+  }
+
+  /// @brief Get a constant lightweight view of the array.
+  Array3DView<const T> view() const noexcept {
+    return Array3DView<const T>(data_, i_total_, j_total_, k_total_);
+  }
 
   T &operator()(int i, int j, int k) noexcept {
     assert(i >= 0 && i < i_total_);
@@ -155,6 +165,16 @@ public:
     if (data_)
       cudaFree(data_);
     data_ = nullptr;
+  }
+
+  /// @brief Get a lightweight view of the array.
+  Array3DView<T> view() noexcept {
+    return Array3DView<T>(data_, i_total_, j_total_, k_total_);
+  }
+
+  /// @brief Get a constant lightweight view of the array.
+  Array3DView<const T> view() const noexcept {
+    return Array3DView<const T>(data_, i_total_, j_total_, k_total_);
   }
 
   /// @brief Get pointer to the data.

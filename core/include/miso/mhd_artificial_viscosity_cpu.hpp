@@ -15,7 +15,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   EOS &eos;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
-  Array3D<Real> cc;
+  Array3D<Real, HostSpace> cc;
   /// @brief Parameters for generalized minmod limiter
   Real ep;
   /// @brief Parameters for amplitude of artificial viscosity flux

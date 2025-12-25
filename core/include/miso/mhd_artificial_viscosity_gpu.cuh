@@ -16,7 +16,7 @@ using mhd::artificial_viscosity::flux_core;
 
 template <typename Real>
 __global__ void
-characteristic_velocity_eval_kernel(Array3DDevice<Real> cc_d, FieldsView<Real> qq,
+characteristic_velocity_eval_kernel(Array3DView<Real> cc_d, FieldsView<Real> qq,
                                     GridView<Real> grid, Real eos_gm, Real cs_fac,
                                     Real ca_fac, Real vv_fac) {
 
@@ -41,7 +41,7 @@ characteristic_velocity_eval_kernel(Array3DDevice<Real> cc_d, FieldsView<Real> q
 
 template <typename Real>
 __global__ void update_ro_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -84,7 +84,7 @@ __global__ void update_ro_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_vx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -132,7 +132,7 @@ __global__ void update_vx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_vy_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -180,7 +180,7 @@ __global__ void update_vy_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_vz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -228,7 +228,7 @@ __global__ void update_vz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_bx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -269,7 +269,7 @@ __global__ void update_bx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_by_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -311,7 +311,7 @@ __global__ void update_by_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_bz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -353,7 +353,7 @@ __global__ void update_bz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_ph_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -394,7 +394,7 @@ __global__ void update_ph_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 template <typename Real>
 __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
-                                 Array3DDevice<Real> cc, GridView<Real> grid,
+                                 Array3DView<Real> cc, GridView<Real> grid,
                                  Real *dxyzi, int i0_, int i1_, int j0_, int j1_,
                                  int k0_, int k1_, int is, int js, int ks,
                                  Real ep, Real fh, Real dt) {
@@ -493,7 +493,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   void characteristic_velocity_eval(const Fields<Real> &qq) {
     artificial_viscosity::characteristic_velocity_eval_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            cc, qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
+            cc.view(), qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
   }
 
   void update(Fields<Real> &qq, Fields<Real> &qq_rslt, Direction direction,
@@ -527,48 +527,48 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
 
     artificial_viscosity::update_ro_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_vx_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_vy_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_vz_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_bx_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_by_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_bz_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_ph_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
 
     artificial_viscosity::update_ei_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            qq.view(), qq_rslt.view(), cc, grid.view(), dxyzi, i0_, i1_, j0_, j1_,
-            k0_, k1_, is, js, ks, ep, fh, dt);
+            qq.view(), qq_rslt.view(), cc.view(), grid.view(), dxyzi, i0_, i1_,
+            j0_, j1_, k0_, k1_, is, js, ks, ep, fh, dt);
   }
 };
 

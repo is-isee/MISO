@@ -1,12 +1,13 @@
 #pragma once
+
 #include <cassert>
-#include <doctest/doctest.h>
 #include <memory>
+
+#include <doctest/doctest.h>
 
 #include <miso/boundary_condition.hpp>
 #include <miso/cuda_compat.hpp>
 #include <miso/grid.hpp>
-#include <miso/mhd.hpp>
 #include <miso/types.hpp>
 
 inline void run_boundary_condition_tests() {
@@ -16,9 +17,6 @@ inline void run_boundary_condition_tests() {
   Real xmin = 0.0, xmax = 1.0, ymin = 0.0, ymax = 2.0, zmin = 0.0, zmax = 3.0;
   Grid<Real> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax, zmin,
                   zmax);
-  printf("grid (main): %d %d %d\n", grid.i_total, grid.j_total, grid.k_total);
-  printf("mask (main): %d %d %d\n", grid.mask.size_x(), grid.mask.size_y(),
-         grid.mask.size_z());
 
   // Test the range_set function
   int i0_, i1_, j0_, j1_, k0_, k1_;
@@ -48,95 +46,87 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k1_ == grid.k_margin);
 
   // test for a margin = 2 case
-  mhd::impl_host::Fields<Real> qq(grid);
+  Array3D<Real, HostSpace> ro(grid.i_total, grid.j_total, grid.k_total);
 #ifdef USE_CUDA
-  mhd::impl_cuda::Streams mhd_streams;
   GridDevice<Real> grid_d(grid);
-  return;
-  mhd::impl_cuda::Fields<Real> qq_d(grid_d);
+  Array3D<Real, CUDASpace> ro_d(grid.i_total, grid.j_total, grid.k_total);
 #endif
 
   // x boundary test
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
       for (int k = 0; k < grid.k_total; ++k) {
-        qq.ro(i, j, k) = i;
+        ro(i, j, k) = i;
       }
     }
   }
 
   for (int j = 0; j < grid.j_total; ++j) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(0, j, k) != qq.ro(3, j, k));
-      REQUIRE(qq.ro(1, j, k) != qq.ro(2, j, k));
-      REQUIRE(qq.ro(grid.i_total - 1, j, k) != qq.ro(grid.i_total - 4, j, k));
-      REQUIRE(qq.ro(grid.i_total - 2, j, k) != qq.ro(grid.i_total - 3, j, k));
+      REQUIRE(ro(0, j, k) != ro(3, j, k));
+      REQUIRE(ro(1, j, k) != ro(2, j, k));
+      REQUIRE(ro(grid.i_total - 1, j, k) != ro(grid.i_total - 4, j, k));
+      REQUIRE(ro(grid.i_total - 2, j, k) != ro(grid.i_total - 3, j, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::X,
-                       bnd::Side::INNER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, 1.0, Direction::X, bnd::Side::INNER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::X, bnd::Side::INNER);
+  bnd::symmetric<Real>(ro, grid, 1.0, Direction::X, bnd::Side::INNER);
 #endif
 
   for (int j = 0; j < grid.j_total; ++j) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(0, j, k) == qq.ro(3, j, k));
-      REQUIRE(qq.ro(1, j, k) == qq.ro(2, j, k));
+      REQUIRE(ro(0, j, k) == ro(3, j, k));
+      REQUIRE(ro(1, j, k) == ro(2, j, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::X,
-                       bnd::Side::INNER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, -1.0, Direction::X, bnd::Side::INNER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::X,
-                       bnd::Side::INNER);
+  bnd::symmetric<Real>(ro, grid, -1.0, Direction::X, bnd::Side::INNER);
 #endif
 
   for (int j = 0; j < grid.j_total; ++j) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(0, j, k) == -qq.ro(3, j, k));
-      REQUIRE(qq.ro(1, j, k) == -qq.ro(2, j, k));
+      REQUIRE(ro(0, j, k) == -ro(3, j, k));
+      REQUIRE(ro(1, j, k) == -ro(2, j, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::X,
-                       bnd::Side::OUTER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, 1.0, Direction::X, bnd::Side::OUTER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::X, bnd::Side::OUTER);
+  bnd::symmetric<Real>(ro, grid, 1.0, Direction::X, bnd::Side::OUTER);
 #endif
 
   for (int j = 0; j < grid.j_total; ++j) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(grid.i_total - 1, j, k) == qq.ro(grid.i_total - 4, j, k));
-      REQUIRE(qq.ro(grid.i_total - 2, j, k) == qq.ro(grid.i_total - 3, j, k));
+      REQUIRE(ro(grid.i_total - 1, j, k) == ro(grid.i_total - 4, j, k));
+      REQUIRE(ro(grid.i_total - 2, j, k) == ro(grid.i_total - 3, j, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::X,
-                       bnd::Side::OUTER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, -1.0, Direction::X, bnd::Side::OUTER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::X,
-                       bnd::Side::OUTER);
+  bnd::symmetric<Real>(ro, grid, -1.0, Direction::X, bnd::Side::OUTER);
 #endif
 
   for (int j = 0; j < grid.j_total; ++j) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(grid.i_total - 1, j, k) == -qq.ro(grid.i_total - 4, j, k));
-      REQUIRE(qq.ro(grid.i_total - 2, j, k) == -qq.ro(grid.i_total - 3, j, k));
+      REQUIRE(ro(grid.i_total - 1, j, k) == -ro(grid.i_total - 4, j, k));
+      REQUIRE(ro(grid.i_total - 2, j, k) == -ro(grid.i_total - 3, j, k));
     }
   }
 
@@ -144,83 +134,77 @@ inline void run_boundary_condition_tests() {
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
       for (int k = 0; k < grid.k_total; ++k) {
-        qq.ro(i, j, k) = j;
+        ro(i, j, k) = j;
       }
     }
   }
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(i, 0, k) != qq.ro(i, 3, k));
-      REQUIRE(qq.ro(i, 1, k) != qq.ro(i, 2, k));
-      REQUIRE(qq.ro(i, grid.j_total - 1, k) != qq.ro(i, grid.j_total - 4, k));
-      REQUIRE(qq.ro(i, grid.j_total - 2, k) != qq.ro(i, grid.j_total - 3, k));
+      REQUIRE(ro(i, 0, k) != ro(i, 3, k));
+      REQUIRE(ro(i, 1, k) != ro(i, 2, k));
+      REQUIRE(ro(i, grid.j_total - 1, k) != ro(i, grid.j_total - 4, k));
+      REQUIRE(ro(i, grid.j_total - 2, k) != ro(i, grid.j_total - 3, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Y,
-                       bnd::Side::INNER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, 1.0, Direction::Y, bnd::Side::INNER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Y, bnd::Side::INNER);
+  bnd::symmetric<Real>(ro, grid, 1.0, Direction::Y, bnd::Side::INNER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(i, 0, k) == qq.ro(i, 3, k));
-      REQUIRE(qq.ro(i, 1, k) == qq.ro(i, 2, k));
+      REQUIRE(ro(i, 0, k) == ro(i, 3, k));
+      REQUIRE(ro(i, 1, k) == ro(i, 2, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Y,
-                       bnd::Side::INNER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, -1.0, Direction::Y, bnd::Side::INNER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Y,
-                       bnd::Side::INNER);
+  bnd::symmetric<Real>(ro, grid, -1.0, Direction::Y, bnd::Side::INNER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(i, 0, k) == -qq.ro(i, 3, k));
-      REQUIRE(qq.ro(i, 1, k) == -qq.ro(i, 2, k));
+      REQUIRE(ro(i, 0, k) == -ro(i, 3, k));
+      REQUIRE(ro(i, 1, k) == -ro(i, 2, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Y,
-                       bnd::Side::OUTER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, 1.0, Direction::Y, bnd::Side::OUTER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Y, bnd::Side::OUTER);
+  bnd::symmetric<Real>(ro, grid, 1.0, Direction::Y, bnd::Side::OUTER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(i, grid.j_total - 1, k) == qq.ro(i, grid.j_total - 4, k));
-      REQUIRE(qq.ro(i, grid.j_total - 2, k) == qq.ro(i, grid.j_total - 3, k));
+      REQUIRE(ro(i, grid.j_total - 1, k) == ro(i, grid.j_total - 4, k));
+      REQUIRE(ro(i, grid.j_total - 2, k) == ro(i, grid.j_total - 3, k));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Y,
-                       bnd::Side::OUTER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, -1.0, Direction::Y, bnd::Side::OUTER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Y,
-                       bnd::Side::OUTER);
+  bnd::symmetric<Real>(ro, grid, -1.0, Direction::Y, bnd::Side::OUTER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int k = 0; k < grid.k_total; ++k) {
-      REQUIRE(qq.ro(i, grid.j_total - 1, k) == -qq.ro(i, grid.j_total - 4, k));
-      REQUIRE(qq.ro(i, grid.j_total - 2, k) == -qq.ro(i, grid.j_total - 3, k));
+      REQUIRE(ro(i, grid.j_total - 1, k) == -ro(i, grid.j_total - 4, k));
+      REQUIRE(ro(i, grid.j_total - 2, k) == -ro(i, grid.j_total - 3, k));
     }
   }
 
@@ -228,84 +212,78 @@ inline void run_boundary_condition_tests() {
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
       for (int k = 0; k < grid.k_total; ++k) {
-        qq.ro(i, j, k) = k;
+        ro(i, j, k) = k;
       }
     }
   }
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
-      REQUIRE(qq.ro(i, j, 0) != qq.ro(i, j, 3));
-      REQUIRE(qq.ro(i, j, 1) != qq.ro(i, j, 2));
-      REQUIRE(qq.ro(i, j, grid.k_total - 1) != qq.ro(i, j, grid.k_total - 4));
-      REQUIRE(qq.ro(i, j, grid.k_total - 2) != qq.ro(i, j, grid.k_total - 3));
+      REQUIRE(ro(i, j, 0) != ro(i, j, 3));
+      REQUIRE(ro(i, j, 1) != ro(i, j, 2));
+      REQUIRE(ro(i, j, grid.k_total - 1) != ro(i, j, grid.k_total - 4));
+      REQUIRE(ro(i, j, grid.k_total - 2) != ro(i, j, grid.k_total - 3));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Z,
-                       bnd::Side::INNER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, 1.0, Direction::Z, bnd::Side::INNER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Z, bnd::Side::INNER);
+  bnd::symmetric<Real>(ro, grid, 1.0, Direction::Z, bnd::Side::INNER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
-      REQUIRE(qq.ro(i, j, 0) == qq.ro(i, j, 3));
-      REQUIRE(qq.ro(i, j, 1) == qq.ro(i, j, 2));
+      REQUIRE(ro(i, j, 0) == ro(i, j, 3));
+      REQUIRE(ro(i, j, 1) == ro(i, j, 2));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Z,
-                       bnd::Side::INNER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, -1.0, Direction::Z, bnd::Side::INNER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Z,
-                       bnd::Side::INNER);
+  bnd::symmetric<Real>(ro, grid, -1.0, Direction::Z, bnd::Side::INNER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
-      REQUIRE(qq.ro(i, j, 0) == -qq.ro(i, j, 3));
-      REQUIRE(qq.ro(i, j, 1) == -qq.ro(i, j, 2));
+      REQUIRE(ro(i, j, 0) == -ro(i, j, 3));
+      REQUIRE(ro(i, j, 1) == -ro(i, j, 2));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, 1.0, Direction::Z,
-                       bnd::Side::OUTER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, 1.0, Direction::Z, bnd::Side::OUTER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, 1.0, Direction::Z, bnd::Side::OUTER);
+  bnd::symmetric<Real>(ro, grid, 1.0, Direction::Z, bnd::Side::OUTER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
-      REQUIRE(qq.ro(i, j, grid.k_total - 1) == qq.ro(i, j, grid.k_total - 4));
-      REQUIRE(qq.ro(i, j, grid.k_total - 2) == qq.ro(i, j, grid.k_total - 3));
+      REQUIRE(ro(i, j, grid.k_total - 1) == ro(i, j, grid.k_total - 4));
+      REQUIRE(ro(i, j, grid.k_total - 2) == ro(i, j, grid.k_total - 3));
     }
   }
 
 #ifdef USE_CUDA
-  qq_d.copy_from_host(qq, mhd_streams);
-  bnd::symmetric<Real>(qq_d.ro, grid_d, qq_d.ro, -1.0, Direction::Z,
-                       bnd::Side::OUTER);
-  qq_d.copy_to_host(qq, mhd_streams);
+  ro_d.copy_from(ro);
+  bnd::symmetric<Real>(ro_d, grid_d, -1.0, Direction::Z, bnd::Side::OUTER);
+  ro.copy_from(ro_d);
 #else
-  bnd::symmetric<Real>(qq.ro, grid, nullptr, -1.0, Direction::Z,
-                       bnd::Side::OUTER);
+  bnd::symmetric<Real>(ro, grid, -1.0, Direction::Z, bnd::Side::OUTER);
 #endif
 
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
 
-      REQUIRE(qq.ro(i, j, grid.k_total - 1) == -qq.ro(i, j, grid.k_total - 4));
-      REQUIRE(qq.ro(i, j, grid.k_total - 2) == -qq.ro(i, j, grid.k_total - 3));
+      REQUIRE(ro(i, j, grid.k_total - 1) == -ro(i, j, grid.k_total - 4));
+      REQUIRE(ro(i, j, grid.k_total - 2) == -ro(i, j, grid.k_total - 3));
     }
   }
 
