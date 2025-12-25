@@ -1,6 +1,6 @@
 #pragma once
 
-#include <miso/mpi_shape.hpp>
+#include <miso/mpi_util.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
 

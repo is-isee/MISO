@@ -1,6 +1,7 @@
 #pragma once
 
 #include <miso/boundary_condition_core.hpp>
+#include <miso/cuda_util.cuh>
 #include <miso/grid_gpu.cuh>
 #include <miso/grid_view.hpp>
 
@@ -48,8 +49,8 @@ void symmetric(Real *arr, const GridDevice<Real> &grid, Real *fac, Real sign,
 
   symmetric_kernel<Real>
       <<<grid_dim, block_dim>>>(arr, grid.view(), sign, direction, side);
-  CUDA_CHECK(cudaGetLastError());
-  CUDA_CHECK(cudaDeviceSynchronize());
+  MISO_CUDA_CHECK(cudaGetLastError());
+  MISO_CUDA_CHECK(cudaDeviceSynchronize());
 };
 
 }  // namespace bnd

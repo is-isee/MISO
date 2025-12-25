@@ -1,14 +1,18 @@
 #pragma once
 
 #include <miso/constants.hpp>
-#include <miso/cuda_utils.cuh>
+#include <miso/cuda_util.cuh>
 #include <miso/grid_gpu.cuh>
 #include <miso/mhd_artificial_viscosity_core.hpp>
 #include <miso/mhd_gpu.cuh>
 
 namespace miso {
 namespace mhd {
+namespace impl_cuda {
 namespace artificial_viscosity {
+
+using mhd::artificial_viscosity::dqq_eval;
+using mhd::artificial_viscosity::flux_core;
 
 template <typename Real>
 __global__ void
@@ -62,15 +66,15 @@ __global__ void update_ro_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     // clang-format on
 
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real fro_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real fro_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real fro_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real fro_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.ro[grid.idx(i, j, k)] =
         qq.ro[grid.idx(i, j, k)] -
@@ -109,15 +113,15 @@ __global__ void update_vx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
                 qq.vx[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
     // clang-format on
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real frx_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real frx_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real frx_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real frx_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.vx[grid.idx(i, j, k)] =
         (qq.ro[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)] -
@@ -157,15 +161,15 @@ __global__ void update_vy_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
                 qq.vy[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
     // clang-format on
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real fry_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real fry_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real fry_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real fry_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.vy[grid.idx(i, j, k)] =
         (qq.ro[grid.idx(i, j, k)] * qq.vy[grid.idx(i, j, k)] -
@@ -205,15 +209,15 @@ __global__ void update_vz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
                 qq.vz[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
     // clang-format on
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real frz_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real frz_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real frz_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real frz_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.vz[grid.idx(i, j, k)] =
         (qq.ro[grid.idx(i, j, k)] * qq.vz[grid.idx(i, j, k)] -
@@ -247,15 +251,15 @@ __global__ void update_bx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real qqr2 = qq.bx[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
     // clang-format on
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real fbx_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real fbx_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real fbx_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real fbx_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.bx[grid.idx(i, j, k)] =
         qq.bx[grid.idx(i, j, k)] -
@@ -289,15 +293,15 @@ __global__ void update_by_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     // clang-format on
 
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real fby_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real fby_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real fby_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real fby_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.by[grid.idx(i, j, k)] =
         qq.by[grid.idx(i, j, k)] -
@@ -331,15 +335,15 @@ __global__ void update_bz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     // clang-format on
 
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real fbz_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real fbz_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real fbz_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real fbz_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.bz[grid.idx(i, j, k)] =
         qq.bz[grid.idx(i, j, k)] -
@@ -372,15 +376,15 @@ __global__ void update_ph_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real qqr2 = qq.ph[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
     // clang-format on
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real fph_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real fph_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real fph_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real fph_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     qq_rslt.ph[grid.idx(i, j, k)] =
         qq.ph[grid.idx(i, j, k)] -
@@ -419,15 +423,15 @@ __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
                 qq.ei[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
     // clang-format on
     // dqq at i-is, j-js, k-2ks
-    Real dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+    Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
     // dqq at i, j, k
-    Real dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+    Real dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
     // dqq at i+is, j+js, k+ks
-    Real dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-    Real fei_dw = artificial_viscosity::flux_core(qql1, qqc, dqq_dw, dqq_cn,
-                                                  Real(0.5) * (ccl + ccc), fh);
-    Real fei_up = artificial_viscosity::flux_core(qqc, qqr1, dqq_cn, dqq_up,
-                                                  Real(0.5) * (ccc + ccr), fh);
+    Real dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+    Real fei_dw =
+        flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+    Real fei_up =
+        flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     // Et: Total energy per unit volume, note that ei is internal energy per unit mass
     Real Et = qq.ro[grid.idx(i, j, k)] * qq.ei[grid.idx(i, j, k)] +
@@ -455,12 +459,10 @@ __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 }  // namespace artificial_viscosity
 
-namespace gpu {
-
 template <typename Real, typename EOS> struct ArtificialViscosity {
   GridDevice<Real> &grid;
   EOS &eos;
-  CudaKernelShape<Real> &cu_shape;
+  cuda::KernelShape3D &cu_shape;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
   Array3DDevice<Real> cc;
@@ -476,7 +478,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   Real vv_fac;
 
   ArtificialViscosity(Config &config, GridDevice<Real> &grid, EOS &eos,
-                      CudaKernelShape<Real> &cu_shape)
+                      cuda::KernelShape3D &cu_shape)
       : grid(grid), eos(eos), cu_shape(cu_shape),
         cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
@@ -570,6 +572,6 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   }
 };
 
-}  // namespace gpu
+}  // namespace impl_cuda
 }  // namespace mhd
 }  // namespace miso

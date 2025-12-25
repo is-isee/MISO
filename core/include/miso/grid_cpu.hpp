@@ -1,11 +1,12 @@
 #pragma once
+
 #include <cassert>
 #include <vector>
 
 #include <miso/array3d_cpu.hpp>
 #include <miso/config.hpp>
 #include <miso/env.hpp>
-#include <miso/mpi_shape.hpp>
+#include <miso/mpi_util.hpp>
 
 namespace miso {
 

@@ -15,8 +15,7 @@
 #include <miso/array4d_cpu.hpp>
 #include <miso/env.hpp>
 #include <miso/grid_cpu.hpp>
-#include <miso/mpi_shape.hpp>
-#include <miso/mpi_types.hpp>
+#include <miso/mpi_util.hpp>
 #include <miso/rt_angular_quadrature.hpp>
 #include <miso/utility.hpp>
 
@@ -173,12 +172,12 @@ template <typename Real> struct RT {
           }
         }
       }
-      MPI_Isend(send_buff_x_pos.data(), send_buff_x_pos.size(), mpi_type<Real>(),
-                mpi_shape.x_procs_pos, 1100, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_x_pos.data(), recv_buff_x_pos.size(), mpi_type<Real>(),
-                mpi_shape.x_procs_pos, 1200, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_x_pos.data(), send_buff_x_pos.size(),
+                mpi::data_type<Real>(), mpi_shape.x_procs_pos, 1100,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_x_pos.data(), recv_buff_x_pos.size(),
+                mpi::data_type<Real>(), mpi_shape.x_procs_pos, 1200,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     if (mpi_shape.x_procs_neg != MPI_PROC_NULL) {
@@ -191,12 +190,12 @@ template <typename Real> struct RT {
           }
         }
       }
-      MPI_Isend(send_buff_x_neg.data(), send_buff_x_neg.size(), mpi_type<Real>(),
-                mpi_shape.x_procs_neg, 1200, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_x_neg.data(), recv_buff_x_neg.size(), mpi_type<Real>(),
-                mpi_shape.x_procs_neg, 1100, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_x_neg.data(), send_buff_x_neg.size(),
+                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 1200,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_x_neg.data(), recv_buff_x_neg.size(),
+                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 1100,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     if (req_count > 0) {
@@ -246,12 +245,12 @@ template <typename Real> struct RT {
           }
         }
       }
-      MPI_Isend(send_buff_y_pos.data(), send_buff_y_pos.size(), mpi_type<Real>(),
-                mpi_shape.y_procs_pos, 1300, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_y_pos.data(), recv_buff_y_pos.size(), mpi_type<Real>(),
-                mpi_shape.y_procs_pos, 1400, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_y_pos.data(), send_buff_y_pos.size(),
+                mpi::data_type<Real>(), mpi_shape.y_procs_pos, 1300,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_y_pos.data(), recv_buff_y_pos.size(),
+                mpi::data_type<Real>(), mpi_shape.y_procs_pos, 1400,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     if (mpi_shape.y_procs_neg != MPI_PROC_NULL) {
@@ -264,12 +263,12 @@ template <typename Real> struct RT {
           }
         }
       }
-      MPI_Isend(send_buff_y_neg.data(), send_buff_y_neg.size(), mpi_type<Real>(),
-                mpi_shape.y_procs_neg, 1400, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_y_neg.data(), recv_buff_y_neg.size(), mpi_type<Real>(),
-                mpi_shape.y_procs_neg, 1300, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_y_neg.data(), send_buff_y_neg.size(),
+                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 1400,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_y_neg.data(), recv_buff_y_neg.size(),
+                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 1300,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     if (req_count > 0) {
@@ -319,12 +318,12 @@ template <typename Real> struct RT {
           }
         }
       }
-      MPI_Isend(send_buff_z_pos.data(), send_buff_z_pos.size(), mpi_type<Real>(),
-                mpi_shape.z_procs_pos, 1500, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_z_pos.data(), recv_buff_z_pos.size(), mpi_type<Real>(),
-                mpi_shape.z_procs_pos, 1600, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_z_pos.data(), send_buff_z_pos.size(),
+                mpi::data_type<Real>(), mpi_shape.z_procs_pos, 1500,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_z_pos.data(), recv_buff_z_pos.size(),
+                mpi::data_type<Real>(), mpi_shape.z_procs_pos, 1600,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     if (mpi_shape.z_procs_neg != MPI_PROC_NULL) {
@@ -337,12 +336,12 @@ template <typename Real> struct RT {
           }
         }
       }
-      MPI_Isend(send_buff_z_neg.data(), send_buff_z_neg.size(), mpi_type<Real>(),
-                mpi_shape.z_procs_neg, 1600, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_buff_z_neg.data(), recv_buff_z_neg.size(), mpi_type<Real>(),
-                mpi_shape.z_procs_neg, 1500, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+      MPI_Isend(send_buff_z_neg.data(), send_buff_z_neg.size(),
+                mpi::data_type<Real>(), mpi_shape.z_procs_neg, 1600,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(recv_buff_z_neg.data(), recv_buff_z_neg.size(),
+                mpi::data_type<Real>(), mpi_shape.z_procs_neg, 1500,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     if (req_count > 0) {
@@ -563,8 +562,8 @@ template <typename Real> struct RT {
 
       const Real max_diff = get_max_diff(grid);
       Real global_max_diff = 0.0;
-      MPI_Allreduce(&max_diff, &global_max_diff, 1, mpi_type<Real>(), MPI_MAX,
-                    mpi_shape.cart_comm);
+      MPI_Allreduce(&max_diff, &global_max_diff, 1, mpi::data_type<Real>(),
+                    MPI_MAX, mpi_shape.cart_comm);
       std::printf("%f %f\n", static_cast<double>(max_diff),
                   static_cast<double>(global_max_diff));
       if (global_max_diff < tolerance)

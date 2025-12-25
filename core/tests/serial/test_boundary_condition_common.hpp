@@ -48,12 +48,12 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k1_ == grid.k_margin);
 
   // test for a margin = 2 case
-  mhd::cpu::Fields<Real> qq(grid);
+  mhd::impl_host::Fields<Real> qq(grid);
 #ifdef USE_CUDA
-  mhd::gpu::Streams mhd_streams;
+  mhd::impl_cuda::Streams mhd_streams;
   GridDevice<Real> grid_d(grid);
   return;
-  mhd::gpu::Fields<Real> qq_d(grid_d);
+  mhd::impl_cuda::Fields<Real> qq_d(grid_d);
 #endif
 
   // x boundary test

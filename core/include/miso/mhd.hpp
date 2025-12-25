@@ -22,17 +22,17 @@ struct MHD {
   GridDevice<Real> grid_d;
 #endif
 
-  cpu::Fields<Real> qq;  // Required for cpu and gpu both
+  impl_host::Fields<Real> qq;  // Required for cpu and gpu both
 #ifdef USE_CUDA
-  gpu::Fields<Real> qq_d;
+  impl_cuda::Fields<Real> qq_d;
 #endif
 
 #ifdef USE_CUDA
-  gpu::ExecContext exec_ctx;
-  gpu::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
+  impl_cuda::ExecContext exec_ctx;
+  impl_cuda::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #else
-  cpu::ExecContext exec_ctx;
-  cpu::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
+  impl_host::ExecContext exec_ctx;
+  impl_host::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #endif
 
   int n_output_digits;
