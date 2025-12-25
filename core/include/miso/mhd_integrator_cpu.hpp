@@ -4,11 +4,10 @@
 #include <miso/env.hpp>
 #include <miso/mhd_artificial_viscosity_cpu.hpp>
 #include <miso/mhd_cpu.hpp>
-#include <miso/mpi_types.hpp>
 
 namespace miso {
 namespace mhd {
-namespace cpu {
+namespace impl_host {
 
 /// @brief Calculate 4th order space-centered derivative for qq
 /// @tparam Real
@@ -418,7 +417,8 @@ struct Integrator {
       }
     }
     Real dt_global;
-    MPI_Allreduce(&dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN, mpi::comm());
+    MPI_Allreduce(&dt, &dt_global, 1, mpi::data_type<Real>(), MPI_MIN,
+                  mpi::comm());
     return dt_global;
   }
 
@@ -443,6 +443,6 @@ struct Integrator {
   Integrator &operator=(Integrator &&) = delete;
 };
 
-}  // namespace cpu
+}  // namespace impl_host
 }  // namespace mhd
 }  // namespace miso

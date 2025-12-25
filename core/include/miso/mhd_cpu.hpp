@@ -7,13 +7,12 @@
 #include <miso/array4d_cpu.hpp>
 #include <miso/grid_cpu.hpp>
 #include <miso/mhd_view.hpp>
-#include <miso/mpi_shape.hpp>
-#include <miso/mpi_types.hpp>
+#include <miso/mpi_util.hpp>
 #include <miso/utility.hpp>
 
 namespace miso {
 namespace mhd {
-namespace cpu {
+namespace impl_host {
 
 /// @brief Execution context for MHD on CPU
 struct ExecContext {
@@ -106,10 +105,10 @@ template <typename Real> struct HaloExchanger {
           }
         }
       }
-      MPI_Isend(send_x_pos.data(), send_x_pos.size(), mpi_type<Real>(),
+      MPI_Isend(send_x_pos.data(), send_x_pos.size(), mpi::data_type<Real>(),
                 mpi_shape.x_procs_pos, 100, mpi_shape.cart_comm,
                 &reqs[req_count++]);
-      MPI_Irecv(recv_x_pos.data(), recv_x_pos.size(), mpi_type<Real>(),
+      MPI_Irecv(recv_x_pos.data(), recv_x_pos.size(), mpi::data_type<Real>(),
                 mpi_shape.x_procs_pos, 200, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
@@ -125,10 +124,10 @@ template <typename Real> struct HaloExchanger {
           }
         }
       }
-      MPI_Isend(send_x_neg.data(), send_x_neg.size(), mpi_type<Real>(),
+      MPI_Isend(send_x_neg.data(), send_x_neg.size(), mpi::data_type<Real>(),
                 mpi_shape.x_procs_neg, 200, mpi_shape.cart_comm,
                 &reqs[req_count++]);
-      MPI_Irecv(recv_x_neg.data(), recv_x_neg.size(), mpi_type<Real>(),
+      MPI_Irecv(recv_x_neg.data(), recv_x_neg.size(), mpi::data_type<Real>(),
                 mpi_shape.x_procs_neg, 100, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
@@ -146,10 +145,10 @@ template <typename Real> struct HaloExchanger {
           }
         }
       }
-      MPI_Isend(send_y_pos.data(), send_y_pos.size(), mpi_type<Real>(),
+      MPI_Isend(send_y_pos.data(), send_y_pos.size(), mpi::data_type<Real>(),
                 mpi_shape.y_procs_pos, 300, mpi_shape.cart_comm,
                 &reqs[req_count++]);
-      MPI_Irecv(recv_y_pos.data(), recv_y_pos.size(), mpi_type<Real>(),
+      MPI_Irecv(recv_y_pos.data(), recv_y_pos.size(), mpi::data_type<Real>(),
                 mpi_shape.y_procs_pos, 400, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
@@ -165,10 +164,10 @@ template <typename Real> struct HaloExchanger {
           }
         }
       }
-      MPI_Isend(send_y_neg.data(), send_y_neg.size(), mpi_type<Real>(),
+      MPI_Isend(send_y_neg.data(), send_y_neg.size(), mpi::data_type<Real>(),
                 mpi_shape.y_procs_neg, 400, mpi_shape.cart_comm,
                 &reqs[req_count++]);
-      MPI_Irecv(recv_y_neg.data(), recv_y_neg.size(), mpi_type<Real>(),
+      MPI_Irecv(recv_y_neg.data(), recv_y_neg.size(), mpi::data_type<Real>(),
                 mpi_shape.y_procs_neg, 300, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
@@ -186,10 +185,10 @@ template <typename Real> struct HaloExchanger {
           }
         }
       }
-      MPI_Isend(send_z_pos.data(), send_z_pos.size(), mpi_type<Real>(),
+      MPI_Isend(send_z_pos.data(), send_z_pos.size(), mpi::data_type<Real>(),
                 mpi_shape.z_procs_pos, 500, mpi_shape.cart_comm,
                 &reqs[req_count++]);
-      MPI_Irecv(recv_z_pos.data(), recv_z_pos.size(), mpi_type<Real>(),
+      MPI_Irecv(recv_z_pos.data(), recv_z_pos.size(), mpi::data_type<Real>(),
                 mpi_shape.z_procs_pos, 600, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
@@ -205,10 +204,10 @@ template <typename Real> struct HaloExchanger {
           }
         }
       }
-      MPI_Isend(send_z_neg.data(), send_z_neg.size(), mpi_type<Real>(),
+      MPI_Isend(send_z_neg.data(), send_z_neg.size(), mpi::data_type<Real>(),
                 mpi_shape.z_procs_neg, 600, mpi_shape.cart_comm,
                 &reqs[req_count++]);
-      MPI_Irecv(recv_z_neg.data(), recv_z_neg.size(), mpi_type<Real>(),
+      MPI_Irecv(recv_z_neg.data(), recv_z_neg.size(), mpi::data_type<Real>(),
                 mpi_shape.z_procs_neg, 500, mpi_shape.cart_comm,
                 &reqs[req_count++]);
     }
@@ -303,6 +302,6 @@ template <typename Real> struct HaloExchanger {
   }
 };
 
-}  // namespace cpu
+}  // namespace impl_host
 }  // namespace mhd
 }  // namespace miso

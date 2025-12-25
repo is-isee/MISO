@@ -6,7 +6,7 @@
 
 namespace miso {
 namespace mhd {
-namespace cpu {
+namespace impl_host {
 
 /// @brief Artificial viscosity class for mhd simulations
 /// @tparam T Type of the data (Real)
@@ -341,6 +341,6 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   }
 };
 
-}  // namespace cpu
+}  // namespace impl_host
 }  // namespace mhd
 }  // namespace miso

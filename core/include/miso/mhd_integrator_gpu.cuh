@@ -2,15 +2,14 @@
 
 #include <miso/constants.hpp>
 #include <miso/cuda_compat.hpp>
-#include <miso/cuda_utils.cuh>
+#include <miso/cuda_util.cuh>
 #include <miso/env.hpp>
 #include <miso/mhd_artificial_viscosity_gpu.cuh>
 #include <miso/mhd_gpu.cuh>
-#include <miso/mpi_types.hpp>
 
 namespace miso {
 namespace mhd {
-namespace gpu {
+namespace impl_cuda {
 
 template <typename Real> struct TimeStep {
   Real *min_values_device = nullptr;
@@ -18,23 +17,23 @@ template <typename Real> struct TimeStep {
   size_t shared_mem_size = 0;
   int n_blocks;
 
-  TimeStep(CudaKernelShape<Real> &cu_shape)
+  TimeStep(cuda::KernelShape3D &cu_shape)
       : n_blocks(cu_shape.grid_dim.x * cu_shape.grid_dim.y *
                  cu_shape.grid_dim.z) {
     min_values_host = new Real[n_blocks];
     shared_mem_size = sizeof(Real) * cu_shape.block_dim.x * cu_shape.block_dim.y *
                       cu_shape.block_dim.z;
-    CUDA_CHECK(cudaMalloc(&min_values_device, sizeof(Real) * n_blocks));
+    MISO_CUDA_CHECK(cudaMalloc(&min_values_device, sizeof(Real) * n_blocks));
   }
 
   ~TimeStep() {
     delete[] min_values_host;
-    CUDA_CHECK(cudaFree(min_values_device));
+    MISO_CUDA_CHECK(cudaFree(min_values_device));
   }
 
   void copy_to_host() const {
-    CUDA_CHECK(cudaMemcpy(min_values_host, min_values_device,
-                          sizeof(Real) * n_blocks, cudaMemcpyDeviceToHost));
+    MISO_CUDA_CHECK(cudaMemcpy(min_values_host, min_values_device,
+                               sizeof(Real) * n_blocks, cudaMemcpyDeviceToHost));
   }
 };
 
@@ -454,7 +453,7 @@ template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source = NoSource<Real>>
 struct Integrator {
   /// @brief CUDA kernel shape
-  CudaKernelShape<Real> &cu_shape;
+  cuda::KernelShape3D &cu_shape;
   /// @brief CUDA streams for MHD variables
   Streams &mhd_streams;
 
@@ -516,43 +515,43 @@ struct Integrator {
                   Fields<Real> &qq_rslt, const Real dt) {
     pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_argm.view(), pr, bb, ht, vb, grid.view(), eos.gm);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ro_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_vx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
         grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_vy_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
         grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_vz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, source,
         grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_bx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_by_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_bz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ph_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), ch_divb_square, tau_divb,
         grid.view(), dt);
-    CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ei_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr, bb, ht, vb, source,
@@ -611,8 +610,8 @@ struct Integrator {
         <<<cu_shape.grid_dim, cu_shape.block_dim, time_step.shared_mem_size>>>(
             qq.view(), grid.view(), time_step.min_values_device, cfl_number,
             eos.gm);
-    CUDA_CHECK(cudaGetLastError());
-    CUDA_CHECK(cudaDeviceSynchronize());
+    MISO_CUDA_CHECK(cudaGetLastError());
+    MISO_CUDA_CHECK(cudaDeviceSynchronize());
 
     time_step.copy_to_host();
     auto dt = *std::min_element(time_step.min_values_host,
@@ -621,7 +620,8 @@ struct Integrator {
         *std::max_element(time_step.min_values_host,
                           time_step.min_values_host + time_step.n_blocks);
     Real dt_global;
-    MPI_Allreduce(&dt, &dt_global, 1, mpi_type<Real>(), MPI_MIN, mpi::comm());
+    MPI_Allreduce(&dt, &dt_global, 1, mpi::data_type<Real>(), MPI_MIN,
+                  mpi::comm());
     return dt_global;
   }
 
@@ -646,6 +646,6 @@ struct Integrator {
   Integrator &operator=(Integrator &&) = delete;
 };
 
-}  // namespace gpu
+}  // namespace impl_cuda
 }  // namespace mhd
 }  // namespace miso

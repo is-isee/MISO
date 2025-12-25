@@ -2,19 +2,19 @@
 #include <cassert>
 
 #include <miso/array3d.hpp>
-#include <miso/cuda_utils.cuh>
+#include <miso/cuda_util.cuh>
 #include <miso/grid_gpu.cuh>
 #include <miso/mhd_view.hpp>
-#include <miso/mpi_shape.hpp>
+#include <miso/mpi_util.hpp>
 
 namespace miso {
 namespace mhd {
 
-namespace cpu {
+namespace impl_host {
 template <typename Real> struct Fields;
-}  // namespace cpu
+}  // namespace impl_host
 
-namespace gpu {
+namespace impl_cuda {
 
 constexpr int n_vars = 9;
 
@@ -32,15 +32,15 @@ struct Streams {
   cudaStream_t stream_ph;
 
   Streams() {
-    CUDA_CHECK(cudaStreamCreate(&stream_ro));
-    CUDA_CHECK(cudaStreamCreate(&stream_vx));
-    CUDA_CHECK(cudaStreamCreate(&stream_vy));
-    CUDA_CHECK(cudaStreamCreate(&stream_vz));
-    CUDA_CHECK(cudaStreamCreate(&stream_bx));
-    CUDA_CHECK(cudaStreamCreate(&stream_by));
-    CUDA_CHECK(cudaStreamCreate(&stream_bz));
-    CUDA_CHECK(cudaStreamCreate(&stream_ei));
-    CUDA_CHECK(cudaStreamCreate(&stream_ph));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_ro));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_vx));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_vy));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_vz));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_bx));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_by));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_bz));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_ei));
+    MISO_CUDA_CHECK(cudaStreamCreate(&stream_ph));
   }
 
   ~Streams() {
@@ -84,7 +84,7 @@ struct Streams {
 /// @brief Execution context for MHD on GPU
 struct ExecContext {
   mpi::Shape &mpi_shape;
-  CudaKernelShape<Real> &cu_shape;
+  cuda::KernelShape3D &cu_shape;
   Streams &mhd_streams;
 };
 
@@ -105,21 +105,21 @@ template <typename Real> struct Fields {
   Fields(const GridDevice<Real> &grid)
       : i_total(grid.i_total), j_total(grid.j_total), k_total(grid.k_total) {
     array_size = sizeof(Real) * i_total * j_total * k_total;
-    CUDA_CHECK(cudaMalloc(&ro, array_size));
-    CUDA_CHECK(cudaMalloc(&vx, array_size));
-    CUDA_CHECK(cudaMalloc(&vy, array_size));
-    CUDA_CHECK(cudaMalloc(&vz, array_size));
-    CUDA_CHECK(cudaMalloc(&bx, array_size));
-    CUDA_CHECK(cudaMalloc(&by, array_size));
-    CUDA_CHECK(cudaMalloc(&bz, array_size));
-    CUDA_CHECK(cudaMalloc(&ei, array_size));
-    CUDA_CHECK(cudaMalloc(&ph, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&ro, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&vx, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&vy, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&vz, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&bx, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&by, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&bz, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&ei, array_size));
+    MISO_CUDA_CHECK(cudaMalloc(&ph, array_size));
   }
 
   ~Fields() {
     auto F = [](Real *&p) {
       if (p)
-        CUDA_CHECK(cudaFree(p));
+        MISO_CUDA_CHECK(cudaFree(p));
       p = nullptr;
     };
     // clang-format off
@@ -137,72 +137,72 @@ template <typename Real> struct Fields {
   Fields(Fields &&) = delete;
   Fields &operator=(Fields &&) = delete;
 
-  void copy_from_host(const cpu::Fields<Real> &qq_h, Streams &cu_streams) {
+  void copy_from_host(const impl_host::Fields<Real> &qq_h, Streams &cu_streams) {
     cudaDeviceSynchronize();
-    CUDA_CHECK(cudaMemcpyAsync(ro, qq_h.ro.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.ro()));
-    CUDA_CHECK(cudaMemcpyAsync(vx, qq_h.vx.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.vx()));
-    CUDA_CHECK(cudaMemcpyAsync(vy, qq_h.vy.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.vy()));
-    CUDA_CHECK(cudaMemcpyAsync(vz, qq_h.vz.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.vz()));
-    CUDA_CHECK(cudaMemcpyAsync(bx, qq_h.bx.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.bx()));
-    CUDA_CHECK(cudaMemcpyAsync(by, qq_h.by.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.by()));
-    CUDA_CHECK(cudaMemcpyAsync(bz, qq_h.bz.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.bz()));
-    CUDA_CHECK(cudaMemcpyAsync(ei, qq_h.ei.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.ei()));
-    CUDA_CHECK(cudaMemcpyAsync(ph, qq_h.ph.data(), array_size,
-                               cudaMemcpyHostToDevice, cu_streams.ph()));
-    cudaDeviceSynchronize();
-  }
-
-  void copy_to_host(cpu::Fields<Real> &qq_h, Streams &cu_streams) {
-    cudaDeviceSynchronize();
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.ro.data(), ro, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.ro()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.vx.data(), vx, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.vx()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.vy.data(), vy, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.vy()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.vz.data(), vz, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.vz()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.bx.data(), bx, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.bx()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.by.data(), by, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.by()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.bz.data(), bz, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.bz()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.ei.data(), ei, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.ei()));
-    CUDA_CHECK(cudaMemcpyAsync(qq_h.ph.data(), ph, array_size,
-                               cudaMemcpyDeviceToHost, cu_streams.ph()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(ro, qq_h.ro.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.ro()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(vx, qq_h.vx.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.vx()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(vy, qq_h.vy.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.vy()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(vz, qq_h.vz.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.vz()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(bx, qq_h.bx.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.bx()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(by, qq_h.by.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.by()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(bz, qq_h.bz.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.bz()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(ei, qq_h.ei.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.ei()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(ph, qq_h.ph.data(), array_size,
+                                    cudaMemcpyHostToDevice, cu_streams.ph()));
     cudaDeviceSynchronize();
   }
 
-  void copy_from_device(const gpu::Fields<Real> &qq_d, Streams &cu_streams) {
+  void copy_to_host(impl_host::Fields<Real> &qq_h, Streams &cu_streams) {
     cudaDeviceSynchronize();
-    CUDA_CHECK(cudaMemcpyAsync(ro, qq_d.ro, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.ro()));
-    CUDA_CHECK(cudaMemcpyAsync(vx, qq_d.vx, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.vx()));
-    CUDA_CHECK(cudaMemcpyAsync(vy, qq_d.vy, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.vy()));
-    CUDA_CHECK(cudaMemcpyAsync(vz, qq_d.vz, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.vz()));
-    CUDA_CHECK(cudaMemcpyAsync(bx, qq_d.bx, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.bx()));
-    CUDA_CHECK(cudaMemcpyAsync(by, qq_d.by, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.by()));
-    CUDA_CHECK(cudaMemcpyAsync(bz, qq_d.bz, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.bz()));
-    CUDA_CHECK(cudaMemcpyAsync(ei, qq_d.ei, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.ei()));
-    CUDA_CHECK(cudaMemcpyAsync(ph, qq_d.ph, array_size, cudaMemcpyDeviceToDevice,
-                               cu_streams.ph()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.ro.data(), ro, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.ro()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.vx.data(), vx, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.vx()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.vy.data(), vy, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.vy()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.vz.data(), vz, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.vz()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.bx.data(), bx, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.bx()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.by.data(), by, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.by()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.bz.data(), bz, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.bz()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.ei.data(), ei, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.ei()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(qq_h.ph.data(), ph, array_size,
+                                    cudaMemcpyDeviceToHost, cu_streams.ph()));
+    cudaDeviceSynchronize();
+  }
+
+  void copy_from_device(const Fields<Real> &qq_d, Streams &cu_streams) {
+    cudaDeviceSynchronize();
+    MISO_CUDA_CHECK(cudaMemcpyAsync(ro, qq_d.ro, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.ro()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(vx, qq_d.vx, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.vx()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(vy, qq_d.vy, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.vy()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(vz, qq_d.vz, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.vz()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(bx, qq_d.bx, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.bx()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(by, qq_d.by, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.by()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(bz, qq_d.bz, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.bz()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(ei, qq_d.ei, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.ei()));
+    MISO_CUDA_CHECK(cudaMemcpyAsync(ph, qq_d.ph, array_size,
+                                    cudaMemcpyDeviceToDevice, cu_streams.ph()));
     cudaDeviceSynchronize();
   }
 };
@@ -254,24 +254,24 @@ template <typename Real> struct Buffers {
         sizeof(Real) * grid.j_margin * grid.i_total * grid.k_total * n_vars;
     const auto buff_z_size =
         sizeof(Real) * grid.k_margin * grid.i_total * grid.j_total * n_vars;
-    CUDA_CHECK(cudaMalloc(&recv_x_pos, buff_x_size));
-    CUDA_CHECK(cudaMalloc(&recv_x_neg, buff_x_size));
-    CUDA_CHECK(cudaMalloc(&recv_y_pos, buff_y_size));
-    CUDA_CHECK(cudaMalloc(&recv_y_neg, buff_y_size));
-    CUDA_CHECK(cudaMalloc(&recv_z_pos, buff_z_size));
-    CUDA_CHECK(cudaMalloc(&recv_z_neg, buff_z_size));
-    CUDA_CHECK(cudaMalloc(&send_x_pos, buff_x_size));
-    CUDA_CHECK(cudaMalloc(&send_x_neg, buff_x_size));
-    CUDA_CHECK(cudaMalloc(&send_y_pos, buff_y_size));
-    CUDA_CHECK(cudaMalloc(&send_y_neg, buff_y_size));
-    CUDA_CHECK(cudaMalloc(&send_z_pos, buff_z_size));
-    CUDA_CHECK(cudaMalloc(&send_z_neg, buff_z_size));
+    MISO_CUDA_CHECK(cudaMalloc(&recv_x_pos, buff_x_size));
+    MISO_CUDA_CHECK(cudaMalloc(&recv_x_neg, buff_x_size));
+    MISO_CUDA_CHECK(cudaMalloc(&recv_y_pos, buff_y_size));
+    MISO_CUDA_CHECK(cudaMalloc(&recv_y_neg, buff_y_size));
+    MISO_CUDA_CHECK(cudaMalloc(&recv_z_pos, buff_z_size));
+    MISO_CUDA_CHECK(cudaMalloc(&recv_z_neg, buff_z_size));
+    MISO_CUDA_CHECK(cudaMalloc(&send_x_pos, buff_x_size));
+    MISO_CUDA_CHECK(cudaMalloc(&send_x_neg, buff_x_size));
+    MISO_CUDA_CHECK(cudaMalloc(&send_y_pos, buff_y_size));
+    MISO_CUDA_CHECK(cudaMalloc(&send_y_neg, buff_y_size));
+    MISO_CUDA_CHECK(cudaMalloc(&send_z_pos, buff_z_size));
+    MISO_CUDA_CHECK(cudaMalloc(&send_z_neg, buff_z_size));
   }
 
   ~Buffers() {
     const auto F = [](Real *&p) {
       if (p)
-        CUDA_CHECK(cudaFree(p));
+        MISO_CUDA_CHECK(cudaFree(p));
       p = nullptr;
     };
     // clang-format off
@@ -474,7 +474,7 @@ template <typename Real> struct HaloExchanger {
   Buffers<Real> buff;
   GridDevice<Real> &grid;
   mpi::Shape &mpi_shape;
-  CudaKernelShape<Real> &cu_shape;
+  cuda::KernelShape3D &cu_shape;
 
   explicit HaloExchanger(GridDevice<Real> &grid, ExecContext &exec_ctx)
       : buff(grid), grid(grid), mpi_shape(exec_ctx.mpi_shape),
@@ -489,51 +489,51 @@ template <typename Real> struct HaloExchanger {
     if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
       pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
           buff.view(), qq_trgt.view(), grid.view(), Face::Pos);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
 
       MPI_Isend(buff.send_x_pos,
                 grid.i_margin * grid.j_total * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.x_procs_pos, 100, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.x_procs_pos, 100,
+                mpi_shape.cart_comm, &reqs[req_count++]);
       MPI_Irecv(buff.recv_x_pos,
                 grid.i_margin * grid.j_total * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.x_procs_pos, 200, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.x_procs_pos, 200,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     // positive y-direction
     if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
       pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
           buff.view(), qq_trgt.view(), grid.view(), Face::Pos);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
 
       MPI_Isend(buff.send_y_pos,
                 grid.i_total * grid.j_margin * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.y_procs_pos, 300, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.y_procs_pos, 300,
+                mpi_shape.cart_comm, &reqs[req_count++]);
       MPI_Irecv(buff.recv_y_pos,
                 grid.i_total * grid.j_margin * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.y_procs_pos, 400, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.y_procs_pos, 400,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     // positive z-direction
     if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
       pack_z_send<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
           buff.view(), qq_trgt.view(), grid.view(), Face::Pos);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
 
       MPI_Isend(buff.send_z_pos,
                 grid.i_total * grid.j_total * grid.k_margin * n_vars,
-                mpi_type<Real>(), mpi_shape.z_procs_pos, 500, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.z_procs_pos, 500,
+                mpi_shape.cart_comm, &reqs[req_count++]);
       MPI_Irecv(buff.recv_z_pos,
                 grid.i_total * grid.j_total * grid.k_margin * n_vars,
-                mpi_type<Real>(), mpi_shape.z_procs_pos, 600, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.z_procs_pos, 600,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     // ##################
@@ -541,48 +541,48 @@ template <typename Real> struct HaloExchanger {
     if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
       pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
           buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
       MPI_Isend(buff.send_x_neg,
                 grid.i_margin * grid.j_total * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.x_procs_neg, 200, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 200,
+                mpi_shape.cart_comm, &reqs[req_count++]);
       MPI_Irecv(buff.recv_x_neg,
                 grid.i_margin * grid.j_total * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.x_procs_neg, 100, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 100,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     // negative y-direction
     if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
       pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
           buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
       MPI_Isend(buff.send_y_neg,
                 grid.i_total * grid.j_margin * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.y_procs_neg, 400, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 400,
+                mpi_shape.cart_comm, &reqs[req_count++]);
       MPI_Irecv(buff.recv_y_neg,
                 grid.i_total * grid.j_margin * grid.k_total * n_vars,
-                mpi_type<Real>(), mpi_shape.y_procs_neg, 300, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 300,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     // negative z-direction
     if (mpi_shape.z_procs_neg != MPI_PROC_NULL && grid.k_total > 1) {
       pack_z_send<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
           buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
       MPI_Isend(buff.send_z_neg,
                 grid.i_total * grid.j_total * grid.k_margin * n_vars,
-                mpi_type<Real>(), mpi_shape.z_procs_neg, 600, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.z_procs_neg, 600,
+                mpi_shape.cart_comm, &reqs[req_count++]);
       MPI_Irecv(buff.recv_z_neg,
                 grid.i_total * grid.j_total * grid.k_margin * n_vars,
-                mpi_type<Real>(), mpi_shape.z_procs_neg, 500, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+                mpi::data_type<Real>(), mpi_shape.z_procs_neg, 500,
+                mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
     if (req_count > 0) {
@@ -594,24 +594,24 @@ template <typename Real> struct HaloExchanger {
     if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
       unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
           qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // positive y-direction
     if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
       unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
           qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // positive z-direction
     if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
       unpack_z_recv<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
           qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // ##################
@@ -619,28 +619,28 @@ template <typename Real> struct HaloExchanger {
     if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
       unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
           qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // negative y-direction
     if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
       unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
           qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
     }
 
     // negative z-direction
     if (mpi_shape.z_procs_neg != MPI_PROC_NULL && grid.k_total > 1) {
       unpack_z_recv<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
           qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
-      CUDA_CHECK(cudaGetLastError());
-      CUDA_CHECK(cudaDeviceSynchronize());
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
     }
   }
 };
 
-}  // namespace gpu
+}  // namespace impl_cuda
 }  // namespace mhd
 }  // namespace miso

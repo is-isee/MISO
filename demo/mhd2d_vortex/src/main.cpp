@@ -1,22 +1,21 @@
 #include <string>
 
 #include <miso/config.hpp>
-#include <miso/cuda_compat.hpp>
 #include <miso/env.hpp>
 #include <miso/eos.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
-#include <miso/mpi_shape.hpp>
+#include <miso/mpi_util.hpp>
 #include <miso/time.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
 #ifdef USE_CUDA
-#include <miso/cuda_utils.cuh>
+#include <miso/cuda_util.cuh>
 #endif
 
 using namespace miso;
 
-void initial_condition(mhd::cpu::Fields<Real> &qq, const Grid<Real> &grid,
+void initial_condition(mhd::impl_host::Fields<Real> &qq, const Grid<Real> &grid,
                        const eos::IdealEOS<Real> &eos) {
   Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
   Real v0 = 1.0;
@@ -54,13 +53,15 @@ struct Model {
 
   eos::IdealEOS<Real> eos;
 #ifdef USE_CUDA
-  CudaKernelShape<Real> cu_shape;
-  mhd::gpu::Streams mhd_streams;
-  mhd::gpu::ExecContext exec_ctx;
-  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::gpu::NoSource<Real>> mhd;
+  cuda::KernelShape3D cu_shape;
+  mhd::impl_cuda::Streams mhd_streams;
+  mhd::impl_cuda::ExecContext exec_ctx;
+  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_cuda::NoSource<Real>>
+      mhd;
 #else
-  mhd::cpu::ExecContext exec_ctx;
-  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::cpu::NoSource<Real>> mhd;
+  mhd::impl_host::ExecContext exec_ctx;
+  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_host::NoSource<Real>>
+      mhd;
 #endif
 
   Model(Config &config)

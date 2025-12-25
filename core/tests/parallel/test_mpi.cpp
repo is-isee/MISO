@@ -4,7 +4,7 @@
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 #include <miso/grid.hpp>
-#include <miso/mpi_shape.hpp>
+#include <miso/mpi_util.hpp>
 #include <miso/types.hpp>
 
 using namespace miso;
