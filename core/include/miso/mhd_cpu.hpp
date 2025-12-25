@@ -3,8 +3,8 @@
 #include <cassert>
 #include <vector>
 
-#include <miso/array3d_cpu.hpp>
-#include <miso/array4d_cpu.hpp>
+#include <miso/array3d.hpp>
+#include <miso/array4d.hpp>
 #include <miso/grid_cpu.hpp>
 #include <miso/mhd_view.hpp>
 #include <miso/mpi_util.hpp>
@@ -20,7 +20,7 @@ struct ExecContext {
 };
 
 template <typename Real> struct Fields {
-  Array3D<Real> ro, vx, vy, vz, bx, by, bz, ei, ph;
+  Array3D<Real, HostSpace> ro, vx, vy, vz, bx, by, bz, ei, ph;
 
   Fields(const Grid<Real> &grid)
       : ro(grid.i_total, grid.j_total, grid.k_total),
@@ -86,9 +86,9 @@ template <typename Real> struct HaloExchanger {
         mpi_shape(exec_ctx.mpi_shape) {}
 
   void apply(Fields<Real> &qq_trgt) {
-    std::array<Array3D<Real> *, 9> vars = {&qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy,
-                                           &qq_trgt.vz, &qq_trgt.bx, &qq_trgt.by,
-                                           &qq_trgt.bz, &qq_trgt.ei, &qq_trgt.ph};
+    std::array<Array3D<Real, HostSpace> *, 9> vars = {
+        &qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy, &qq_trgt.vz, &qq_trgt.bx,
+        &qq_trgt.by, &qq_trgt.bz, &qq_trgt.ei, &qq_trgt.ph};
     MPI_Request reqs[12];
     int req_count = 0;
 

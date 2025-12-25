@@ -66,7 +66,7 @@ struct MHD {
     std::ofstream ofs(filename, std::ios::binary);
     assert(ofs.is_open());
 
-    auto write_array = [&ofs](const Array3D<Real> &arr) {
+    auto write_array = [&ofs](const Array3D<Real, HostSpace> &arr) {
       ofs.write(reinterpret_cast<const char *>(arr.data()),
                 sizeof(Real) * arr.size());
     };
@@ -88,7 +88,7 @@ struct MHD {
     std::ifstream ifs(filename, std::ios::binary);
     assert(ifs.is_open());
 
-    auto read_array = [&ifs](Array3D<Real> &arr) {
+    auto read_array = [&ifs](Array3D<Real, HostSpace> &arr) {
       ifs.read(reinterpret_cast<char *>(arr.data()), sizeof(Real) * arr.size());
     };
     read_array(qq.ro);

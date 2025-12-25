@@ -13,7 +13,6 @@ template <typename Real> struct GridDevice {
   Real *x = nullptr, *y = nullptr, *z = nullptr;
   Real *dx = nullptr, *dy = nullptr, *dz = nullptr;
   Real *dxi = nullptr, *dyi = nullptr, *dzi = nullptr;
-  Real *mask = nullptr;
 
   explicit GridDevice(const Grid<Real> &grid)
       : i_total(grid.i_total), j_total(grid.j_total), k_total(grid.k_total),
@@ -29,10 +28,6 @@ template <typename Real> struct GridDevice {
     MISO_CUDA_CHECK(cudaMalloc(&dxi, sizeof(Real) * i_total));
     MISO_CUDA_CHECK(cudaMalloc(&dyi, sizeof(Real) * j_total));
     MISO_CUDA_CHECK(cudaMalloc(&dzi, sizeof(Real) * k_total));
-    if (grid.mask.size() > 0) {
-      MISO_CUDA_CHECK(
-          cudaMalloc(&mask, sizeof(Real) * i_total * j_total * k_total));
-    }
     copy_from_host(grid);
   }
 
@@ -46,7 +41,6 @@ template <typename Real> struct GridDevice {
     F(x); F(dx); F(dxi);
     F(y); F(dy); F(dyi);
     F(z); F(dz); F(dzi);
-    F(mask);
     // clang-format on
   }
 
@@ -72,11 +66,6 @@ template <typename Real> struct GridDevice {
                                cudaMemcpyHostToDevice));
     MISO_CUDA_CHECK(cudaMemcpy(dzi, grid_h.dzi.data(), sizeof(Real) * k_total,
                                cudaMemcpyHostToDevice));
-    if (grid_h.mask.size() > 0 && mask != nullptr) {
-      MISO_CUDA_CHECK(cudaMemcpy(mask, grid_h.mask.data(),
-                                 sizeof(Real) * i_total * j_total * k_total,
-                                 cudaMemcpyHostToDevice));
-    }
   }
 
   void copy_to_host(Grid<Real> &grid_h) {
@@ -98,11 +87,6 @@ template <typename Real> struct GridDevice {
                                cudaMemcpyDeviceToHost));
     MISO_CUDA_CHECK(cudaMemcpy(grid_h.dzi.data(), dzi, sizeof(Real) * k_total,
                                cudaMemcpyDeviceToHost));
-    if (grid_h.mask.size() > 0 && mask != nullptr) {
-      MISO_CUDA_CHECK(cudaMemcpy(grid_h.mask.data(), mask,
-                                 sizeof(Real) * i_total * j_total * k_total,
-                                 cudaMemcpyDeviceToHost));
-    }
   }
 
   // Prohibit copy and move

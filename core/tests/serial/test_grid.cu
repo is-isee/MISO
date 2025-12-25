@@ -32,7 +32,6 @@ TEST_CASE("Test Grid GPU" * doctest::test_suite("grid")) {
 
   miso::Grid<double> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax,
                           zmin, zmax);
-  grid.mask.allocate(grid.i_total, grid.j_total, grid.k_total);
   miso::GridDevice<double> grid_d(grid);
 
   grid_d.copy_from_host(grid);

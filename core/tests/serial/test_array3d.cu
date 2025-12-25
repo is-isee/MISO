@@ -3,32 +3,45 @@
 #include <doctest/doctest.h>
 
 #define USE_CUDA
-#include <miso/array3d_cpu.hpp>
-#include <miso/array3d_gpu.cuh>
+#include <miso/array3d.hpp>
 
-__global__ void test_array3d_kernel(double *data, int size_x, int size_y,
-                                    int size_z) {
+using namespace miso;
+
+HOST_DEVICE inline double ref_value(int i, int j, int k) {
+  return static_cast<double>(i * 100 + j * 10 + k);
+}
+
+__global__ void test_array3d_kernel(Array3DView<double> arr) {
   int x = blockIdx.x * blockDim.x + threadIdx.x;
   int y = blockIdx.y * blockDim.y + threadIdx.y;
   int z = blockIdx.z * blockDim.z + threadIdx.z;
 
-  if (x < size_x && y < size_y && z < size_z) {
-    data[z * size_x * size_y + y * size_x + x] = 1.0;  // Set all elements to 1.0
+  if (x < arr.size_x() && y < arr.size_y() && z < arr.size_z()) {
+    arr(x, y, z) = ref_value(x, y, z);
   }
 }
 
 TEST_CASE("Test Array3D GPU" * doctest::test_suite("array3d")) {
-  miso::Array3D<double> arr(3, 4, 5);
-  miso::Array3DDevice<double> arr_d(3, 4, 5);
+  Array3D<double, HostSpace> arr(3, 4, 5);
+  Array3D<double, CUDASpace> arr_d(3, 4, 5);
 
-  // Check access
-  arr(1, 2, 3) = 42.0;
-  REQUIRE(arr(1, 2, 3) == 42.0);
+  for (int i = 0; i < arr.size_x(); ++i) {
+    for (int j = 0; j < arr.size_y(); ++j) {
+      for (int k = 0; k < arr.size_z(); ++k) {
+        arr(i, j, k) = ref_value(i, j, k);
+      }
+    }
+  }
 
-  arr_d.copy_from_host(arr);
+  arr_d.copy_from(arr);
+  test_array3d_kernel<<<dim3(1, 1, 1), dim3(3, 4, 5)>>>(arr_d.view());
 
-  test_array3d_kernel<<<dim3(1, 1, 1), dim3(3, 4, 5)>>>(
-      arr_d.data(), arr.size_x(), arr.size_y(), arr.size_z());
-  arr_d.copy_to_host(arr);
-  REQUIRE(arr(1, 2, 3) == 1.0);
+  arr.copy_from(arr_d);
+  for (int i = 0; i < arr.size_x(); ++i) {
+    for (int j = 0; j < arr.size_y(); ++j) {
+      for (int k = 0; k < arr.size_z(); ++k) {
+        REQUIRE(std::abs(arr(i, j, k) - ref_value(i, j, k)) < 1e-9);
+      }
+    }
+  }
 }
