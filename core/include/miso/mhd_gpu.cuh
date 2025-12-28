@@ -1,7 +1,6 @@
 #pragma once
 #include <cassert>
 
-#include <miso/array3d.hpp>
 #include <miso/cuda_util.cuh>
 #include <miso/grid_gpu.cuh>
 #include <miso/mhd_view.hpp>
