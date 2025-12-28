@@ -2,7 +2,7 @@
 #include <cassert>
 
 #include <miso/cuda_util.cuh>
-#include <miso/grid_gpu.cuh>
+#include <miso/grid.hpp>
 #include <miso/mhd_view.hpp>
 #include <miso/mpi_util.hpp>
 

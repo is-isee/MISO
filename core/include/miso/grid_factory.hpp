@@ -1,17 +1,19 @@
 #pragma once
 
-#include <cassert>
-#include <vector>
-
-#include <miso/config.hpp>
+#include <miso/cuda_compat.hpp>
 #include <miso/env.hpp>
 #include <miso/mpi_util.hpp>
 
+#include <miso/config.hpp>
+
+#ifdef USE_CUDA
+#include <miso/cuda_util.cuh>
+#endif  // USE_CUDA
+
 namespace miso {
 
-/// @brief  Grid class for CPU version
-/// @tparam Real
-template <typename Real> struct Grid {
+/// @brief Generator of local Grid objects with MPI topology
+template <typename Real> struct GridGenerator {
   /// @brief  grid number in x direction without margin
   int i_size;
   /// @brief  grid number in y direction without margin
@@ -49,9 +51,9 @@ template <typename Real> struct Grid {
   /// @brief starting index in z direction (for MPI calculation)
   int k_stt;
 
-  /// @brief  minimum value in x direction
+  /// @brief minimum value in x direction
   Real xmin;
-  /// @brief  maximum value in x direction
+  /// @brief maximum value in x direction
   Real xmax;
   /// @brief minimum value in y direction
   Real ymin;
@@ -62,25 +64,25 @@ template <typename Real> struct Grid {
   /// @brief maximum value in z direction
   Real zmax;
 
-  /// @brief  coordinate in x direction
+  /// @brief coordinate in x direction
   std::vector<Real> x;
-  /// @brief  coordinate in y direction
+  /// @brief coordinate in y direction
   std::vector<Real> y;
-  /// @brief  coordinate in z direction
+  /// @brief coordinate in z direction
   std::vector<Real> z;
 
-  /// @brief  grid spacing in x direction
+  /// @brief grid spacing in x direction
   std::vector<Real> dx;
-  /// @brief  grid spacing in y direction
+  /// @brief grid spacing in y direction
   std::vector<Real> dy;
-  /// @brief  grid spacing in z direction
+  /// @brief grid spacing in z direction
   std::vector<Real> dz;
 
-  /// @brief  inverse grid spacing in x direction
+  /// @brief inverse grid spacing in x direction
   std::vector<Real> dxi;
-  /// @brief  inverse grid spacing in y direction
+  /// @brief inverse grid spacing in y direction
   std::vector<Real> dyi;
-  /// @brief  inverse grid spacing in z direction
+  /// @brief inverse grid spacing in z direction
   std::vector<Real> dzi;
 
   /// @brief global minimum value of dx, dy, dz
