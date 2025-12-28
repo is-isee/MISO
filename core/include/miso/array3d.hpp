@@ -18,38 +18,38 @@ private:
   int i_total_ = -1, j_total_ = -1, k_total_ = -1;
 
 public:
-  HOST_DEVICE
-  Array3DView(T *data, int i_total, int j_total, int k_total) noexcept
+  __host__ __device__ Array3DView(T *data, int i_total, int j_total,
+                                  int k_total) noexcept
       : data_(data), i_total_(i_total), j_total_(j_total), k_total_(k_total) {}
 
-  HOST_DEVICE T &operator()(int i, int j, int k) noexcept {
+  __host__ __device__ T &operator()(int i, int j, int k) noexcept {
     assert(i >= 0 && i < i_total_);
     assert(j >= 0 && j < j_total_);
     assert(k >= 0 && k < k_total_);
     return data_[i * j_total_ * k_total_ + j * k_total_ + k];
   }
-  HOST_DEVICE const T &operator()(int i, int j, int k) const noexcept {
+  __host__ __device__ const T &operator()(int i, int j, int k) const noexcept {
     assert(i >= 0 && i < i_total_);
     assert(j >= 0 && j < j_total_);
     assert(k >= 0 && k < k_total_);
     return data_[i * j_total_ * k_total_ + j * k_total_ + k];
   }
 
-  HOST_DEVICE T &operator[](int idx) noexcept {
+  __host__ __device__ T &operator[](int idx) noexcept {
     assert(idx >= 0 && idx < i_total_ * j_total_ * k_total_);
     return data_[idx];
   }
-  HOST_DEVICE const T &operator[](int idx) const noexcept {
+  __host__ __device__ const T &operator[](int idx) const noexcept {
     assert(idx >= 0 && idx < i_total_ * j_total_ * k_total_);
     return data_[idx];
   }
 
-  HOST_DEVICE const T *data() const noexcept { return data_; }
+  __host__ __device__ const T *data() const noexcept { return data_; }
 
-  HOST_DEVICE int size_x() const noexcept { return i_total_; }
-  HOST_DEVICE int size_y() const noexcept { return j_total_; }
-  HOST_DEVICE int size_z() const noexcept { return k_total_; }
-  HOST_DEVICE size_t size() const noexcept {
+  __host__ __device__ int size_x() const noexcept { return i_total_; }
+  __host__ __device__ int size_y() const noexcept { return j_total_; }
+  __host__ __device__ int size_z() const noexcept { return k_total_; }
+  __host__ __device__ size_t size() const noexcept {
     return i_total_ * j_total_ * k_total_;
   }
 };
