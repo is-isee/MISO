@@ -11,7 +11,7 @@ namespace impl_host {
 /// @brief Artificial viscosity class for mhd simulations
 /// @tparam T Type of the data (Real)
 template <typename Real, typename EOS> struct ArtificialViscosity {
-  Grid<Real> &grid;
+  Grid<Real, HostSpace> &grid;
   EOS &eos;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
@@ -29,7 +29,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
 
   /// @brief Constructor for ArtificialViscosity
   /// @param model
-  ArtificialViscosity(Config &config, Grid<Real> &grid, EOS &eos)
+  ArtificialViscosity(Config &config, Grid<Real, HostSpace> &grid, EOS &eos)
       : grid(grid), eos(eos), cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();

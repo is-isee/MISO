@@ -83,7 +83,7 @@ template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source>
 struct Integrator {
   /// @brief Spatial grid
-  Grid<Real> &grid;
+  Grid<Real, HostSpace> &grid;
   /// @brief Equation of states
   EOS eos;
   /// @brief MHD state
@@ -119,7 +119,7 @@ struct Integrator {
   Real tau_divb;
 
   /// @brief Constructor
-  Integrator(Config &config, Fields<Real> &qq, Grid<Real> &grid,
+  Integrator(Config &config, Fields<Real> &qq, Grid<Real, HostSpace> &grid,
              ExecContext &exec_ctx)
       : grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
         halo_exchanger(grid, exec_ctx), bc(config), artdiff(config, grid, eos),

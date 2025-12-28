@@ -461,7 +461,7 @@ __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 }  // namespace artificial_viscosity
 
 template <typename Real, typename EOS> struct ArtificialViscosity {
-  GridDevice<Real> &grid;
+  Grid<Real, CUDASpace> &grid;
   EOS &eos;
   cuda::KernelShape3D &cu_shape;
 
@@ -478,7 +478,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   /// @brief Characteristic velocity factor for fluid velocity
   Real vv_fac;
 
-  ArtificialViscosity(Config &config, GridDevice<Real> &grid, EOS &eos,
+  ArtificialViscosity(Config &config, Grid<Real, CUDASpace> &grid, EOS &eos,
                       cuda::KernelShape3D &cu_shape)
       : grid(grid), eos(eos), cu_shape(cu_shape),
         cc(grid.i_total, grid.j_total, grid.k_total) {

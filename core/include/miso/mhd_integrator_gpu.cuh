@@ -457,7 +457,7 @@ struct Integrator {
   Streams &mhd_streams;
 
   /// @brief Spatial grid
-  GridDevice<Real> &grid;
+  Grid<Real, CUDASpace> &grid;
   /// @brief Equation of states
   EOS eos;
   /// @brief MHD state
@@ -495,7 +495,7 @@ struct Integrator {
   /// @brief damping time scape for divergence B
   Real tau_divb;
 
-  Integrator(Config &config, Fields<Real> &qq, GridDevice<Real> &grid,
+  Integrator(Config &config, Fields<Real> &qq, Grid<Real, CUDASpace> &grid,
              ExecContext &exec_ctx)
       : cu_shape(exec_ctx.cu_shape), mhd_streams(exec_ctx.mhd_streams),
         grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
