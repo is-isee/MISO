@@ -22,7 +22,7 @@ struct ExecContext {
 template <typename Real> struct Fields {
   Array3D<Real, HostSpace> ro, vx, vy, vz, bx, by, bz, ei, ph;
 
-  Fields(const Grid<Real> &grid)
+  Fields(const Grid<Real, HostSpace> &grid)
       : ro(grid.i_total, grid.j_total, grid.k_total),
         vx(grid.i_total, grid.j_total, grid.k_total),
         vy(grid.i_total, grid.j_total, grid.k_total),
@@ -67,10 +67,10 @@ template <typename Real> struct HaloExchanger {
   Array4D<Real> send_y_pos, send_y_neg;
   Array4D<Real> send_z_pos, send_z_neg;
 
-  Grid<Real> &grid;
+  Grid<Real, HostSpace> &grid;
   mpi::Shape &mpi_shape;
 
-  HaloExchanger(Grid<Real> &grid, ExecContext &exec_ctx)
+  HaloExchanger(Grid<Real, HostSpace> &grid, ExecContext &exec_ctx)
       : recv_x_pos(grid.i_margin, grid.j_total, grid.k_total, 9),
         recv_x_neg(grid.i_margin, grid.j_total, grid.k_total, 9),
         recv_y_pos(grid.i_total, grid.j_margin, grid.k_total, 9),

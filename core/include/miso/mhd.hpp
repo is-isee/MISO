@@ -17,9 +17,9 @@ template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source>
 struct MHD {
   Time<Real> &time;
-  Grid<Real> &grid;
+  Grid<Real, HostSpace> &grid;
 #ifdef USE_CUDA
-  GridDevice<Real> grid_d;
+  Grid<Real, CUDASpace> grid_d;
 #endif
 
   impl_host::Fields<Real> qq;  // Required for cpu and gpu both
@@ -39,7 +39,7 @@ struct MHD {
   std::string mhd_save_dir;
 
   template <typename ExecContextType>
-  MHD(Config &config, Time<Real> &time, Grid<Real> &grid,
+  MHD(Config &config, Time<Real> &time, Grid<Real, HostSpace> &grid,
       ExecContextType &exec_ctx)
 #ifdef USE_CUDA
       : time(time), grid(grid), grid_d(grid), qq(grid), qq_d(grid_d),

@@ -101,7 +101,7 @@ template <typename Real> struct Fields {
   int i_total = -1, j_total = -1, k_total = -1;
   size_t array_size = 0;
 
-  Fields(const GridDevice<Real> &grid)
+  Fields(const Grid<Real, CUDASpace> &grid)
       : i_total(grid.i_total), j_total(grid.j_total), k_total(grid.k_total) {
     array_size = sizeof(Real) * i_total * j_total * k_total;
     MISO_CUDA_CHECK(cudaMalloc(&ro, array_size));
@@ -246,7 +246,7 @@ template <typename Real> struct Buffers {
   Real *send_z_pos = nullptr;
   Real *send_z_neg = nullptr;
 
-  Buffers(const GridDevice<Real> &grid) {
+  Buffers(const Grid<Real, CUDASpace> &grid) {
     const auto buff_x_size =
         sizeof(Real) * grid.i_margin * grid.j_total * grid.k_total * n_vars;
     const auto buff_y_size =
@@ -471,11 +471,11 @@ __global__ void unpack_z_recv(FieldsView<Real> qq_trgt,
 
 template <typename Real> struct HaloExchanger {
   Buffers<Real> buff;
-  GridDevice<Real> &grid;
+  Grid<Real, CUDASpace> &grid;
   mpi::Shape &mpi_shape;
   cuda::KernelShape3D &cu_shape;
 
-  explicit HaloExchanger(GridDevice<Real> &grid, ExecContext &exec_ctx)
+  explicit HaloExchanger(Grid<Real, CUDASpace> &grid, ExecContext &exec_ctx)
       : buff(grid), grid(grid), mpi_shape(exec_ctx.mpi_shape),
         cu_shape(exec_ctx.cu_shape) {}
 

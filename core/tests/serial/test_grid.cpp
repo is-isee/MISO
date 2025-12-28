@@ -4,6 +4,8 @@
 #undef USE_CUDA
 #include <miso/grid.hpp>
 
+using namespace miso;
+
 TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   // Test the Grid constructor and accessors
   int i_size = 3;
@@ -17,8 +19,8 @@ TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   double zmin = 4.0;
   double zmax = 5.0;
 
-  miso::Grid<double> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin, ymax,
-                          zmin, zmax);
+  Grid<double, HostSpace> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin,
+                               ymax, zmin, zmax);
 
   // Check dimensions
   REQUIRE(grid.i_size == i_size);
