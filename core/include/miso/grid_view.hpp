@@ -23,7 +23,7 @@ template <typename Real> struct GridView {
         x(grid.x), y(grid.y), z(grid.z), dx(grid.dx), dy(grid.dy), dz(grid.dz),
         dxi(grid.dxi), dyi(grid.dyi), dzi(grid.dzi) {}
 
-  DEVICE inline int idx(int i, int j, int k) const {
+  __device__ inline int idx(int i, int j, int k) const {
     return (i * j_total + j) * k_total + k;
   }
 };

@@ -7,7 +7,7 @@
 
 using namespace miso;
 
-HOST_DEVICE inline double ref_value(int i, int j, int k) {
+__host__ __device__ inline double ref_value(int i, int j, int k) {
   return static_cast<double>(i * 100 + j * 10 + k);
 }
 

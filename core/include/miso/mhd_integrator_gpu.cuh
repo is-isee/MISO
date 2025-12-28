@@ -424,26 +424,26 @@ update_ei_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
 /// @details Volumetric heat / force terms are expected.
 template <typename Real> struct NoSource {
   /// External force: x-direction
-  HOST_DEVICE inline Real vx(const FieldsView<Real> &, int, int,
-                             int) const noexcept {
+  __host__ __device__ inline Real vx(const FieldsView<Real> &, int, int,
+                                     int) const noexcept {
     return 0.0;
   }
 
   /// External force: y-direction
-  HOST_DEVICE inline Real vy(const FieldsView<Real> &, int, int,
-                             int) const noexcept {
+  __host__ __device__ inline Real vy(const FieldsView<Real> &, int, int,
+                                     int) const noexcept {
     return 0.0;
   }
 
   /// External force: z-direction
-  HOST_DEVICE inline Real vz(const FieldsView<Real> &, int, int,
-                             int) const noexcept {
+  __host__ __device__ inline Real vz(const FieldsView<Real> &, int, int,
+                                     int) const noexcept {
     return 0.0;
   }
 
   /// External heating
-  HOST_DEVICE inline Real ei(const FieldsView<Real> &, int, int,
-                             int) const noexcept {
+  __host__ __device__ inline Real ei(const FieldsView<Real> &, int, int,
+                                     int) const noexcept {
     return 0.0;
   }
 };

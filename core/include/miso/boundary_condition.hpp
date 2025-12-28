@@ -53,9 +53,9 @@ inline Side string_to_side(const std::string &str) {
 }
 
 template <typename Real, typename GridType>
-HOST_DEVICE inline void range_set(int &i0_, int &i1_, int &j0_, int &j1_,
-                                  int &k0_, int &k1_, Direction direction,
-                                  const GridType &grid) {
+__host__ __device__ inline void range_set(int &i0_, int &i1_, int &j0_, int &j1_,
+                                          int &k0_, int &k1_, Direction direction,
+                                          const GridType &grid) {
   i0_ = 0;
   i1_ = grid.i_total;
   j0_ = 0;
@@ -76,8 +76,9 @@ HOST_DEVICE inline void range_set(int &i0_, int &i1_, int &j0_, int &j1_,
 }
 
 template <typename Real>
-HOST_DEVICE inline void symmetric_index(int i, int i_total, int i_margin,
-                                        int &i_ghst, int &i_trgt, Side side) {
+__host__ __device__ inline void symmetric_index(int i, int i_total, int i_margin,
+                                                int &i_ghst, int &i_trgt,
+                                                Side side) {
   switch (side) {
   case Side::INNER:
     i_ghst = i;
@@ -91,8 +92,9 @@ HOST_DEVICE inline void symmetric_index(int i, int i_total, int i_margin,
 }
 
 template <typename Real>
-HOST_DEVICE inline void periodic_index(int i, int i_total, int i_margin,
-                                       int &i_ghst, int &i_trgt, Side side) {
+__host__ __device__ inline void periodic_index(int i, int i_total, int i_margin,
+                                               int &i_ghst, int &i_trgt,
+                                               Side side) {
   switch (side) {
   case Side::INNER:
     i_ghst = i;
