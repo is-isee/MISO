@@ -5,7 +5,7 @@
 
 #include <miso/array3d.hpp>
 #include <miso/array4d.hpp>
-#include <miso/grid_cpu.hpp>
+#include <miso/grid.hpp>
 #include <miso/mhd_view.hpp>
 #include <miso/mpi_util.hpp>
 #include <miso/utility.hpp>

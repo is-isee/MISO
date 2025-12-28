@@ -1,15 +1,20 @@
 #pragma once
 
 #ifdef USE_CUDA
+
 #include <cuda_runtime.h>
-#else
+
+#else  // USE_CUDA
+
 #ifndef __device__
 #define __device__
 #endif
+
 #ifndef __host__
 #define __host__
 #endif
-#ifndef __global__
-#define __global__
-#endif
-#endif
+
+// Do not define __global__:
+// CUDA kernel semantics and launch syntax are not portable.
+
+#endif  // USE_CUDA

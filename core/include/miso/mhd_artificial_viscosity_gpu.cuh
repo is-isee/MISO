@@ -3,7 +3,7 @@
 #include <miso/array3d.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_util.cuh>
-#include <miso/grid_gpu.cuh>
+#include <miso/grid.hpp>
 #include <miso/mhd_artificial_viscosity_core.hpp>
 #include <miso/mhd_gpu.cuh>
 

@@ -1,9 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <cassert>
 #include <doctest/doctest.h>
 
 #undef USE_CUDA
-#include <miso/grid_cpu.hpp>
+#include <miso/grid.hpp>
 
 TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   // Test the Grid constructor and accessors
