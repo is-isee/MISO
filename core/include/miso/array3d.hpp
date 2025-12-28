@@ -44,6 +44,8 @@ public:
     return data_[idx];
   }
 
+  HOST_DEVICE const T *data() const noexcept { return data_; }
+
   HOST_DEVICE int size_x() const noexcept { return i_total_; }
   HOST_DEVICE int size_y() const noexcept { return j_total_; }
   HOST_DEVICE int size_z() const noexcept { return k_total_; }

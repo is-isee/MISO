@@ -1,5 +1,6 @@
 #pragma once
 
+#include <miso/array3d.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_util.cuh>
 #include <miso/grid_gpu.cuh>
@@ -465,7 +466,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   cuda::KernelShape3D &cu_shape;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
-  Array3DDevice<Real> cc;
+  Array3D<Real, CUDASpace> cc;
   /// @brief Parameters for generalized minmod limiter
   Real ep;
   /// @brief Parameters for amplitude of artificial viscosity flux

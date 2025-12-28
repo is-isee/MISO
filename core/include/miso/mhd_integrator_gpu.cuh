@@ -1,5 +1,6 @@
 #pragma once
 
+#include <miso/array3d.hpp>
 #include <miso/constants.hpp>
 #include <miso/cuda_compat.hpp>
 #include <miso/cuda_util.cuh>
@@ -477,13 +478,13 @@ struct Integrator {
   TimeStep<Real> time_step;
 
   /// @brief gas pressure
-  Array3DDevice<Real> pr;
+  Array3D<Real, CUDASpace> pr;
   /// @brief magnetic field strength bx*bx + by*by + bz*bz
-  Array3DDevice<Real> bb;
+  Array3D<Real, CUDASpace> bb;
   /// @brief enthalpy + 2*magnetic energy + kinetic energy
-  Array3DDevice<Real> ht;
+  Array3D<Real, CUDASpace> ht;
   /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
-  Array3DDevice<Real> vb;
+  Array3D<Real, CUDASpace> vb;
 
   /// @brief CFL number
   Real cfl_number;
