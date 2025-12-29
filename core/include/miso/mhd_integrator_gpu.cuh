@@ -6,7 +6,8 @@
 #include <miso/cuda_util.cuh>
 #include <miso/env.hpp>
 #include <miso/mhd_artificial_viscosity_gpu.cuh>
-#include <miso/mhd_gpu.cuh>
+#include <miso/mhd_fields.hpp>
+#include <miso/mhd_halo_exchange.hpp>
 
 namespace miso {
 namespace mhd {
@@ -453,20 +454,18 @@ template <typename Real, typename BoundaryCondition, typename EOS,
 struct Integrator {
   /// @brief CUDA kernel shape
   cuda::KernelShape3D &cu_shape;
-  /// @brief CUDA streams for MHD variables
-  Streams &mhd_streams;
 
   /// @brief Spatial grid
   Grid<Real, CUDASpace> &grid;
   /// @brief Equation of states
   EOS eos;
   /// @brief MHD state
-  Fields<Real> &qq;
+  Fields<Real, CUDASpace> &qq;
   /// @brief Workspace
-  Fields<Real> qq_argm, qq_rslt;
+  Fields<Real, CUDASpace> qq_argm, qq_rslt;
 
   /// @brief Halo exchanger
-  HaloExchanger<Real> halo_exchanger;
+  HaloExchanger<Real, CUDASpace> halo_exchanger;
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
   /// @brief Body source for MHD equations
@@ -495,11 +494,10 @@ struct Integrator {
   /// @brief damping time scape for divergence B
   Real tau_divb;
 
-  Integrator(Config &config, Fields<Real> &qq, Grid<Real, CUDASpace> &grid,
-             ExecContext &exec_ctx)
-      : cu_shape(exec_ctx.cu_shape), mhd_streams(exec_ctx.mhd_streams),
-        grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
-        halo_exchanger(grid, exec_ctx), bc(config),
+  Integrator(Config &config, Fields<Real, CUDASpace> &qq,
+             Grid<Real, CUDASpace> &grid, ExecContext &exec_ctx)
+      : cu_shape(exec_ctx.cu_shape), grid(grid), eos(config), qq(qq),
+        qq_argm(grid), qq_rslt(grid), halo_exchanger(grid, exec_ctx), bc(config),
         artdiff(config, grid, eos, exec_ctx.cu_shape),
         time_step(exec_ctx.cu_shape),
         pr(grid.i_total, grid.j_total, grid.k_total),
@@ -510,8 +508,9 @@ struct Integrator {
   }
 
   /// @brief Update MHD equations using 4th order space-centered scheme
-  void update_sc4(Fields<Real> &qq_orgn, Fields<Real> &qq_argm,
-                  Fields<Real> &qq_rslt, const Real dt) {
+  void update_sc4(Fields<Real, CUDASpace> &qq_orgn,
+                  Fields<Real, CUDASpace> &qq_argm,
+                  Fields<Real, CUDASpace> &qq_rslt, const Real dt) {
     pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_argm.view(), pr.view(), bb.view(), ht.view(), vb.view(), grid.view(),
         eos.gm);
@@ -562,22 +561,22 @@ struct Integrator {
   /// @brief Runge-Kutta 4th order time integration step
   void runge_kutta_4step(const Real dt) {
     update_sc4(qq, qq, qq_rslt, dt / 4.0);
-    qq_argm.copy_from_device(qq_rslt, mhd_streams);
+    qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 3.0);
-    qq_argm.copy_from_device(qq_rslt, mhd_streams);
+    qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt / 2.0);
-    qq_argm.copy_from_device(qq_rslt, mhd_streams);
+    qq_argm.copy_from(qq_rslt);
     bc.apply(qq_argm.view());
     halo_exchanger.apply(qq_argm);
 
     update_sc4(qq, qq_argm, qq_rslt, dt);
-    qq.copy_from_device(qq_rslt, mhd_streams);
+    qq.copy_from(qq_rslt);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }
@@ -588,19 +587,19 @@ struct Integrator {
 
     // x direction
     artdiff.update(qq, qq_rslt, Direction::X, dt);
-    qq.copy_from_device(qq_rslt, mhd_streams);
+    qq.copy_from(qq_rslt);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // y direction
     artdiff.update(qq, qq_rslt, Direction::Y, dt);
-    qq.copy_from_device(qq_rslt, mhd_streams);
+    qq.copy_from(qq_rslt);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
 
     // z direction
     artdiff.update(qq, qq_rslt, Direction::Z, dt);
-    qq.copy_from_device(qq_rslt, mhd_streams);
+    qq.copy_from(qq_rslt);
     bc.apply(qq.view());
     halo_exchanger.apply(qq);
   }

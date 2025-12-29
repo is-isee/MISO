@@ -1,14 +1,13 @@
 #pragma once
 
+#include <miso/array3d.hpp>
+#include <miso/env.hpp>
 #include <miso/eos.hpp>
 #include <miso/grid.hpp>
-#include <miso/time.hpp>
-
-#include <miso/mhd_cpu.hpp>
-#ifdef USE_CUDA
-#include <miso/mhd_gpu.cuh>
-#endif
+#include <miso/mhd_fields.hpp>
+#include <miso/mhd_halo_exchange.hpp>
 #include <miso/mhd_integrator.hpp>
+#include <miso/time.hpp>
 
 namespace miso {
 namespace mhd {
@@ -22,16 +21,16 @@ struct MHD {
   Grid<Real, CUDASpace> grid_d;
 #endif
 
-  impl_host::Fields<Real> qq;  // Required for cpu and gpu both
+  Fields<Real, HostSpace> qq;  // Required for cpu and gpu both
 #ifdef USE_CUDA
-  impl_cuda::Fields<Real> qq_d;
+  Fields<Real, CUDASpace> qq_d;
 #endif
 
 #ifdef USE_CUDA
-  impl_cuda::ExecContext exec_ctx;
+  ExecContext<CUDASpace> &exec_ctx;
   impl_cuda::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #else
-  impl_host::ExecContext exec_ctx;
+  ExecContext<HostSpace> &exec_ctx;
   impl_host::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #endif
 
@@ -70,6 +69,9 @@ struct MHD {
       ofs.write(reinterpret_cast<const char *>(arr.data()),
                 sizeof(Real) * arr.size());
     };
+#ifdef USE_CUDA
+    qq.copy_from(qq_d);
+#endif  // USE_CUDA
     write_array(qq.ro);
     write_array(qq.vx);
     write_array(qq.vy);
@@ -102,11 +104,6 @@ struct MHD {
     read_array(qq.ph);
   };
 };
-
-// /// @brief Ideal MHD model type alias
-// template <typename Real, typename BoundaryCondition>
-// using IdealMHD =
-//     MHD<Real, BoundaryCondition, eos::IdealEOS<Real>, NoSource<Real>>;
 
 }  // namespace mhd
 }  // namespace miso

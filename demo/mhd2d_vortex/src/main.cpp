@@ -48,13 +48,12 @@ struct Model {
   Config &config;
   mpi::Shape mpi_shape;
   Time<Real> time;
-  Grid<Real> grid_global;
-  Grid<Real> grid;
+  Grid<Real, HostSpace> grid_global;
+  Grid<Real, HostSpace> grid;
 
   eos::IdealEOS<Real> eos;
 #ifdef USE_CUDA
   cuda::KernelShape3D cu_shape;
-  mhd::impl_cuda::Streams mhd_streams;
   mhd::impl_cuda::ExecContext exec_ctx;
   mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_cuda::NoSource<Real>>
       mhd;
@@ -68,12 +67,11 @@ struct Model {
       : config(config), mpi_shape(config), time(config), grid_global(config),
         grid(grid_global, mpi_shape), eos(config),
 #ifdef USE_CUDA
-        cu_shape(grid), mhd_streams(), exec_ctx{mpi_shape, cu_shape, mhd_streams},
-        mhd(config, time, grid, exec_ctx)
+        cu_shape(grid), exec_ctx{mpi_shape, cu_shape},
 #else
-        exec_ctx{mpi_shape}, mhd(config, time, grid, exec_ctx)
+        exec_ctx{mpi_shape},
 #endif
-  {
+        mhd(config, time, grid, exec_ctx) {
   }
 
   void save_metadata() {
@@ -84,9 +82,6 @@ struct Model {
   }
 
   void save_state() {
-#ifdef USE_CUDA
-    mhd.qq_d.copy_to_host(mhd.qq, mhd_streams);
-#endif
     mhd.save();
     time.save();
   }

@@ -1,12 +1,17 @@
 #pragma once
 
+#include <miso/array3d.hpp>
 #include <miso/constants.hpp>
-#include <miso/mhd_artificial_viscosity_core.hpp>
-#include <miso/mhd_cpu.hpp>
+#include <miso/grid.hpp>
+#include <miso/limiter.hpp>
+#include <miso/mhd_fields.hpp>
 
 namespace miso {
 namespace mhd {
 namespace impl_host {
+
+using miso::limiter::dqq_eval;
+using miso::limiter::flux_core;
 
 /// @brief Artificial viscosity class for mhd simulations
 /// @tparam T Type of the data (Real)
@@ -111,15 +116,15 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks);
           // clang-format on
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real fro_dw = artificial_viscosity::flux_core(
-              qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real fro_up = artificial_viscosity::flux_core(
-              qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real fro_dw =
+              flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+          Real fro_up =
+              flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.ro(i, j, k) =
               qq.ro(i, j, k) -
@@ -139,15 +144,15 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
                  qq.vx(i + 2 * is, j + 2 * js, k + 2 * ks);
           // clang-format on
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real frx_dw = artificial_viscosity::flux_core(
-              qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real frx_up = artificial_viscosity::flux_core(
-              qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real frx_dw =
+              flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+          Real frx_up =
+              flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.vx(i, j, k) =
               (qq.ro(i, j, k) * qq.vx(i, j, k) -
@@ -168,15 +173,15 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
                  qq.vy(i + 2 * is, j + 2 * js, k + 2 * ks);
           // clang-format on
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real fry_dw = artificial_viscosity::flux_core(
-              qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real fry_up = artificial_viscosity::flux_core(
-              qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real fry_dw =
+              flux_core(qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
+          Real fry_up =
+              flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.vy(i, j, k) =
               (qq.ro(i, j, k) * qq.vy(i, j, k) -
@@ -196,14 +201,14 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
                  qq.vz(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real frz_dw = artificial_viscosity::flux_core(
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real frz_dw = flux_core(
               qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real frz_up = artificial_viscosity::flux_core(
+          Real frz_up = flux_core(
               qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.vz(i, j, k) =
@@ -218,14 +223,14 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
           qqr1 = qq.bx(i + is, j + js, k + ks);
           qqr2 = qq.bx(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real fbx_dw = artificial_viscosity::flux_core(
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real fbx_dw = flux_core(
               qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real fbx_up = artificial_viscosity::flux_core(
+          Real fbx_up = flux_core(
               qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.bx(i, j, k) =
@@ -239,14 +244,14 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
           qqr1 = qq.by(i + is, j + js, k + ks);
           qqr2 = qq.by(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real fby_dw = artificial_viscosity::flux_core(
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real fby_dw = flux_core(
               qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real fby_up = artificial_viscosity::flux_core(
+          Real fby_up = flux_core(
               qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.by(i, j, k) =
@@ -260,14 +265,14 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
           qqr1 = qq.bz(i + is, j + js, k + ks);
           qqr2 = qq.bz(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real fbz_dw = artificial_viscosity::flux_core(
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real fbz_dw = flux_core(
               qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real fbz_up = artificial_viscosity::flux_core(
+          Real fbz_up = flux_core(
               qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.bz(i, j, k) =
@@ -281,14 +286,14 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
           qqr1 = qq.ph(i + is, j + js, k + ks);
           qqr2 = qq.ph(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real fph_dw = artificial_viscosity::flux_core(
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real fph_dw = flux_core(
               qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real fph_up = artificial_viscosity::flux_core(
+          Real fph_up = flux_core(
               qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           qq_rslt.ph(i, j, k) =
@@ -304,14 +309,14 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
           qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
                  qq.ei(i + 2 * is, j + 2 * js, k + 2 * ks);
           // dqq at i-is, j-js, k-2ks
-          dqq_dw = artificial_viscosity::dqq_eval(qql2, qql1, qqc, ep);
+          dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
           // dqq at i, j, k
-          dqq_cn = artificial_viscosity::dqq_eval(qql1, qqc, qqr1, ep);
+          dqq_cn = dqq_eval(qql1, qqc, qqr1, ep);
           // dqq at i+is, j+js, k+ks
-          dqq_up = artificial_viscosity::dqq_eval(qqc, qqr1, qqr2, ep);
-          Real fei_dw = artificial_viscosity::flux_core(
+          dqq_up = dqq_eval(qqc, qqr1, qqr2, ep);
+          Real fei_dw = flux_core(
               qql1, qqc, dqq_dw, dqq_cn, Real(0.5) * (ccl + ccc), fh);
-          Real fei_up = artificial_viscosity::flux_core(
+          Real fei_up = flux_core(
               qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
           // Et: Total energy per unit volume, note that ei is internal energy per unit mass

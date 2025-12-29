@@ -4,7 +4,7 @@
 #include <cassert>
 
 #include <miso/cuda_compat.hpp>
-#include <miso/memory_space.hpp>
+#include <miso/policy.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_util.cuh>
 #endif  // USE_CUDA
@@ -140,6 +140,18 @@ public:
     MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * other.size(),
                                cudaMemcpyDeviceToHost));
   }
+
+  /// @brief Copy data from another Array3D in CUDA memory (async).
+  /// @details The caller is responsible for synchronizing the stream.
+  void copy_from(const Array3D<T, CUDASpace> &other, cudaStream_t stream) {
+    assert(other.size_x() == size_x());
+    assert(other.size_y() == size_y());
+    assert(other.size_z() == size_z());
+    assert(other.data() && data());
+    MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(),
+                                    sizeof(T) * other.size(),
+                                    cudaMemcpyDeviceToHost, stream));
+  }
 #endif  // USE_CUDA
 
   // Prohibit copy and move semantics
@@ -215,6 +227,28 @@ public:
     assert(other.data() && data());
     MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * size(),
                                cudaMemcpyDeviceToDevice));
+  }
+
+  /// @brief Copy data from another Array3D in host memory (async).
+  /// @details The caller is responsible for synchronizing the stream.
+  void copy_from(const Array3D<T, HostSpace> &other, cudaStream_t stream) {
+    assert(other.size_x() == size_x());
+    assert(other.size_y() == size_y());
+    assert(other.size_z() == size_z());
+    assert(other.data() && data());
+    MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),
+                                    cudaMemcpyHostToDevice, stream));
+  }
+
+  /// @brief Copy data from another Array3D in CUDA memory (async).
+  /// @details The caller is responsible for synchronizing the stream.
+  void copy_from(const Array3D<T, CUDASpace> &other, cudaStream_t stream) {
+    assert(other.size_x() == size_x());
+    assert(other.size_y() == size_y());
+    assert(other.size_z() == size_z());
+    assert(other.data() && data());
+    MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),
+                                    cudaMemcpyDeviceToDevice, stream));
   }
 
   // Prohibit copy and move semantics
