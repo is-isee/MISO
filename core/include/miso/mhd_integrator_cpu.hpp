@@ -1,9 +1,10 @@
 #pragma once
 
+#include <miso/array3d.hpp>
 #include <miso/constants.hpp>
 #include <miso/env.hpp>
 #include <miso/mhd_artificial_viscosity_cpu.hpp>
-#include <miso/mhd_cpu.hpp>
+#include <miso/mhd_fields.hpp>
 
 namespace miso {
 namespace mhd {

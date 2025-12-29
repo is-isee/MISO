@@ -4,16 +4,16 @@
 #include <miso/constants.hpp>
 #include <miso/cuda_util.cuh>
 #include <miso/grid.hpp>
-#include <miso/mhd_artificial_viscosity_core.hpp>
-#include <miso/mhd_gpu.cuh>
+#include <miso/limiter.hpp>
+#include <miso/mhd_fields.hpp>
 
 namespace miso {
 namespace mhd {
 namespace impl_cuda {
 namespace artificial_viscosity {
 
-using mhd::artificial_viscosity::dqq_eval;
-using mhd::artificial_viscosity::flux_core;
+using miso::limiter::dqq_eval;
+using miso::limiter::flux_core;
 
 template <typename Real>
 __global__ void
@@ -491,14 +491,14 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
     assert(fh >= 0);
   }
 
-  void characteristic_velocity_eval(const Fields<Real> &qq) {
+  void characteristic_velocity_eval(const Fields<Real, CUDASpace> &qq) {
     artificial_viscosity::characteristic_velocity_eval_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
             cc.view(), qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
   }
 
-  void update(Fields<Real> &qq, Fields<Real> &qq_rslt, Direction direction,
-              const Real dt) {
+  void update(Fields<Real, CUDASpace> &qq, Fields<Real, CUDASpace> &qq_rslt,
+              Direction direction, const Real dt) {
     int i0_ = 0;
     int i1_ = grid.i_total;
     int is = 0;

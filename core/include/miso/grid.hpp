@@ -5,8 +5,8 @@
 
 #include <miso/cuda_compat.hpp>
 #include <miso/env.hpp>
-#include <miso/memory_space.hpp>
 #include <miso/mpi_util.hpp>
+#include <miso/policy.hpp>
 
 #include <miso/config.hpp>
 
