@@ -120,8 +120,8 @@ struct Integrator {
   Real tau_divb;
 
   /// @brief Constructor
-  Integrator(Config &config, Fields<Real> &qq, Grid<Real, HostSpace> &grid,
-             ExecContext &exec_ctx)
+  Integrator(Config &config, Fields<Real, HostSpace> &qq,
+             Grid<Real, HostSpace> &grid, ExecContext<HostSpace> &exec_ctx)
       : grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
         halo_exchanger(grid, exec_ctx), bc(config), artdiff(config, grid, eos),
         pr(grid.i_total, grid.j_total, grid.k_total),
