@@ -53,14 +53,14 @@ __global__ void cfl_kernel(FieldsView<Real> qq, GridView<Real> grid,
       j >= grid.j_margin && j < grid.j_total - grid.j_margin &&
       k >= grid.k_margin && k < grid.k_total - grid.k_margin) {
     // clang-format off
-    Real cs = std::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei[grid.idx(i, j, k)]);
-    Real vv = std::sqrt( + qq.vx[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)]
-                         + qq.vy[grid.idx(i, j, k)] * qq.vy[grid.idx(i, j, k)]
-                         + qq.vz[grid.idx(i, j, k)] * qq.vz[grid.idx(i, j, k)]);
-    Real ca = std::sqrt((+ qq.bx[grid.idx(i, j, k)] * qq.bx[grid.idx(i, j, k)]
-                         + qq.by[grid.idx(i, j, k)] * qq.by[grid.idx(i, j, k)]
-                         + qq.bz[grid.idx(i, j, k)] * qq.bz[grid.idx(i, j, k)]) /
-                        qq.ro[grid.idx(i, j, k)] * pii4<Real>);
+    Real cs = std::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
+    Real vv = std::sqrt( + qq.vx(i, j, k) * qq.vx(i, j, k)
+                         + qq.vy(i, j, k) * qq.vy(i, j, k)
+                         + qq.vz(i, j, k) * qq.vz(i, j, k));
+    Real ca = std::sqrt((+ qq.bx(i, j, k) * qq.bx(i, j, k)
+                         + qq.by(i, j, k) * qq.by(i, j, k)
+                         + qq.bz(i, j, k) * qq.bz(i, j, k)) /
+                        qq.ro(i, j, k) * pii4<Real>);
     Real total_vel = (cs + vv + ca);
     // clang-format on
     dt = cfl_number * util::min3(grid.dx[i], grid.dy[j], grid.dz[k]) / total_vel;
@@ -89,54 +89,55 @@ __global__ void cfl_kernel(FieldsView<Real> qq, GridView<Real> grid,
 }
 
 template <typename Real>
-__device__ inline Real space_centered_4th(const Real *qq1, Real dxyzi, int i,
-                                          int j, int k, int is, int js, int ks,
-                                          const GridView<Real> &grid) {
+__device__ inline Real space_centered_4th(const Array3DView<Real> qq1, Real dxyzi,
+                                          int i, int j, int k, int is, int js,
+                                          int ks, const GridView<Real> &grid) {
   // clang-format off
-  return (     -qq1[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] +
-          8.0 * qq1[grid.idx(i +     is, j +     js, k +     ks)] -
-          8.0 * qq1[grid.idx(i -     is, j -     js, k -     ks)] +
-                qq1[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)]) *
+  return (     -qq1(i + 2 * is, j + 2 * js, k + 2 * ks) +
+          8.0 * qq1(i +     is, j +     js, k +     ks) -
+          8.0 * qq1(i -     is, j -     js, k -     ks) +
+                qq1(i - 2 * is, j - 2 * js, k - 2 * ks)) *
+         inv12<Real> * dxyzi;
+};
+// clang-format on
+
+template <typename Real>
+__device__ inline Real space_centered_4th(const Array3DView<Real> qq1,
+                                          const Array3DView<Real> qq2, Real dxyzi,
+                                          int i, int j, int k, int is, int js,
+                                          int ks, const GridView<Real> &grid) {
+
+  // clang-format off
+  return (    - qq1(i + 2 * is, j + 2 * js, k + 2 * ks) *
+                qq2(i + 2 * is, j + 2 * js, k + 2 * ks) +
+          8.0 * qq1(i +     is, j +     js, k +     ks) *
+                qq2(i +     is, j +     js, k +     ks) -
+          8.0 * qq1(i -     is, j -     js, k -     ks) *
+                qq2(i -     is, j -     js, k -     ks) +
+                qq1(i - 2 * is, j - 2 * js, k - 2 * ks) *
+                qq2(i - 2 * is, j - 2 * js, k - 2 * ks)) *
          inv12<Real> * dxyzi;
 };
 // clang-format on
 
 template <typename Real>
 __device__ inline Real
-space_centered_4th(const Real *qq1, const Real *qq2, Real dxyzi, int i, int j,
-                   int k, int is, int js, int ks, const GridView<Real> &grid) {
-
+space_centered_4th(const Array3DView<Real> qq1, const Array3DView<Real> qq2,
+                   const Array3DView<Real> qq3, Real dxyzi, int i, int j, int k,
+                   int is, int js, int ks, const GridView<Real> &grid) {
   // clang-format off
-  return (    - qq1[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
-                qq2[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] +
-          8.0 * qq1[grid.idx(i +     is, j +     js, k +     ks)] *
-                qq2[grid.idx(i +     is, j +     js, k +     ks)] -
-          8.0 * qq1[grid.idx(i -     is, j -     js, k -     ks)] *
-                qq2[grid.idx(i -     is, j -     js, k -     ks)] +
-                qq1[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
-                qq2[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)]) *
-         inv12<Real> * dxyzi;
-};
-// clang-format on
-
-template <typename Real>
-__device__ inline Real space_centered_4th(const Real *qq1, const Real *qq2,
-                                          const Real *qq3, Real dxyzi, int i,
-                                          int j, int k, int is, int js, int ks,
-                                          const GridView<Real> &grid) {
-  // clang-format off
-  return (    - qq1[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
-                qq2[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
-                qq3[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] +
-          8.0 * qq1[grid.idx(i +     is, j +     js, k +     ks)] *
-                qq2[grid.idx(i +     is, j +     js, k +     ks)] *
-                qq3[grid.idx(i +     is, j +     js, k +     ks)] -
-          8.0 * qq1[grid.idx(i -     is, j -     js, k -     ks)] *
-                qq2[grid.idx(i -     is, j -     js, k -     ks)] *
-                qq3[grid.idx(i -     is, j -     js, k -     ks)] +
-                qq1[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
-                qq2[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
-                qq3[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)]) *
+  return (    - qq1(i + 2 * is, j + 2 * js, k + 2 * ks) *
+                qq2(i + 2 * is, j + 2 * js, k + 2 * ks) *
+                qq3(i + 2 * is, j + 2 * js, k + 2 * ks) +
+          8.0 * qq1(i +     is, j +     js, k +     ks) *
+                qq2(i +     is, j +     js, k +     ks) *
+                qq3(i +     is, j +     js, k +     ks) -
+          8.0 * qq1(i -     is, j -     js, k -     ks) *
+                qq2(i -     is, j -     js, k -     ks) *
+                qq3(i -     is, j -     js, k -     ks) +
+                qq1(i - 2 * is, j - 2 * js, k - 2 * ks) *
+                qq2(i - 2 * is, j - 2 * js, k - 2 * ks) *
+                qq3(i - 2 * is, j - 2 * js, k - 2 * ks)) *
          inv12<Real> * dxyzi;
 };
 // clang-format on
@@ -155,28 +156,26 @@ __global__ void pr_bb_ht_vb_kernel(FieldsView<Real> qq_argm, Array3DView<Real> p
     return;
 
   // gas pressure
-  pr[grid.idx(i, j, k)] = qq_argm.ro[grid.idx(i, j, k)] *
-                          qq_argm.ei[grid.idx(i, j, k)] * (eos_gm - 1.0);
+  pr(i, j, k) = qq_argm.ro(i, j, k) * qq_argm.ei(i, j, k) * (eos_gm - 1.0);
   // squared magnetic strength
-  bb[grid.idx(i, j, k)] =
-      qq_argm.bx[grid.idx(i, j, k)] * qq_argm.bx[grid.idx(i, j, k)] +
-      qq_argm.by[grid.idx(i, j, k)] * qq_argm.by[grid.idx(i, j, k)] +
-      qq_argm.bz[grid.idx(i, j, k)] * qq_argm.bz[grid.idx(i, j, k)];
+  bb(i, j, k) = qq_argm.bx(i, j, k) * qq_argm.bx(i, j, k) +
+                qq_argm.by(i, j, k) * qq_argm.by(i, j, k) +
+                qq_argm.bz(i, j, k) * qq_argm.bz(i, j, k);
 
   // // enthalpy + 2*magnetic energy + kinetic energy
   // clang-format off
-  ht[grid.idx(i, j, k)] =
-      +qq_argm.ro[grid.idx(i, j, k)] * qq_argm.ei[grid.idx(i, j, k)] +
-      pr[grid.idx(i, j, k)] + bb[grid.idx(i, j, k)] * pii4<Real> +
-      0.5 * qq_argm.ro[grid.idx(i, j, k)] *
-          (+ qq_argm.vx[grid.idx(i, j, k)] * qq_argm.vx[grid.idx(i, j, k)]
-           + qq_argm.vy[grid.idx(i, j, k)] * qq_argm.vy[grid.idx(i, j, k)]
-           + qq_argm.vz[grid.idx(i, j, k)] * qq_argm.vz[grid.idx(i, j, k)]);
+  ht(i, j, k) =
+      +qq_argm.ro(i, j, k) * qq_argm.ei(i, j, k) +
+      pr(i, j, k) + bb(i, j, k) * pii4<Real> +
+      0.5 * qq_argm.ro(i, j, k) *
+          (+ qq_argm.vx(i, j, k) * qq_argm.vx(i, j, k)
+           + qq_argm.vy(i, j, k) * qq_argm.vy(i, j, k)
+           + qq_argm.vz(i, j, k) * qq_argm.vz(i, j, k));
   // v dot b
-  vb[grid.idx(i, j, k)] =
-      + qq_argm.vx[grid.idx(i, j, k)] * qq_argm.bx[grid.idx(i, j, k)]
-      + qq_argm.vy[grid.idx(i, j, k)] * qq_argm.by[grid.idx(i, j, k)]
-      + qq_argm.vz[grid.idx(i, j, k)] * qq_argm.bz[grid.idx(i, j, k)];
+  vb(i, j, k) =
+      + qq_argm.vx(i, j, k) * qq_argm.bx(i, j, k)
+      + qq_argm.vy(i, j, k) * qq_argm.by(i, j, k)
+      + qq_argm.vz(i, j, k) * qq_argm.bz(i, j, k);
   // clang-format on
 }
 
@@ -201,8 +200,8 @@ update_ro_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
     return;
 
   // equation of continuity
-  qq_rslt.ro[grid.idx(i, j, k)] =
-      qq_orgn.ro[grid.idx(i, j, k)] +
+  qq_rslt.ro(i, j, k) =
+      qq_orgn.ro(i, j, k) +
       dt * (-space_centered_4th(qq_argm.ro, qq_argm.vx, grid.dxi[i], i, j, k,
                                 grid.is, 0, 0, grid) -
             space_centered_4th(qq_argm.ro, qq_argm.vy, grid.dyi[j], i, j, k, 0,
@@ -223,19 +222,19 @@ __global__ void update_vx_kernel(FieldsView<Real> qq_orgn,
 
   // clang-format off
   // x equation of motion
-  qq_rslt.vx[grid.idx(i, j, k)] =
-      (qq_orgn.ro[grid.idx(i, j, k)] * qq_orgn.vx[grid.idx(i, j, k)] +
+  qq_rslt.vx(i, j, k) =
+      (qq_orgn.ro(i, j, k) * qq_orgn.vx(i, j, k) +
        dt *
            (- space_centered_4th(qq_argm.ro, qq_argm.vx, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
             - space_centered_4th(qq_argm.ro, qq_argm.vx, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
             - space_centered_4th(qq_argm.ro, qq_argm.vx, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
-            - space_centered_4th(pr.data(), grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
-            - space_centered_4th(bb.data(), grid.dxi[i], i, j, k, grid.is, 0, 0, grid) * pii8<Real>
+            - space_centered_4th(pr, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+            - space_centered_4th(bb, grid.dxi[i], i, j, k, grid.is, 0, 0, grid) * pii8<Real>
             + pii4<Real> * (+ space_centered_4th(qq_argm.bx, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                             + space_centered_4th(qq_argm.bx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                             + space_centered_4th(qq_argm.bx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
             + source.vx(qq_argm, i, j, k)
-            )) / qq_rslt.ro[grid.idx(i, j, k)];
+            )) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
 
@@ -250,20 +249,20 @@ __global__ void update_vy_kernel(FieldsView<Real> qq_orgn,
     return;
 
   // y equation of motion
-  qq_rslt.vy[grid.idx(i, j, k)] =
-      (qq_orgn.ro[grid.idx(i, j, k)] * qq_orgn.vy[grid.idx(i, j, k)] +
+  qq_rslt.vy(i, j, k) =
+      (qq_orgn.ro(i, j, k) * qq_orgn.vy(i, j, k) +
        // clang-format off
        dt *
            (- space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
             - space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
             - space_centered_4th(qq_argm.ro, qq_argm.vy, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
-            - space_centered_4th(pr.data(), grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-            - space_centered_4th(bb.data(), grid.dyi[j], i, j, k, 0, grid.js, 0, grid) * pii8<Real>
+            - space_centered_4th(pr, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+            - space_centered_4th(bb, grid.dyi[j], i, j, k, 0, grid.js, 0, grid) * pii8<Real>
             + pii4<Real> * (+ space_centered_4th(qq_argm.by, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                             + space_centered_4th(qq_argm.by, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                             + space_centered_4th(qq_argm.by, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
             + source.vy(qq_argm, i, j, k)
-            )) / qq_rslt.ro[grid.idx(i, j, k)];
+            )) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
 
@@ -279,19 +278,19 @@ __global__ void update_vz_kernel(FieldsView<Real> qq_orgn,
 
   // z equation of motion
   // clang-format off
-  qq_rslt.vz[grid.idx(i, j, k)] =
-      (qq_orgn.ro[grid.idx(i, j, k)] * qq_orgn.vz[grid.idx(i, j, k)] +
+  qq_rslt.vz(i, j, k) =
+      (qq_orgn.ro(i, j, k) * qq_orgn.vz(i, j, k) +
        dt *
            ( - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
              - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
              - space_centered_4th(qq_argm.ro, qq_argm.vz, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
-             - space_centered_4th(pr.data(), grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
-             - space_centered_4th(bb.data(), grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) * pii8<Real>
+             - space_centered_4th(pr, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
+             - space_centered_4th(bb, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid) * pii8<Real>
              + pii4<Real> * (+ space_centered_4th(qq_argm.bz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
                              + space_centered_4th(qq_argm.bz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
                              + space_centered_4th(qq_argm.bz, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))
              + source.vz(qq_argm, i, j, k)
-          )) / qq_rslt.ro[grid.idx(i, j, k)];
+          )) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
 
@@ -305,8 +304,8 @@ update_bx_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
 
   // x magnetic induction
   // clang-format off
-  qq_rslt.bx[grid.idx(i, j, k)] =
-      qq_orgn.bx[grid.idx(i, j, k)] +
+  qq_rslt.bx(i, j, k) =
+      qq_orgn.bx(i, j, k) +
       dt * (- space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
             - space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
             + space_centered_4th(qq_argm.vx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
@@ -325,8 +324,8 @@ update_by_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
 
   // y magnetic induction
   // clang-format off
-  qq_rslt.by[grid.idx(i, j, k)] =
-      qq_orgn.by[grid.idx(i, j, k)] +
+  qq_rslt.by(i, j, k) =
+      qq_orgn.by(i, j, k) +
       dt * (- space_centered_4th(qq_argm.vx, qq_argm.by, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
             - space_centered_4th(qq_argm.vz, qq_argm.by, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
             + space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
@@ -345,8 +344,8 @@ update_bz_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
 
   // z magnetic induction
   // clang-format off
-  qq_rslt.bz[grid.idx(i, j, k)] =
-      qq_orgn.bz[grid.idx(i, j, k)] +
+  qq_rslt.bz(i, j, k) =
+      qq_orgn.bz(i, j, k) +
       dt * (- space_centered_4th(qq_argm.vx, qq_argm.bz, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
             - space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
             + space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
@@ -366,8 +365,8 @@ __global__ void update_ph_kernel(FieldsView<Real> qq_orgn,
 
   // div B factor
   // clang-format off
-  qq_rslt.ph[grid.idx(i, j, k)] =
-      (qq_orgn.ph[grid.idx(i, j, k)] +
+  qq_rslt.ph(i, j, k) =
+      (qq_orgn.ph(i, j, k) +
        dt * ch_divb_square *
            (- space_centered_4th(qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
             - space_centered_4th(qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
@@ -390,34 +389,34 @@ update_ei_kernel(FieldsView<Real> qq_orgn, FieldsView<Real> qq_argm,
   // ei: is the internal energy per unit mass
   // clang-format off
   const Real Et =
-      +qq_orgn.ro[grid.idx(i, j, k)] * qq_orgn.ei[grid.idx(i, j, k)] +
-      0.5 * qq_orgn.ro[grid.idx(i, j, k)] *
-          (+ qq_orgn.vx[grid.idx(i, j, k)] * qq_orgn.vx[grid.idx(i, j, k)]
-           + qq_orgn.vy[grid.idx(i, j, k)] * qq_orgn.vy[grid.idx(i, j, k)]
-           + qq_orgn.vz[grid.idx(i, j, k)] * qq_orgn.vz[grid.idx(i, j, k)]) +
+      +qq_orgn.ro(i, j, k) * qq_orgn.ei(i, j, k) +
+      0.5 * qq_orgn.ro(i, j, k) *
+          (+ qq_orgn.vx(i, j, k) * qq_orgn.vx(i, j, k)
+           + qq_orgn.vy(i, j, k) * qq_orgn.vy(i, j, k)
+           + qq_orgn.vz(i, j, k) * qq_orgn.vz(i, j, k)) +
       pii8<Real> *
-          (+ qq_orgn.bx[grid.idx(i, j, k)] * qq_orgn.bx[grid.idx(i, j, k)]
-           + qq_orgn.by[grid.idx(i, j, k)] * qq_orgn.by[grid.idx(i, j, k)]
-           + qq_orgn.bz[grid.idx(i, j, k)] * qq_orgn.bz[grid.idx(i, j, k)]);
+          (+ qq_orgn.bx(i, j, k) * qq_orgn.bx(i, j, k)
+           + qq_orgn.by(i, j, k) * qq_orgn.by(i, j, k)
+           + qq_orgn.bz(i, j, k) * qq_orgn.bz(i, j, k));
 
-  qq_rslt.ei[grid.idx(i, j, k)] =
+  qq_rslt.ei(i, j, k) =
       (Et +
-       dt * (- space_centered_4th(ht.data(), qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
-             - space_centered_4th(ht.data(), qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-             - space_centered_4th(ht.data(), qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
-             + pii4<Real> * (+ space_centered_4th(vb.data(), qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
-                             + space_centered_4th(vb.data(), qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
-                             + space_centered_4th(vb.data(), qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid))) -
-       0.5 * qq_rslt.ro[grid.idx(i, j, k)] *
-           (+ qq_rslt.vx[grid.idx(i, j, k)] * qq_rslt.vx[grid.idx(i, j, k)]
-            + qq_rslt.vy[grid.idx(i, j, k)] * qq_rslt.vy[grid.idx(i, j, k)]
-            + qq_rslt.vz[grid.idx(i, j, k)] * qq_rslt.vz[grid.idx(i, j, k)]) -
+       dt * (- space_centered_4th(ht, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+             - space_centered_4th(ht, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+             - space_centered_4th(ht, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)
+             + pii4<Real> * (+ space_centered_4th(vb, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0, grid)
+                             + space_centered_4th(vb, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0, grid)
+                             + space_centered_4th(vb, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks, grid)))
+       - 0.5 * qq_rslt.ro(i, j, k) *
+           (+ qq_rslt.vx(i, j, k) * qq_rslt.vx(i, j, k)
+            + qq_rslt.vy(i, j, k) * qq_rslt.vy(i, j, k)
+            + qq_rslt.vz(i, j, k) * qq_rslt.vz(i, j, k)) -
        pii8<Real> *
-           (+ qq_rslt.bx[grid.idx(i, j, k)] * qq_rslt.bx[grid.idx(i, j, k)]
-            + qq_rslt.by[grid.idx(i, j, k)] * qq_rslt.by[grid.idx(i, j, k)]
-            + qq_rslt.bz[grid.idx(i, j, k)] * qq_rslt.bz[grid.idx(i, j, k)])
+           (+ qq_rslt.bx(i, j, k) * qq_rslt.bx(i, j, k)
+            + qq_rslt.by(i, j, k) * qq_rslt.by(i, j, k)
+            + qq_rslt.bz(i, j, k) * qq_rslt.bz(i, j, k))
        + source.ei(qq_argm, i, j, k)
-      ) / qq_rslt.ro[grid.idx(i, j, k)];
+      ) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
 
@@ -495,7 +494,7 @@ struct Integrator {
   Real tau_divb;
 
   Integrator(Config &config, Fields<Real, CUDASpace> &qq,
-             Grid<Real, CUDASpace> &grid, ExecContext &exec_ctx)
+             Grid<Real, CUDASpace> &grid, ExecContext<CUDASpace> &exec_ctx)
       : cu_shape(exec_ctx.cu_shape), grid(grid), eos(config), qq(qq),
         qq_argm(grid), qq_rslt(grid), halo_exchanger(grid, exec_ctx), bc(config),
         artdiff(config, grid, eos, exec_ctx.cu_shape),

@@ -2,20 +2,10 @@
 
 namespace miso {
 
-/// @brief Memory policy for host memory.
+/// @brief Execution/memory space for host.
 struct HostSpace {};
 
-/// @brief Memory policy for CUDA device memory.
+/// @brief Execution/memory space for CUDA device.
 struct CUDASpace {};
-
-/// @brief Execution policy for host.
-struct HostBackend {
-  using memory_space = HostSpace;
-};
-
-/// @brief Execution policy for CUDA.
-struct CUDABackend {
-  using memory_space = CUDASpace;
-};
 
 }  // namespace miso

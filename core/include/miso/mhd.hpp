@@ -57,7 +57,7 @@ struct MHD {
 
   void update(const Real dt) { integrator.update(dt); }
 
-  void save() const {
+  void save() {
     util::create_directories(mhd_save_dir);
     std::string filename =
         mhd_save_dir + "mhd." + util::zfill(time.n_output, time.n_output_digits) +

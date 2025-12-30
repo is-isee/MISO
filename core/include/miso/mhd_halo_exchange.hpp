@@ -17,9 +17,9 @@
 namespace miso {
 namespace mhd {
 
-template <typename Real, typename Backend = HostBackend> struct HaloExchanger;
+template <typename Real, typename Space = HostSpace> struct HaloExchanger {};
 
-template <typename Real> struct HaloExchanger<Real, HostBackend> {
+template <typename Real> struct HaloExchanger<Real, HostSpace> {
   // MPI communication buffers
   Array4D<Real> recv_x_pos, recv_x_neg;
   Array4D<Real> recv_y_pos, recv_y_neg;
@@ -31,7 +31,7 @@ template <typename Real> struct HaloExchanger<Real, HostBackend> {
   Grid<Real, HostSpace> &grid;
   mpi::Shape &mpi_shape;
 
-  HaloExchanger(Grid<Real, HostSpace> &grid, ExecContext<HostBackend> &exec_ctx)
+  HaloExchanger(Grid<Real, HostSpace> &grid, ExecContext<HostSpace> &exec_ctx)
       : recv_x_pos(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_x_neg(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_y_pos(grid.i_total, grid.j_margin, grid.k_total, n_fields),
@@ -46,7 +46,7 @@ template <typename Real> struct HaloExchanger<Real, HostBackend> {
         send_z_neg(grid.i_total, grid.j_total, grid.k_margin, n_fields),
         grid(grid), mpi_shape(exec_ctx.mpi_shape) {}
 
-  void apply(Fields<Real> &qq_trgt) {
+  void apply(Fields<Real, HostSpace> &qq_trgt) {
     std::array<Array3D<Real, HostSpace> *, 9> vars = {
         &qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy, &qq_trgt.vz, &qq_trgt.bx,
         &qq_trgt.by, &qq_trgt.bz, &qq_trgt.ei, &qq_trgt.ph};
@@ -284,9 +284,10 @@ __global__ void pack_x_send(BuffersView<Real> buff,
   const size_t src_idx = grid.idx(i_src, j, k);
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_fields;
 
-  const Real *__restrict__ var[n_fields] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
-                                            qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
-                                            qq_trgt.bz, qq_trgt.ei, qq_trgt.ph};
+  const Real *__restrict__ var[n_fields] = {
+      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
+      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
+      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
 
 #pragma unroll
   for (int m = 0; m < n_fields; ++m) {
@@ -314,9 +315,10 @@ __global__ void pack_y_send(BuffersView<Real> buff,
   const size_t src_idx = grid.idx(i, j_src, k);
   const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_fields;
 
-  const Real *__restrict__ var[n_fields] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
-                                            qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
-                                            qq_trgt.bz, qq_trgt.ei, qq_trgt.ph};
+  const Real *__restrict__ var[n_fields] = {
+      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
+      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
+      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
 
 #pragma unroll
   for (int m = 0; m < n_fields; ++m) {
@@ -344,9 +346,10 @@ __global__ void pack_z_send(BuffersView<Real> buff,
   const size_t src_idx = grid.idx(i, j, k_src);
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_fields;
 
-  const Real *__restrict__ var[n_fields] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
-                                            qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
-                                            qq_trgt.bz, qq_trgt.ei, qq_trgt.ph};
+  const Real *__restrict__ var[n_fields] = {
+      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
+      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
+      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
 
 #pragma unroll
   for (int m = 0; m < n_fields; ++m) {
@@ -373,9 +376,10 @@ __global__ void unpack_x_recv(FieldsView<Real> qq_trgt,
   const size_t tgt_idx = grid.idx(i_tgt, j, k);
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_fields;
 
-  Real *__restrict__ var[n_fields] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
-                                      qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
-                                      qq_trgt.bz, qq_trgt.ei, qq_trgt.ph};
+  Real *__restrict__ var[n_fields] = {
+      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
+      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
+      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
 
 #pragma unroll
   for (int m = 0; m < n_fields; ++m) {
@@ -401,9 +405,10 @@ __global__ void unpack_y_recv(FieldsView<Real> qq_trgt,
   const size_t tgt_idx = grid.idx(i, j_tgt, k);
   const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_fields;
 
-  Real *__restrict__ var[n_fields] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
-                                      qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
-                                      qq_trgt.bz, qq_trgt.ei, qq_trgt.ph};
+  Real *__restrict__ var[n_fields] = {
+      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
+      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
+      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
 
 #pragma unroll
   for (int m = 0; m < n_fields; ++m) {
@@ -429,9 +434,10 @@ __global__ void unpack_z_recv(FieldsView<Real> qq_trgt,
   const size_t tgt_idx = grid.idx(i, j, k_tgt);
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_fields;
 
-  Real *__restrict__ var[n_fields] = {qq_trgt.ro, qq_trgt.vx, qq_trgt.vy,
-                                      qq_trgt.vz, qq_trgt.bx, qq_trgt.by,
-                                      qq_trgt.bz, qq_trgt.ei, qq_trgt.ph};
+  Real *__restrict__ var[n_fields] = {
+      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
+      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
+      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
 
 #pragma unroll
   for (int m = 0; m < n_fields; ++m) {
@@ -439,18 +445,18 @@ __global__ void unpack_z_recv(FieldsView<Real> qq_trgt,
   }
 };
 
-template <typename Real> struct HaloExchanger<Real, CUDABackend> {
+template <typename Real> struct HaloExchanger<Real, CUDASpace> {
   Buffers<Real, CUDASpace> buff;
   Grid<Real, CUDASpace> &grid;
   mpi::Shape &mpi_shape;
   cuda::KernelShape3D &cu_shape;
 
   explicit HaloExchanger(Grid<Real, CUDASpace> &grid,
-                         ExecContext<CUDABackend> &exec_ctx)
+                         ExecContext<CUDASpace> &exec_ctx)
       : buff(grid), grid(grid), mpi_shape(exec_ctx.mpi_shape),
         cu_shape(exec_ctx.cu_shape) {}
 
-  void apply(Fields<Real> &qq_trgt) {
+  void apply(Fields<Real, CUDASpace> &qq_trgt) {
     MPI_Request reqs[12];
     int req_count = 0;
 

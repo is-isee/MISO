@@ -22,6 +22,10 @@ public:
                                   int k_total) noexcept
       : data_(data), i_total_(i_total), j_total_(j_total), k_total_(k_total) {}
 
+  __host__ __device__ Array3DView(const Array3DView &) noexcept = default;
+  __host__ __device__ Array3DView &
+  operator=(const Array3DView &) noexcept = default;
+
   __host__ __device__ T &operator()(int i, int j, int k) noexcept {
     assert(i >= 0 && i < i_total_);
     assert(j >= 0 && j < j_total_);
@@ -44,6 +48,7 @@ public:
     return data_[idx];
   }
 
+  __host__ __device__ T *data() noexcept { return data_; }
   __host__ __device__ const T *data() const noexcept { return data_; }
 
   __host__ __device__ int size_x() const noexcept { return i_total_; }
@@ -54,8 +59,8 @@ public:
   }
 };
 
-/// @brief 3D Array in general memory space.
-template <typename T, typename MemorySpace = HostSpace> class Array3D;
+/// @brief 3D Array in general execution/memory space.
+template <typename T, typename Space = HostSpace> class Array3D;
 
 /// @brief 3D Array in host memory.
 template <typename T> class Array3D<T, HostSpace> {
@@ -182,12 +187,12 @@ public:
   }
 
   /// @brief Get a lightweight view of the array.
-  Array3DView<T> view() noexcept {
+  __host__ __device__ Array3DView<T> view() noexcept {
     return Array3DView<T>(data_, i_total_, j_total_, k_total_);
   }
 
   /// @brief Get a constant lightweight view of the array.
-  Array3DView<const T> view() const noexcept {
+  __host__ __device__ Array3DView<const T> view() const noexcept {
     return Array3DView<const T>(data_, i_total_, j_total_, k_total_);
   }
 
