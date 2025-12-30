@@ -263,6 +263,7 @@ template <typename Real> struct HaloExchanger<Real, HostSpace> {
   }
 };
 
+#ifdef USE_CUDA
 // ##################
 // x-direction send
 template <typename Real>
@@ -616,6 +617,7 @@ template <typename Real> struct HaloExchanger<Real, CUDASpace> {
     }
   }
 };
+#endif  // USE_CUDA
 
 }  // namespace mhd
 }  // namespace miso
