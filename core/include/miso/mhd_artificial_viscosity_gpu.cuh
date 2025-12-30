@@ -16,10 +16,11 @@ using miso::limiter::dqq_eval;
 using miso::limiter::flux_core;
 
 template <typename Real>
-__global__ void
-characteristic_velocity_eval_kernel(Array3DView<Real> cc_d, FieldsView<Real> qq,
-                                    GridView<Real> grid, Real eos_gm, Real cs_fac,
-                                    Real ca_fac, Real vv_fac) {
+__global__ void characteristic_velocity_eval_kernel(Array3DView<Real> cc_d,
+                                                    FieldsView<const Real> qq,
+                                                    GridView<Real> grid,
+                                                    Real eos_gm, Real cs_fac,
+                                                    Real ca_fac, Real vv_fac) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -27,16 +28,16 @@ characteristic_velocity_eval_kernel(Array3DView<Real> cc_d, FieldsView<Real> qq,
 
   if (i <= grid.i_total - 1 && j <= grid.j_total - 1 && k <= grid.k_total - 1) {
     // clang-format off
-    Real cs = std::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei[grid.idx(i, j, k)]);
-    Real vv = std::sqrt(qq.vx[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)] +
-                        qq.vy[grid.idx(i, j, k)] * qq.vy[grid.idx(i, j, k)] +
-                        qq.vz[grid.idx(i, j, k)] * qq.vz[grid.idx(i, j, k)]);
-    Real ca = std::sqrt((qq.bx[grid.idx(i, j, k)] * qq.bx[grid.idx(i, j, k)] +
-                         qq.by[grid.idx(i, j, k)] * qq.by[grid.idx(i, j, k)] +
-                         qq.bz[grid.idx(i, j, k)] * qq.bz[grid.idx(i, j, k)]) /
-                         qq.ro[grid.idx(i, j, k)] * pii4<Real>);
+    Real cs = std::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
+    Real vv = std::sqrt(qq.vx(i, j, k) * qq.vx(i, j, k) +
+                        qq.vy(i, j, k) * qq.vy(i, j, k) +
+                        qq.vz(i, j, k) * qq.vz(i, j, k));
+    Real ca = std::sqrt((qq.bx(i, j, k) * qq.bx(i, j, k) +
+                         qq.by(i, j, k) * qq.by(i, j, k) +
+                         qq.bz(i, j, k) * qq.bz(i, j, k)) /
+                         qq.ro(i, j, k) * pii4<Real>);
     // clang-format on
-    cc_d[grid.idx(i, j, k)] = cs * cs_fac + vv * vv_fac + ca * ca_fac;
+    cc_d(i, j, k) = cs * cs_fac + vv * vv_fac + ca * ca_fac;
   }
 }
 
@@ -54,16 +55,16 @@ __global__ void update_ro_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
     // density
-    Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.ro[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.ro(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.ro(i         , j         , k         );
+    Real qqr1 = qq.ro(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
 
     // dqq at i-is, j-js, k-2ks
@@ -77,9 +78,8 @@ __global__ void update_ro_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real fro_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.ro[grid.idx(i, j, k)] =
-        qq.ro[grid.idx(i, j, k)] -
-        (fro_up - fro_dw) * dxyzi[i * is + j * js + k * ks] * dt;
+    qq_rslt.ro(i, j, k) =
+        qq.ro(i, j, k) - (fro_up - fro_dw) * dxyzi[i * is + j * js + k * ks] * dt;
   }
 }
 
@@ -97,21 +97,21 @@ __global__ void update_vx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
     // x momentum
-    Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
-                qq.vx[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
-                qq.vx[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] *
-                qq.vx[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
-                qq.vx[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
-                qq.vx[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
+                qq.vx(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.ro(i -     is, j -     js, k -     ks) *
+                qq.vx(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.ro(i         , j         , k         ) *
+                qq.vx(i         , j         , k         );
+    Real qqr1 = qq.ro(i +     is, j +     js, k +     ks) *
+                qq.vx(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
+                qq.vx(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
@@ -124,10 +124,10 @@ __global__ void update_vx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real frx_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.vx[grid.idx(i, j, k)] =
-        (qq.ro[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)] -
+    qq_rslt.vx(i, j, k) =
+        (qq.ro(i, j, k) * qq.vx(i, j, k) -
          (frx_up - frx_dw) * dxyzi[i * is + j * js + k * ks] * dt) /
-        qq_rslt.ro[grid.idx(i, j, k)];
+        qq_rslt.ro(i, j, k);
   }
 }
 
@@ -145,21 +145,21 @@ __global__ void update_vy_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
     // x momentum
-    Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
-                qq.vy[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
-                qq.vy[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] *
-                qq.vy[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
-                qq.vy[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
-                qq.vy[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
+                qq.vy(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.ro(i -     is, j -     js, k -     ks) *
+                qq.vy(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.ro(i         , j         , k         ) *
+                qq.vy(i         , j         , k         );
+    Real qqr1 = qq.ro(i +     is, j +     js, k +     ks) *
+                qq.vy(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
+                qq.vy(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
@@ -172,10 +172,10 @@ __global__ void update_vy_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real fry_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.vy[grid.idx(i, j, k)] =
-        (qq.ro[grid.idx(i, j, k)] * qq.vy[grid.idx(i, j, k)] -
+    qq_rslt.vy(i, j, k) =
+        (qq.ro(i, j, k) * qq.vy(i, j, k) -
          (fry_up - fry_dw) * dxyzi[i * is + j * js + k * ks] * dt) /
-        qq_rslt.ro[grid.idx(i, j, k)];
+        qq_rslt.ro(i, j, k);
   }
 }
 
@@ -193,21 +193,21 @@ __global__ void update_vz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
     // x momentum
-    Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
-                qq.vz[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
-                qq.vz[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] *
-                qq.vz[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
-                qq.vz[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
-                qq.vz[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
+                qq.vz(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.ro(i -     is, j -     js, k -     ks) *
+                qq.vz(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.ro(i         , j         , k         ) *
+                qq.vz(i         , j         , k         );
+    Real qqr1 = qq.ro(i +     is, j +     js, k +     ks) *
+                qq.vz(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
+                qq.vz(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
@@ -220,10 +220,10 @@ __global__ void update_vz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real frz_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.vz[grid.idx(i, j, k)] =
-        (qq.ro[grid.idx(i, j, k)] * qq.vz[grid.idx(i, j, k)] -
+    qq_rslt.vz(i, j, k) =
+        (qq.ro(i, j, k) * qq.vz(i, j, k) -
          (frz_up - frz_dw) * dxyzi[i * is + j * js + k * ks] * dt) /
-        qq_rslt.ro[grid.idx(i, j, k)];
+        qq_rslt.ro(i, j, k);
   }
 }
 
@@ -241,15 +241,15 @@ __global__ void update_bx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
-    Real qql2 = qq.bx[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.bx[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.bx[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.bx[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.bx[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.bx(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.bx(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.bx(i         , j         , k         );
+    Real qqr1 = qq.bx(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.bx(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
@@ -262,9 +262,8 @@ __global__ void update_bx_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real fbx_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.bx[grid.idx(i, j, k)] =
-        qq.bx[grid.idx(i, j, k)] -
-        (fbx_up - fbx_dw) * dxyzi[i * is + j * js + k * ks] * dt;
+    qq_rslt.bx(i, j, k) =
+        qq.bx(i, j, k) - (fbx_up - fbx_dw) * dxyzi[i * is + j * js + k * ks] * dt;
   }
 }
 
@@ -282,15 +281,15 @@ __global__ void update_by_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
-    Real qql2 = qq.by[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.by[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.by[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.by[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.by[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.by(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.by(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.by(i         , j         , k         );
+    Real qqr1 = qq.by(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.by(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
 
     // dqq at i-is, j-js, k-2ks
@@ -304,9 +303,8 @@ __global__ void update_by_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real fby_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.by[grid.idx(i, j, k)] =
-        qq.by[grid.idx(i, j, k)] -
-        (fby_up - fby_dw) * dxyzi[i * is + j * js + k * ks] * dt;
+    qq_rslt.by(i, j, k) =
+        qq.by(i, j, k) - (fby_up - fby_dw) * dxyzi[i * is + j * js + k * ks] * dt;
   }
 }
 
@@ -324,15 +322,15 @@ __global__ void update_bz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
-    Real qql2 = qq.bz[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.bz[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.bz[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.bz[grid.idx(i +     is, j +     js, k +      ks)];
-    Real qqr2 = qq.bz[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.bz(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.bz(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.bz(i         , j         , k         );
+    Real qqr1 = qq.bz(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.bz(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
 
     // dqq at i-is, j-js, k-2ks
@@ -346,9 +344,8 @@ __global__ void update_bz_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real fbz_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.bz[grid.idx(i, j, k)] =
-        qq.bz[grid.idx(i, j, k)] -
-        (fbz_up - fbz_dw) * dxyzi[i * is + j * js + k * ks] * dt;
+    qq_rslt.bz(i, j, k) =
+        qq.bz(i, j, k) - (fbz_up - fbz_dw) * dxyzi[i * is + j * js + k * ks] * dt;
   }
 }
 
@@ -366,15 +363,15 @@ __global__ void update_ph_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
-    Real qql2 = qq.ph[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ph[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.ph[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.ph[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.ph[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.ph(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.ph(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.ph(i         , j         , k         );
+    Real qqr1 = qq.ph(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.ph(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
@@ -387,9 +384,8 @@ __global__ void update_ph_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
     Real fph_up =
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
-    qq_rslt.ph[grid.idx(i, j, k)] =
-        qq.ph[grid.idx(i, j, k)] -
-        (fph_up - fph_dw) * dxyzi[i * is + j * js + k * ks] * dt;
+    qq_rslt.ph(i, j, k) =
+        qq.ph(i, j, k) - (fph_up - fph_dw) * dxyzi[i * is + j * js + k * ks] * dt;
   }
 }
 
@@ -407,21 +403,21 @@ __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     // chracteristic velocity
     // clang-format off
-    Real ccl = cc[grid.idx(i - is, j - js, k - ks)];
-    Real ccc = cc[grid.idx(i     , j     , k     )];
-    Real ccr = cc[grid.idx(i + is, j + js, k + ks)];
+    Real ccl = cc(i - is, j - js, k - ks);
+    Real ccc = cc(i     , j     , k     );
+    Real ccr = cc(i + is, j + js, k + ks);
 
     // total energy
-    Real qql2 = qq.ro[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)] *
-                qq.ei[grid.idx(i - 2 * is, j - 2 * js, k - 2 * ks)];
-    Real qql1 = qq.ro[grid.idx(i -     is, j -     js, k -     ks)] *
-                qq.ei[grid.idx(i -     is, j -     js, k -     ks)];
-    Real qqc  = qq.ro[grid.idx(i         , j         , k         )] *
-                qq.ei[grid.idx(i         , j         , k         )];
-    Real qqr1 = qq.ro[grid.idx(i +     is, j +     js, k +     ks)] *
-                qq.ei[grid.idx(i +     is, j +     js, k +     ks)];
-    Real qqr2 = qq.ro[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)] *
-                qq.ei[grid.idx(i + 2 * is, j + 2 * js, k + 2 * ks)];
+    Real qql2 = qq.ro(i - 2 * is, j - 2 * js, k - 2 * ks) *
+                qq.ei(i - 2 * is, j - 2 * js, k - 2 * ks);
+    Real qql1 = qq.ro(i -     is, j -     js, k -     ks) *
+                qq.ei(i -     is, j -     js, k -     ks);
+    Real qqc  = qq.ro(i         , j         , k         ) *
+                qq.ei(i         , j         , k         );
+    Real qqr1 = qq.ro(i +     is, j +     js, k +     ks) *
+                qq.ei(i +     is, j +     js, k +     ks);
+    Real qqr2 = qq.ro(i + 2 * is, j + 2 * js, k + 2 * ks) *
+                qq.ei(i + 2 * is, j + 2 * js, k + 2 * ks);
     // clang-format on
     // dqq at i-is, j-js, k-2ks
     Real dqq_dw = dqq_eval(qql2, qql1, qqc, ep);
@@ -435,26 +431,25 @@ __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
         flux_core(qqc, qqr1, dqq_cn, dqq_up, Real(0.5) * (ccc + ccr), fh);
 
     // Et: Total energy per unit volume, note that ei is internal energy per unit mass
-    Real Et = qq.ro[grid.idx(i, j, k)] * qq.ei[grid.idx(i, j, k)] +
-              0.5 * qq.ro[grid.idx(i, j, k)] *
-                  (qq.vx[grid.idx(i, j, k)] * qq.vx[grid.idx(i, j, k)] +
-                   qq.vy[grid.idx(i, j, k)] * qq.vy[grid.idx(i, j, k)] +
-                   qq.vz[grid.idx(i, j, k)] * qq.vz[grid.idx(i, j, k)]) +
-              pii8<Real> * (qq.bx[grid.idx(i, j, k)] * qq.bx[grid.idx(i, j, k)] +
-                            qq.by[grid.idx(i, j, k)] * qq.by[grid.idx(i, j, k)] +
-                            qq.bz[grid.idx(i, j, k)] * qq.bz[grid.idx(i, j, k)]);
+    Real Et =
+        qq.ro(i, j, k) * qq.ei(i, j, k) +
+        0.5 * qq.ro(i, j, k) *
+            (qq.vx(i, j, k) * qq.vx(i, j, k) + qq.vy(i, j, k) * qq.vy(i, j, k) +
+             qq.vz(i, j, k) * qq.vz(i, j, k)) +
+        pii8<Real> *
+            (qq.bx(i, j, k) * qq.bx(i, j, k) + qq.by(i, j, k) * qq.by(i, j, k) +
+             qq.bz(i, j, k) * qq.bz(i, j, k));
 
-    qq_rslt.ei[grid.idx(i, j, k)] =
+    qq_rslt.ei(i, j, k) =
         (Et - (fei_up - fei_dw) * dxyzi[i * is + j * js + k * ks] * dt -
-         0.5 * qq_rslt.ro[grid.idx(i, j, k)] *
-             (qq_rslt.vx[grid.idx(i, j, k)] * qq_rslt.vx[grid.idx(i, j, k)] +
-              qq_rslt.vy[grid.idx(i, j, k)] * qq_rslt.vy[grid.idx(i, j, k)] +
-              qq_rslt.vz[grid.idx(i, j, k)] * qq_rslt.vz[grid.idx(i, j, k)]) -
-         pii8<Real> *
-             (qq_rslt.bx[grid.idx(i, j, k)] * qq_rslt.bx[grid.idx(i, j, k)] +
-              qq_rslt.by[grid.idx(i, j, k)] * qq_rslt.by[grid.idx(i, j, k)] +
-              qq_rslt.bz[grid.idx(i, j, k)] * qq_rslt.bz[grid.idx(i, j, k)])) /
-        qq_rslt.ro[grid.idx(i, j, k)];
+         0.5 * qq_rslt.ro(i, j, k) *
+             (qq_rslt.vx(i, j, k) * qq_rslt.vx(i, j, k) +
+              qq_rslt.vy(i, j, k) * qq_rslt.vy(i, j, k) +
+              qq_rslt.vz(i, j, k) * qq_rslt.vz(i, j, k)) -
+         pii8<Real> * (qq_rslt.bx(i, j, k) * qq_rslt.bx(i, j, k) +
+                       qq_rslt.by(i, j, k) * qq_rslt.by(i, j, k) +
+                       qq_rslt.bz(i, j, k) * qq_rslt.bz(i, j, k))) /
+        qq_rslt.ro(i, j, k);
   }
 }
 

@@ -15,7 +15,7 @@
 
 using namespace miso;
 
-void initial_condition(mhd::impl_host::Fields<Real> &qq, const Grid<Real> &grid,
+void initial_condition(mhd::Fields<Real> &qq, const Grid<Real> &grid,
                        const eos::IdealEOS<Real> &eos) {
   Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
   Real v0 = 1.0;
@@ -54,11 +54,11 @@ struct Model {
   eos::IdealEOS<Real> eos;
 #ifdef USE_CUDA
   cuda::KernelShape3D cu_shape;
-  mhd::impl_cuda::ExecContext exec_ctx;
+  mhd::ExecContext<CUDASpace> exec_ctx;
   mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_cuda::NoSource<Real>>
       mhd;
 #else
-  mhd::impl_host::ExecContext exec_ctx;
+  mhd::ExecContext<HostSpace> exec_ctx;
   mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_host::NoSource<Real>>
       mhd;
 #endif
@@ -117,7 +117,7 @@ struct Model {
     save_metadata();
     initial_condition(mhd.qq, grid, eos);
 #ifdef USE_CUDA
-    mhd.qq_d.copy_from_host(mhd.qq, mhd_streams);
+    mhd.qq_d.copy_from(mhd.qq);
 #endif
 
     MPI_Barrier(mpi::comm());

@@ -12,20 +12,20 @@ namespace mhd {
 constexpr int n_fields = 9;
 
 /// @brief Execution context for MHD
-template <typename Backend = HostBackend> struct ExecContext;
+template <typename Space = HostSpace> struct ExecContext {};
 
 /// @brief Execution context for MHD on CPU
-struct ExecContext<HostBackend> {
+template <> struct ExecContext<HostSpace> {
   using memory_space = HostSpace;
-  using backend = HostBackend;
+  using Space = HostSpace;
   mpi::Shape &mpi_shape;
 };
 
 #ifdef USE_CUDA
 /// @brief Execution context for MHD on GPU
-struct ExecContext<CUDABackend> {
+template <> struct ExecContext<CUDASpace> {
   using memory_space = CUDASpace;
-  using backend = CUDABackend;
+  using Space = CUDASpace;
   mpi::Shape &mpi_shape;
   cuda::KernelShape3D &cu_shape;
 };

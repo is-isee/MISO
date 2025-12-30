@@ -182,8 +182,7 @@ __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<Real> grid,
       symmetric_index<Real>(k, grid.k_total, grid.k_margin, k_ghst, k_trgt, side);
       break;
     }
-    arr[grid.idx(i_ghst, j_ghst, k_ghst)] =
-        sign * arr[grid.idx(i_trgt, j_trgt, k_trgt)];
+    arr(i_ghst, j_ghst, k_ghst) = sign * arr(i_trgt, j_trgt, k_trgt);
   }
 }
 

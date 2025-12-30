@@ -1,6 +1,7 @@
 #pragma once
 
 #include <miso/grid.hpp>
+#include <miso/mhd_core.hpp>
 #include <miso/policy.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_util.cuh>
@@ -9,7 +10,7 @@
 namespace miso {
 namespace mhd {
 
-/// @brief Lightweight non-owning view of MHD buffers
+/// @brief Lightweight non-owning view of MHD buffers.
 template <typename Real> struct BuffersView {
   Real *recv_x_pos = nullptr;
   Real *recv_x_neg = nullptr;
@@ -34,10 +35,10 @@ template <typename Real> struct BuffersView {
         send_z_pos(buffers.send_z_pos), send_z_neg(buffers.send_z_neg) {}
 };
 
-/// @brief MHD communication buffers on GPU
-template <typename Real, typename MemorySpace = HostSpace> struct Buffers;
+/// @brief MHD communication buffers.
+template <typename Real, typename Space = HostSpace> struct Buffers;
 
-/// @brief MHD communication buffers on GPU
+/// @brief MHD communication buffers on GPU.
 template <typename Real> struct Buffers<Real, CUDASpace> {
   Real *recv_x_pos = nullptr;
   Real *recv_x_neg = nullptr;

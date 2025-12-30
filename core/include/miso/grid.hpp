@@ -40,8 +40,8 @@ template <typename Real> struct GridView {
   }
 };
 
-/// @brief Simulation grid in general memory space.
-template <typename Real, typename MemorySpace = HostSpace> struct Grid;
+/// @brief Simulation grid in general execution/memory space.
+template <typename Real, typename Space = HostSpace> struct Grid;
 
 /// @brief Simulation grid in host memory.
 template <typename Real> struct Grid<Real, HostSpace> {
