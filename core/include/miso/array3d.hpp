@@ -20,12 +20,13 @@ template <typename T, typename Space = HostSpace> class Array3D;
 template <typename T> class Array3DView {
 private:
   T *data_ = nullptr;
-  std::array<int, 3> shape_ = {-1, -1, -1};
+  int shape_[3] = {-1, -1, -1};
 
   // Always constructed from Array3D
+  // to ensure that the array size is within the numeric limits of int.
   template <typename, typename> friend class Array3D;
-  __host__ __device__ Array3DView(T *data, std::array<int, 3> shape) noexcept
-      : data_(data), shape_(shape) {}
+  __host__ __device__ Array3DView(T *data, int nx0, int nx1, int nx2) noexcept
+      : data_(data), shape_{nx0, nx1, nx2} {}
 
 public:
   /// @brief Return pointer to the data.
@@ -40,8 +41,9 @@ public:
     return shape_[dim];
   }
 
-  /// @brief Return the shape of the array in the given axis.
-  __host__ __device__ std::array<int, 3> shape() const noexcept { return shape_; }
+  // The shape() method is not implemented in Array3DView
+  // as returning shape from a __host__ __device__ interface is awkward.
+  // Use extent() instead.
 
   /// @brief Return the total size of the array.
   __host__ __device__ int size() const noexcept {
@@ -108,14 +110,14 @@ public:
   Array3DView<T> view() noexcept {
     assert(data_);
     assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0);
-    return Array3DView<T>(data_, shape_);
+    return Array3DView<T>(data_, shape_[0], shape_[1], shape_[2]);
   }
 
   /// @brief Return a constant lightweight view of the array.
   Array3DView<const T> view() const noexcept {
     assert(data_);
     assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0);
-    return Array3DView<const T>(data_, shape_);
+    return Array3DView<const T>(data_, shape_[0], shape_[1], shape_[2]);
   }
 
   /// @brief Return pointer to the data.
@@ -243,14 +245,14 @@ public:
   Array3DView<T> view() noexcept {
     assert(data_);
     assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0);
-    return Array3DView<T>(data_, shape_);
+    return Array3DView<T>(data_, shape_[0], shape_[1], shape_[2]);
   }
 
   /// @brief Return a constant lightweight view of the array.
   Array3DView<const T> view() const noexcept {
     assert(data_);
     assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0);
-    return Array3DView<const T>(data_, shape_);
+    return Array3DView<const T>(data_, shape_[0], shape_[1], shape_[2]);
   }
 
   /// @brief Return pointer to the data.
