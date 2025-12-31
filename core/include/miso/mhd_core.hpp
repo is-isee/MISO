@@ -1,41 +1,37 @@
 #pragma once
 
-#include <cassert>
-#include <vector>
-
-#include <miso/array3d_cpu.hpp>
-#include <miso/array4d_cpu.hpp>
-#include <miso/grid_cpu.hpp>
-#include <miso/mpi_manager.hpp>
-#include <miso/mpi_types.hpp>
-#include <miso/time.hpp>
-#include <miso/utility.hpp>
+#include <miso/backend.hpp>
+#ifdef __CUDACC__
+#include <miso/cuda_util.cuh>
+#endif  // __CUDACC__
 
 namespace miso {
 namespace mhd {
 
-template <typename Real> struct MHDCore {
-  Array3D<Real> ro, vx, vy, vz, bx, by, bz, ei, ph;
+/// @brief  Number of MHD fields
+constexpr int n_fields = 9;
 
-  MHDCore(int i_size, int j_size, int k_size)
-      : ro(i_size, j_size, k_size), vx(i_size, j_size, k_size),
-        vy(i_size, j_size, k_size), vz(i_size, j_size, k_size),
-        bx(i_size, j_size, k_size), by(i_size, j_size, k_size),
-        bz(i_size, j_size, k_size), ei(i_size, j_size, k_size),
-        ph(i_size, j_size, k_size) {}
+/// @brief Execution context for MHD
+template <typename Backend = backend::Host> struct ExecContext {};
 
-  void copy_from(const MHDCore &other) {
-    ro.copy_from(other.ro);
-    vx.copy_from(other.vx);
-    vy.copy_from(other.vy);
-    vz.copy_from(other.vz);
-    bx.copy_from(other.bx);
-    by.copy_from(other.by);
-    bz.copy_from(other.bz);
-    ei.copy_from(other.ei);
-    ph.copy_from(other.ph);
-  }
+/// @brief Execution context for MHD on CPU
+template <> struct ExecContext<backend::Host> {
+  mpi::Shape &mpi_shape;
+
+  ExecContext(mpi::Shape &mpi_shape_, const Grid<Real, backend::Host> &)
+      : mpi_shape(mpi_shape_) {}
 };
+
+#ifdef __CUDACC__
+/// @brief Execution context for MHD on GPU
+template <> struct ExecContext<backend::CUDA> {
+  mpi::Shape &mpi_shape;
+  cuda::KernelShape3D cu_shape;
+
+  ExecContext(mpi::Shape &mpi_shape_, const Grid<Real, backend::Host> &grid)
+      : mpi_shape(mpi_shape_), cu_shape(grid) {}
+};
+#endif  // __CUDACC__
 
 }  // namespace mhd
 }  // namespace miso

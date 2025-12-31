@@ -1,16 +1,37 @@
 #pragma once
 
+#include <cstdio>
+
 #include <miso/cuda_compat.hpp>
-#include <miso/grid.hpp>
+#include <miso/env.hpp>
+
+// clang-format off
+/// @brief Macro to check CUDA errors
+#define MISO_CUDA_CHECK(ans) \
+  do { miso::cuda::check_error((ans), __FILE__, __LINE__); } while (0)
+// clang-format on
 
 namespace miso {
+namespace cuda {
 
-template <typename Real> struct CudaKernelShape {
+inline void check_error(cudaError_t code, const char *file, int line,
+                        bool abort = true) {
+  if (code != cudaSuccess) {
+    const char *errstr = cudaGetErrorString(code);
+    std::fprintf(stderr, "CUDA Error: %s %s %d\n", errstr, file, line);
+    std::fflush(stderr);
+    if (abort)
+      MPI_Abort(mpi::comm(), EXIT_FAILURE);
+  }
+}
+
+struct KernelShape3D {
   dim3 block_dim;
   dim3 grid_dim;
   dim3 grid_dim_x_margin, grid_dim_y_margin, grid_dim_z_margin;
 
-  explicit CudaKernelShape(const Grid<Real> &grid) {
+  template <typename GridType>
+  explicit KernelShape3D(const GridType &grid) noexcept {
     const auto div_up = [](int n, int d) { return (n + d - 1) / d; };
 
     block_dim = dim3(8, 8, 8);
@@ -31,4 +52,5 @@ template <typename Real> struct CudaKernelShape {
   }
 };
 
+}  // namespace cuda
 }  // namespace miso

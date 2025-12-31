@@ -36,36 +36,48 @@ inline std::string zfill(int num, int width) {
 /// @tparam T type of the value
 /// @param x target value
 /// @return squared value
-template <typename T> HOST_DEVICE inline T pow2(T x) { return x * x; }
-template <typename T> HOST_DEVICE inline T pow3(T x) { return x * x * x; }
-template <typename T> HOST_DEVICE inline T pow4(T x) { return x * x * x * x; }
-template <typename T> HOST_DEVICE inline T pow5(T x) { return x * x * x * x * x; }
+template <typename T> __host__ __device__ inline T pow2(T x) { return x * x; }
+template <typename T> __host__ __device__ inline T pow3(T x) { return x * x * x; }
+template <typename T> __host__ __device__ inline T pow4(T x) {
+  return x * x * x * x;
+}
+template <typename T> __host__ __device__ inline T pow5(T x) {
+  return x * x * x * x * x;
+}
 
 // for float min
-HOST_DEVICE inline float fmin_safe(float a, float b) { return fminf(a, b); }
+__host__ __device__ inline float fmin_safe(float a, float b) {
+  return fminf(a, b);
+}
 
 // for float max
-HOST_DEVICE inline float fmax_safe(float a, float b) { return fmaxf(a, b); }
+__host__ __device__ inline float fmax_safe(float a, float b) {
+  return fmaxf(a, b);
+}
 
 // for double min
-HOST_DEVICE inline double dmin_safe(double a, double b) { return fmin(a, b); }
+__host__ __device__ inline double dmin_safe(double a, double b) {
+  return fmin(a, b);
+}
 
 // for double max
-HOST_DEVICE inline double dmax_safe(double a, double b) { return fmax(a, b); }
+__host__ __device__ inline double dmax_safe(double a, double b) {
+  return fmax(a, b);
+}
 
-template <typename T> HOST_DEVICE inline T max2(T a, T b) {
+template <typename T> __host__ __device__ inline T max2(T a, T b) {
   return fmax_safe(a, b);
 }
 
-template <typename T> HOST_DEVICE inline T min2(T a, T b) {
+template <typename T> __host__ __device__ inline T min2(T a, T b) {
   return fmin_safe(a, b);
 }
 
-template <typename T> HOST_DEVICE inline T min3(T a, T b, T c) {
+template <typename T> __host__ __device__ inline T min3(T a, T b, T c) {
   return fmin_safe(fmin_safe(a, b), c);
 }
 
-template <typename T> HOST_DEVICE inline T max3(T a, T b, T c) {
+template <typename T> __host__ __device__ inline T max3(T a, T b, T c) {
   return fmax_safe(fmax_safe(a, b), c);
 }
 
@@ -77,7 +89,7 @@ inline Endian get_endian() {
 }
 
 // @brief Clear array (zero-fill)
-template <typename VectorLike> HOST inline void clear_array(VectorLike &arr) {
+template <typename VectorLike> inline void clear_array(VectorLike &arr) {
   using T = std::decay_t<decltype(*arr.data())>;
   std::fill(arr.data(), arr.data() + arr.size(), T(0));
 }

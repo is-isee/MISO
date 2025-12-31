@@ -1,17 +1,19 @@
 #pragma once
-#include <cassert>
-#include <vector>
 
-#include <miso/array3d_cpu.hpp>
-#include <miso/config.hpp>
+#include <miso/cuda_compat.hpp>
 #include <miso/env.hpp>
-#include <miso/mpi_manager.hpp>
+#include <miso/mpi_util.hpp>
+
+#include <miso/config.hpp>
+
+#ifdef __CUDACC__
+#include <miso/cuda_util.cuh>
+#endif  // __CUDACC__
 
 namespace miso {
 
-/// @brief  Grid class for CPU version
-/// @tparam Real
-template <typename Real> struct Grid {
+/// @brief Generator of local Grid objects with MPI topology
+template <typename Real> struct GridGenerator {
   /// @brief  grid number in x direction without margin
   int i_size;
   /// @brief  grid number in y direction without margin
@@ -49,9 +51,9 @@ template <typename Real> struct Grid {
   /// @brief starting index in z direction (for MPI calculation)
   int k_stt;
 
-  /// @brief  minimum value in x direction
+  /// @brief minimum value in x direction
   Real xmin;
-  /// @brief  maximum value in x direction
+  /// @brief maximum value in x direction
   Real xmax;
   /// @brief minimum value in y direction
   Real ymin;
@@ -62,32 +64,29 @@ template <typename Real> struct Grid {
   /// @brief maximum value in z direction
   Real zmax;
 
-  /// @brief  coordinate in x direction
+  /// @brief coordinate in x direction
   std::vector<Real> x;
-  /// @brief  coordinate in y direction
+  /// @brief coordinate in y direction
   std::vector<Real> y;
-  /// @brief  coordinate in z direction
+  /// @brief coordinate in z direction
   std::vector<Real> z;
 
-  /// @brief  grid spacing in x direction
+  /// @brief grid spacing in x direction
   std::vector<Real> dx;
-  /// @brief  grid spacing in y direction
+  /// @brief grid spacing in y direction
   std::vector<Real> dy;
-  /// @brief  grid spacing in z direction
+  /// @brief grid spacing in z direction
   std::vector<Real> dz;
 
-  /// @brief  inverse grid spacing in x direction
+  /// @brief inverse grid spacing in x direction
   std::vector<Real> dxi;
-  /// @brief  inverse grid spacing in y direction
+  /// @brief inverse grid spacing in y direction
   std::vector<Real> dyi;
-  /// @brief  inverse grid spacing in z direction
+  /// @brief inverse grid spacing in z direction
   std::vector<Real> dzi;
 
   /// @brief global minimum value of dx, dy, dz
   Real min_dxyz;
-
-  /// @brief mask array
-  Array3D<Real> mask;
 
   inline int idx(int i, int j, int k) const {
     return (i * j_total + j) * k_total + k;
@@ -188,10 +187,10 @@ template <typename Real> struct Grid {
 
   ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
   /// @param grid_global Global grid object
-  Grid(const Grid<Real> &grid_global, const MPIManager &mpi) {
-    i_size = grid_global.i_size / mpi.x_procs;
-    j_size = grid_global.j_size / mpi.y_procs;
-    k_size = grid_global.k_size / mpi.z_procs;
+  Grid(const Grid<Real> &grid_global, const mpi::Shape &mpi_shape) {
+    i_size = grid_global.i_size / mpi_shape.x_procs;
+    j_size = grid_global.j_size / mpi_shape.y_procs;
+    k_size = grid_global.k_size / mpi_shape.z_procs;
 
     margin = grid_global.margin;
 
@@ -207,9 +206,9 @@ template <typename Real> struct Grid {
     j_total = j_size + 2 * j_margin;
     k_total = k_size + 2 * k_margin;
 
-    i_stt = mpi.coord[0] * i_size;
-    j_stt = mpi.coord[1] * j_size;
-    k_stt = mpi.coord[2] * k_size;
+    i_stt = mpi_shape.coord[0] * i_size;
+    j_stt = mpi_shape.coord[1] * j_size;
+    k_stt = mpi_shape.coord[2] * k_size;
 
     x.resize(i_total);
     dx.resize(i_total);
@@ -239,17 +238,6 @@ template <typename Real> struct Grid {
       dzi[k] = grid_global.dzi[k_stt + k];
     }
     min_dxyz = grid_global.min_dxyz;
-
-    mask.allocate(i_total, j_total, k_total);
-
-    // set mask value, default is 1 (fluid)
-    for (int i = 0; i < i_total; ++i) {
-      for (int j = 0; j < j_total; ++j) {
-        for (int k = 0; k < k_total; ++k) {
-          mask(i, j, k) = 1;
-        }
-      }
-    }
   }
 
   /// @brief save grid data to a binary file
