@@ -59,10 +59,11 @@ template <typename Real> struct Fields<Real, backend::Host> {
         ei(grid.i_total, grid.j_total, grid.k_total),
         ph(grid.i_total, grid.j_total, grid.k_total) {}
 
+  FieldsView<Real> view() noexcept { return FieldsView<Real>(*this); }
   FieldsView<const Real> view() const noexcept {
     return FieldsView<const Real>(*this);
   }
-  FieldsView<Real> view() noexcept { return FieldsView<Real>(*this); }
+  FieldsView<const Real> const_view() const noexcept { return view(); }
 
   void copy_from(const Fields<Real, backend::Host> &other) {
     ro.copy_from(other.ro);
@@ -124,10 +125,11 @@ template <typename Real> struct Fields<Real, backend::CUDA> {
         ei(grid.i_total, grid.j_total, grid.k_total),
         ph(grid.i_total, grid.j_total, grid.k_total) {}
 
+  FieldsView<Real> view() noexcept { return FieldsView<Real>(*this); }
   FieldsView<const Real> view() const noexcept {
     return FieldsView<const Real>(*this);
   }
-  FieldsView<Real> view() noexcept { return FieldsView<Real>(*this); }
+  FieldsView<const Real> const_view() const noexcept { return view(); }
 
   void copy_from(const Fields<Real, backend::Host> &other) {
     ro.copy_from(other.ro);

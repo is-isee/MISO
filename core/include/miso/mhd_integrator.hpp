@@ -1,7 +1,94 @@
 #pragma once
 
+#include <miso/array3d.hpp>
+#include <miso/constants.hpp>
+#include <miso/cuda_compat.hpp>
+#include <miso/mhd_fields.hpp>
+
+namespace miso {
+namespace mhd {
+
+template <typename Real, typename EOS, typename Backend> struct Integrator;
+
+/// @brief Dummy source class (without source terms)
+/// @details Volumetric heat / force terms are expected.
+template <typename Real> struct NoSource {
+  /// External force: x-direction
+  __host__ __device__ inline Real vx(FieldsView<Real const>, int, int,
+                                     int) const noexcept {
+    return 0.0;
+  }
+
+  /// External force: y-direction
+  __host__ __device__ inline Real vy(FieldsView<Real const>, int, int,
+                                     int) const noexcept {
+    return 0.0;
+  }
+
+  /// External force: z-direction
+  __host__ __device__ inline Real vz(FieldsView<Real const>, int, int,
+                                     int) const noexcept {
+    return 0.0;
+  }
+
+  /// External heating
+  __host__ __device__ inline Real ei(FieldsView<Real const>, int, int,
+                                     int) const noexcept {
+    return 0.0;
+  }
+};
+
+/// @brief Calculate 4th order space-centered derivative for qq
+template <typename Real>
+__host__ __device__ inline Real
+space_centered_4th(Array3DView<const Real> qq, Real dxyzi, int i, int j, int k,
+                   int is, int js, int ks) {
+  // clang-format off
+  return (
+    -     qq(i + 2*is, j + 2*js, k + 2*ks)
+    + 8.0*qq(i +   is, j +   js, k +   ks)
+    - 8.0*qq(i -   is, j -   js, k -   ks)
+    +     qq(i - 2*is, j - 2*js, k - 2*ks)
+  )*inv12<Real>*dxyzi;
+  // clang-format on
+};
+
+/// @brief Calculate 4th order space-centered derivative for qq1*qq2
+template <typename Real>
+__host__ __device__ inline Real
+space_centered_4th(Array3DView<const Real> qq1, Array3DView<const Real> qq2,
+                   Real dxyzi, int i, int j, int k, int is, int js, int ks) {
+  // clang-format off
+  return (
+    -     qq1(i + 2*is, j + 2*js, k + 2*ks)*qq2(i + 2*is, j + 2*js, k + 2*ks)
+    + 8.0*qq1(i +   is, j +   js, k +   ks)*qq2(i +   is, j +   js, k +   ks)
+    - 8.0*qq1(i -   is, j -   js, k -   ks)*qq2(i -   is, j -   js, k -   ks)
+    +     qq1(i - 2*is, j - 2*js, k - 2*ks)*qq2(i - 2*is, j - 2*js, k - 2*ks)
+  )*inv12<Real>*dxyzi;
+  // clang-format on
+};
+
+/// @brief Calculate 4th order space-centered derivative for qq1*qq2*qq3
+template <typename Real>
+__host__ __device__ inline Real
+space_centered_4th(Array3DView<const Real> qq1, Array3DView<const Real> qq2,
+                   Array3DView<const Real> qq3, Real dxyzi, int i, int j, int k,
+                   int is, int js, int ks) {
+  // clang-format off
+  return (
+    -     qq1(i + 2*is, j + 2*js, k + 2*ks)*qq2(i + 2*is, j + 2*js, k + 2*ks)*qq3(i + 2*is, j + 2*js, k + 2*ks)
+    + 8.0*qq1(i +   is, j +   js, k +   ks)*qq2(i +   is, j +   js, k +   ks)*qq3(i +   is, j +   js, k +   ks)
+    - 8.0*qq1(i -   is, j -   js, k -   ks)*qq2(i -   is, j -   js, k -   ks)*qq3(i -   is, j -   js, k -   ks)
+    +     qq1(i - 2*is, j - 2*js, k - 2*ks)*qq2(i - 2*is, j - 2*js, k - 2*ks)*qq3(i - 2*is, j - 2*js, k - 2*ks)
+  )*inv12<Real>*dxyzi;
+  // clang-format on
+};
+
+}  // namespace mhd
+}  // namespace miso
+
+#include <miso/mhd_integrator_host.hpp>
+
 #ifdef __CUDACC__
-#include <miso/mhd_integrator_gpu.cuh>
-#else
-#include <miso/mhd_integrator_cpu.hpp>
+#include <miso/mhd_integrator_cuda.cuh>
 #endif

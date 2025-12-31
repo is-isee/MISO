@@ -3,10 +3,10 @@
 #include <cassert>
 #include <vector>
 
+#include <miso/backend.hpp>
 #include <miso/cuda_compat.hpp>
 #include <miso/env.hpp>
 #include <miso/mpi_util.hpp>
-#include <miso/backend.hpp>
 
 #include <miso/config.hpp>
 
@@ -34,6 +34,15 @@ template <typename Real> struct GridView {
         j_margin(grid.j_margin), k_margin(grid.k_margin), min_dxyz(grid.min_dxyz),
         x(grid.x), y(grid.y), z(grid.z), dx(grid.dx), dy(grid.dy), dz(grid.dz),
         dxi(grid.dxi), dyi(grid.dyi), dzi(grid.dzi) {}
+
+  GridView(int i_total, int j_total, int k_total, int is, int js, int ks,
+           int i_margin, int j_margin, int k_margin, Real min_dxyz, Real *x,
+           Real *y, Real *z, Real *dx, Real *dy, Real *dz, Real *dxi, Real *dyi,
+           Real *dzi) noexcept
+      : i_total(i_total), j_total(j_total), k_total(k_total), is(is), js(js),
+        ks(ks), i_margin(i_margin), j_margin(j_margin), k_margin(k_margin),
+        min_dxyz(min_dxyz), x(x), y(y), z(z), dx(dx), dy(dy), dz(dz), dxi(dxi),
+        dyi(dyi), dzi(dzi) {}
 
   __device__ inline int idx(int i, int j, int k) const {
     return (i * j_total + j) * k_total + k;
@@ -218,7 +227,8 @@ template <typename Real> struct Grid<Real, backend::Host> {
 
   ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
   /// @param grid_global Global grid object
-  Grid(const Grid<Real, backend::Host> &grid_global, const mpi::Shape &mpi_shape) {
+  Grid(const Grid<Real, backend::Host> &grid_global,
+       const mpi::Shape &mpi_shape) {
     i_size = grid_global.i_size / mpi_shape.x_procs;
     j_size = grid_global.j_size / mpi_shape.y_procs;
     k_size = grid_global.k_size / mpi_shape.z_procs;
@@ -270,6 +280,21 @@ template <typename Real> struct Grid<Real, backend::Host> {
     }
     min_dxyz = grid_global.min_dxyz;
   }
+
+  // Shallow-copy
+  GridView<Real> view() noexcept {
+    return GridView<Real>(i_total, j_total, k_total, is, js, ks, i_margin,
+                          j_margin, k_margin, min_dxyz, x.data(), y.data(),
+                          z.data(), dx.data(), dy.data(), dz.data(), dxi.data(),
+                          dyi.data(), dzi.data());
+  }
+  GridView<const Real> view() const noexcept {
+    return GridView<const Real>(i_total, j_total, k_total, is, js, ks, i_margin,
+                                j_margin, k_margin, min_dxyz, x.data(), y.data(),
+                                z.data(), dx.data(), dy.data(), dz.data(),
+                                dxi.data(), dyi.data(), dzi.data());
+  }
+  GridView<const Real> const_view() const noexcept { return view(); }
 
   /// @brief save grid data to a binary file
   /// @param config
@@ -330,8 +355,12 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
     // clang-format on
   }
 
-  // Shallow-const / shallow-copy
-  GridView<Real> view() const noexcept { return GridView<Real>(*this); }
+  // Shallow-copy
+  GridView<Real> view() noexcept { return GridView<Real>(*this); }
+  GridView<const Real> view() const noexcept {
+    return GridView<const Real>(*this);
+  }
+  GridView<const Real> const_view() const noexcept { return view(); }
 
   void copy_from_host(const Grid<Real, backend::Host> &grid_h) {
     MISO_CUDA_CHECK(cudaMemcpy(x, grid_h.x.data(), sizeof(Real) * i_total,
@@ -377,7 +406,8 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
 
   // Prohibit copy and move
   Grid<Real, backend::CUDA>(const Grid<Real, backend::CUDA> &) = delete;
-  Grid<Real, backend::CUDA> &operator=(const Grid<Real, backend::CUDA> &) = delete;
+  Grid<Real, backend::CUDA> &
+  operator=(const Grid<Real, backend::CUDA> &) = delete;
   Grid<Real, backend::CUDA>(Grid<Real, backend::CUDA> &&) = delete;
   Grid<Real, backend::CUDA> &operator=(Grid<Real, backend::CUDA> &&) = delete;
 };

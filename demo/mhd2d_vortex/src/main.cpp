@@ -15,33 +15,44 @@
 
 using namespace miso;
 
-void initial_condition(mhd::Fields<Real> &qq, const Grid<Real> &grid,
-                       const eos::IdealEOS<Real> &eos) {
-  Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
-  Real v0 = 1.0;
+#ifdef USE_CUDA
+using Backend = backend::CUDA;
+#else
+using Backend = backend::Host;
+#endif
 
-  for (int i = 0; i < grid.i_total; ++i) {
-    for (int j = 0; j < grid.j_total; ++j) {
-      for (int k = 0; k < grid.k_total; ++k) {
-        qq.ro(i, j, k) = 1.0;
-        Real pr = 1.0 / eos.gm;
-        qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
-        qq.vx(i, j, k) = -v0 * std::sin(2.0 * pi<Real> * grid.y[j]);
-        qq.vy(i, j, k) = +v0 * std::sin(2.0 * pi<Real> * grid.x[i]);
-        qq.vz(i, j, k) = 0.0;
-        qq.bx(i, j, k) = -b0 * std::sin(2.0 * pi<Real> * grid.y[j]);
-        qq.by(i, j, k) = +b0 * std::sin(4.0 * pi<Real> * grid.x[i]);
-        qq.bz(i, j, k) = 0.0;
+struct InitialCondition {
+  // The signature must not be changed as it is called inside miso::mhd::MHD.
+  template <typename EOS>
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid, EOS eos) const {
+    const Real pr = 1.0 / eos.gm;
+    const Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
+    const Real v0 = 1.0;
+
+    for (int i = 0; i < grid.i_total; ++i) {
+      for (int j = 0; j < grid.j_total; ++j) {
+        for (int k = 0; k < grid.k_total; ++k) {
+          qq.ro(i, j, k) = 1.0;
+          qq.ei(i, j, k) = eos.roprtoei(qq.ro(i, j, k), pr);
+          qq.vx(i, j, k) = -v0 * std::sin(2.0 * pi<Real> * grid.y[j]);
+          qq.vy(i, j, k) = +v0 * std::sin(2.0 * pi<Real> * grid.x[i]);
+          qq.vz(i, j, k) = 0.0;
+          qq.bx(i, j, k) = -b0 * std::sin(2.0 * pi<Real> * grid.y[j]);
+          qq.by(i, j, k) = +b0 * std::sin(4.0 * pi<Real> * grid.x[i]);
+          qq.bz(i, j, k) = 0.0;
+        }
       }
     }
   }
-}
+};
 
-// Periodic boundary condition is applied by MPI communication.
-// Be sure to set "periodic" in domain field of config.yaml.
-struct EmptyBC {
-  explicit EmptyBC(Config &config) {}
-  void apply(const mhd::FieldsView<Real> &qq) {}
+struct EmptyBoundaryCondition {
+  // The signature must not be changed as it is called inside miso::mhd::MHD.
+  template <typename EOS>
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid, EOS eos) const {
+    // Periodic boundary condition is applied by MPI communication.
+    // Be sure to set "periodic" in domain field of config.yaml.
+  }
 };
 
 struct Model {
@@ -51,44 +62,33 @@ struct Model {
   Grid<Real, backend::Host> grid_global;
   Grid<Real, backend::Host> grid;
 
+  mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
-#ifdef USE_CUDA
-  cuda::KernelShape3D cu_shape;
-  mhd::ExecContext<backend::CUDA> exec_ctx;
-  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_cuda::NoSource<Real>>
-      mhd;
-#else
-  mhd::ExecContext<backend::Host> exec_ctx;
-  mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_host::NoSource<Real>>
-      mhd;
-#endif
+  InitialCondition ic;
+  EmptyBoundaryCondition bc;
+  mhd::NoSource<Real> src;
+  mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid_global(config),
-        grid(grid_global, mpi_shape), eos(config),
-#ifdef USE_CUDA
-        cu_shape(grid), exec_ctx{mpi_shape, cu_shape},
-#else
-        exec_ctx{mpi_shape},
-#endif
-        mhd(config, time, grid, exec_ctx) {
-  }
+        grid(grid_global, mpi_shape), exec_ctx(mpi_shape, grid), eos(config),
+        mhd(config, grid, exec_ctx, eos) {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
     config.save();
     grid_global.save(config);
-    mpi_shape.save();
+    exec_ctx.mpi_shape.save();
   }
 
   void save_state() {
-    mhd.save();
     time.save();
+    mhd.save(time);
   }
 
   void load_state() {
     time.load();
-    mhd.load();
+    mhd.load(time);
   }
 
   void save_if_needed() {
@@ -115,10 +115,7 @@ struct Model {
     }
 
     save_metadata();
-    initial_condition(mhd.qq, grid, eos);
-#ifdef USE_CUDA
-    mhd.qq_d.copy_from(mhd.qq);
-#endif
+    mhd.apply_initial_condition(ic, bc, grid);
 
     MPI_Barrier(mpi::comm());
 
@@ -126,7 +123,7 @@ struct Model {
     while (time.time < time.tend) {
       // basic MHD time integration
       const auto dt = mhd.cfl();
-      mhd.update(dt);
+      mhd.update(dt, bc, src);
 
       // Time is update after all procedures
       time.update(dt);
