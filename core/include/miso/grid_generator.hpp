@@ -6,9 +6,9 @@
 
 #include <miso/config.hpp>
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_util.cuh>
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 namespace miso {
 

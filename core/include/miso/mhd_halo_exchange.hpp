@@ -10,9 +10,9 @@
 #include <miso/mhd_fields.hpp>
 #include <miso/mpi_util.hpp>
 #include <miso/backend.hpp>
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_util.cuh>
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 namespace miso {
 namespace mhd {
@@ -263,7 +263,7 @@ template <typename Real> struct HaloExchanger<Real, backend::Host> {
   }
 };
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 // ##################
 // x-direction send
 template <typename Real>
@@ -617,7 +617,7 @@ template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
     }
   }
 };
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 }  // namespace mhd
 }  // namespace miso

@@ -2,9 +2,9 @@
 
 #include <miso/array3d.hpp>
 #include <miso/backend.hpp>
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_util.cuh>
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 namespace miso {
 namespace mhd {
@@ -76,7 +76,7 @@ template <typename Real> struct Fields<Real, backend::Host> {
     ph.copy_from(other.ph);
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   void copy_from(const Fields<Real, backend::CUDA> &other) {
     ro.copy_from(other.ro);
     vx.copy_from(other.vx);
@@ -100,7 +100,7 @@ template <typename Real> struct Fields<Real, backend::Host> {
   Fields &operator=(Fields &&) = default;
 };
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 /// @brief Primitive MHD variables on GPU device.
 template <typename Real> struct Fields<Real, backend::CUDA> {
   Array3D<Real, backend::CUDA> ro, vx, vy, vz, bx, by, bz, ei, ph;
@@ -163,7 +163,7 @@ template <typename Real> struct Fields<Real, backend::CUDA> {
   Fields(Fields &&) = default;
   Fields &operator=(Fields &&) = default;
 };
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 }  // namespace mhd
 }  // namespace miso

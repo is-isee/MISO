@@ -7,9 +7,9 @@
 #include <miso/mpi_util.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_util.cuh>
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 namespace miso {
 namespace bnd {
@@ -155,7 +155,7 @@ void symmetric(Array3D<Real, backend::Host> &arr, const Grid<Real, backend::Host
   }
 };
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 template <typename Real>
 __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<Real> grid,
                                  Real sign, Direction direction, Side side) {
@@ -199,7 +199,7 @@ void symmetric(Array3D<Real, backend::CUDA> &arr, const Grid<Real, backend::CUDA
   MISO_CUDA_CHECK(cudaGetLastError());
   MISO_CUDA_CHECK(cudaDeviceSynchronize());
 };
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 }  // namespace bnd
 }  // namespace miso

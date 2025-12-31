@@ -17,16 +17,16 @@ template <typename Real, typename BoundaryCondition, typename EOS,
 struct MHD {
   Time<Real> &time;
   Grid<Real, backend::Host> &grid;
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   Grid<Real, backend::CUDA> grid_d;
 #endif
 
   Fields<Real, backend::Host> qq;  // Required for cpu and gpu both
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   Fields<Real, backend::CUDA> qq_d;
 #endif
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   ExecContext<backend::CUDA> &exec_ctx;
   impl_cuda::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #else
@@ -40,7 +40,7 @@ struct MHD {
   template <typename ExecContextType>
   MHD(Config &config, Time<Real> &time, Grid<Real, backend::Host> &grid,
       ExecContextType &exec_ctx)
-#ifdef USE_CUDA
+#ifdef __CUDACC__
       : time(time), grid(grid), grid_d(grid), qq(grid), qq_d(grid_d),
         exec_ctx(exec_ctx), integrator(config, qq_d, grid_d, exec_ctx)
 #else
@@ -69,9 +69,9 @@ struct MHD {
       ofs.write(reinterpret_cast<const char *>(arr.data()),
                 sizeof(Real) * arr.size());
     };
-#ifdef USE_CUDA
+#ifdef __CUDACC__
     qq.copy_from(qq_d);
-#endif  // USE_CUDA
+#endif  // __CUDACC__
     write_array(qq.ro);
     write_array(qq.vx);
     write_array(qq.vy);

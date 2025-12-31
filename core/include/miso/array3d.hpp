@@ -7,9 +7,9 @@
 
 #include <miso/backend.hpp>
 #include <miso/cuda_compat.hpp>
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_util.cuh>
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 namespace miso {
 
@@ -177,7 +177,7 @@ public:
     std::copy(other.data(), other.data() + other.size(), data());
   }
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   /// @brief Copy data from another Array3D in CUDA memory.
   void copy_from(const Array3D<T, backend::CUDA> &other) {
     assert(other.data() && data());
@@ -195,7 +195,7 @@ public:
                                     sizeof(T) * other.size(),
                                     cudaMemcpyDeviceToHost, stream));
   }
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
   // Prohibit copy semantics
   Array3D(const Array3D &) = delete;
@@ -218,7 +218,7 @@ public:
   }
 };
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 /// @brief 3D Array in CUDA device memory.
 template <typename T> class Array3D<T, backend::CUDA> {
 private:
@@ -328,6 +328,6 @@ public:
     return *this;
   }
 };
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 }  // namespace miso
