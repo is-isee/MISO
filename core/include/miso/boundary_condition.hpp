@@ -125,8 +125,9 @@ bool is_physical_boundary(const Direction direction, const Side side,
 }
 
 template <typename Real>
-void symmetric(Array3D<Real, backend::Host> &arr, const Grid<Real, backend::Host> &grid,
-               Real sign, Direction direction, Side side) {
+void symmetric(Array3D<Real, backend::Host> &arr,
+               const Grid<Real, backend::Host> &grid, Real sign,
+               Direction direction, Side side) {
   int i0_, i1_, j0_, j1_, k0_, k1_;
   range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
   for (int i = i0_; i < i1_; ++i) {
@@ -157,7 +158,7 @@ void symmetric(Array3D<Real, backend::Host> &arr, const Grid<Real, backend::Host
 
 #ifdef __CUDACC__
 template <typename Real>
-__global__ void symmetric_kernel(Array3DView<Real> arr, GridView<Real> grid,
+__global__ void symmetric_kernel(Array3DView<Real> arr, GridView<const Real> grid,
                                  Real sign, Direction direction, Side side) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -187,8 +188,9 @@ __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<Real> grid,
 }
 
 template <typename Real>
-void symmetric(Array3D<Real, backend::CUDA> &arr, const Grid<Real, backend::CUDA> &grid,
-               Real sign, Direction direction, Side side) {
+void symmetric(Array3D<Real, backend::CUDA> &arr,
+               const Grid<Real, backend::CUDA> &grid, Real sign,
+               Direction direction, Side side) {
   dim3 block_dim(8, 8, 8);
   dim3 grid_dim((grid.i_total + block_dim.x - 1) / block_dim.x,
                 (grid.j_total + block_dim.y - 1) / block_dim.y,

@@ -120,6 +120,9 @@ public:
     return Array3DView<const T>(data_, shape_[0], shape_[1], shape_[2]);
   }
 
+  /// @brief Return a constant lightweight view of the array.
+  Array3DView<const T> const_view() const noexcept { return view(); }
+
   /// @brief Return pointer to the data.
   T *data() noexcept { return data_; }
 
@@ -254,6 +257,9 @@ public:
     assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0);
     return Array3DView<const T>(data_, shape_[0], shape_[1], shape_[2]);
   }
+
+  /// @brief Return a constant lightweight view of the array.
+  Array3DView<const T> const_view() const noexcept { return view(); }
 
   /// @brief Return pointer to the data.
   T *data() noexcept { return data_; }

@@ -16,18 +16,20 @@ template <typename Backend = backend::Host> struct ExecContext {};
 
 /// @brief Execution context for MHD on CPU
 template <> struct ExecContext<backend::Host> {
-  using memory_space = backend::Host;
-  using Backend = backend::Host;
   mpi::Shape &mpi_shape;
+
+  ExecContext(mpi::Shape &mpi_shape_, const Grid<Real, backend::Host> &)
+      : mpi_shape(mpi_shape_) {}
 };
 
 #ifdef __CUDACC__
 /// @brief Execution context for MHD on GPU
 template <> struct ExecContext<backend::CUDA> {
-  using memory_space = backend::CUDA;
-  using Backend = backend::CUDA;
   mpi::Shape &mpi_shape;
-  cuda::KernelShape3D &cu_shape;
+  cuda::KernelShape3D cu_shape;
+
+  ExecContext(mpi::Shape &mpi_shape_, const Grid<Real, backend::Host> &grid)
+      : mpi_shape(mpi_shape_), cu_shape(grid) {}
 };
 #endif  // __CUDACC__
 
