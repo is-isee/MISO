@@ -31,9 +31,9 @@ TEST_CASE("Test Grid GPU" * doctest::test_suite("grid")) {
   double zmin = 4.0;
   double zmax = 5.0;
 
-  miso::Grid<double, HostSpace> grid(i_size, j_size, k_size, margin, xmin, xmax,
+  miso::Grid<double, backend::Host> grid(i_size, j_size, k_size, margin, xmin, xmax,
                                      ymin, ymax, zmin, zmax);
-  miso::Grid<double, CUDASpace> grid_d(grid);
+  miso::Grid<double, backend::CUDA> grid_d(grid);
 
   grid_d.copy_from_host(grid);
 

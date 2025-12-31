@@ -7,7 +7,7 @@
 using namespace miso;
 
 TEST_CASE("Test Array3D CPU" * doctest::test_suite("array3d")) {
-  Array3D<int, HostSpace> arr(3, 4, 5);
+  Array3D<int, backend::Host> arr(3, 4, 5);
 
   // Check dimensions
   REQUIRE(arr.extent(0) == 3);

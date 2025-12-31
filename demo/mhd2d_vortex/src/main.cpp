@@ -48,17 +48,17 @@ struct Model {
   Config &config;
   mpi::Shape mpi_shape;
   Time<Real> time;
-  Grid<Real, HostSpace> grid_global;
-  Grid<Real, HostSpace> grid;
+  Grid<Real, backend::Host> grid_global;
+  Grid<Real, backend::Host> grid;
 
   eos::IdealEOS<Real> eos;
 #ifdef USE_CUDA
   cuda::KernelShape3D cu_shape;
-  mhd::ExecContext<CUDASpace> exec_ctx;
+  mhd::ExecContext<backend::CUDA> exec_ctx;
   mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_cuda::NoSource<Real>>
       mhd;
 #else
-  mhd::ExecContext<HostSpace> exec_ctx;
+  mhd::ExecContext<backend::Host> exec_ctx;
   mhd::MHD<Real, EmptyBC, eos::IdealEOS<Real>, mhd::impl_host::NoSource<Real>>
       mhd;
 #endif

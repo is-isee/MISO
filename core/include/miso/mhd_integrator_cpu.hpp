@@ -12,7 +12,7 @@ namespace impl_host {
 
 /// @brief Calculate 4th order space-centered derivative for qq
 template <typename Real>
-inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq, Real dxyzi,
+inline Real space_centered_4th(const Array3D<Real, backend::Host> &qq, Real dxyzi,
                                int i, int j, int k, int is, int js, int ks) {
   // clang-format off
   return (
@@ -26,8 +26,8 @@ inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq, Real dxyzi,
 
 /// @brief Calculate 4th order space-centered derivative for qq1*qq2
 template <typename Real>
-inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq1,
-                               const Array3D<Real, HostSpace> &qq2, Real dxyzi,
+inline Real space_centered_4th(const Array3D<Real, backend::Host> &qq1,
+                               const Array3D<Real, backend::Host> &qq2, Real dxyzi,
                                int i, int j, int k, int is, int js, int ks) {
   // clang-format off
   return (
@@ -41,9 +41,9 @@ inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq1,
 
 /// @brief Calculate 4th order space-centered derivative for qq1*qq2*qq3
 template <typename Real>
-inline Real space_centered_4th(const Array3D<Real, HostSpace> &qq1,
-                               const Array3D<Real, HostSpace> &qq2,
-                               const Array3D<Real, HostSpace> &qq3, Real dxyzi,
+inline Real space_centered_4th(const Array3D<Real, backend::Host> &qq1,
+                               const Array3D<Real, backend::Host> &qq2,
+                               const Array3D<Real, backend::Host> &qq3, Real dxyzi,
                                int i, int j, int k, int is, int js, int ks) {
   // clang-format off
   return (
@@ -84,7 +84,7 @@ template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source>
 struct Integrator {
   /// @brief Spatial grid
-  Grid<Real, HostSpace> &grid;
+  Grid<Real, backend::Host> &grid;
   /// @brief Equation of states
   EOS eos;
   /// @brief MHD state
@@ -102,13 +102,13 @@ struct Integrator {
   ArtificialViscosity<Real, EOS> artdiff;
 
   /// @brief gas pressure
-  Array3D<Real, HostSpace> pr;
+  Array3D<Real, backend::Host> pr;
   /// @brief magnetic field strength bx*bx + by*by + bz*bz
-  Array3D<Real, HostSpace> bb;
+  Array3D<Real, backend::Host> bb;
   /// @brief enthalpy + 2*magnetic energy + kinetic energy
-  Array3D<Real, HostSpace> ht;
+  Array3D<Real, backend::Host> ht;
   /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
-  Array3D<Real, HostSpace> vb;
+  Array3D<Real, backend::Host> vb;
 
   /// @brief CFL number
   Real cfl_number;
@@ -120,8 +120,8 @@ struct Integrator {
   Real tau_divb;
 
   /// @brief Constructor
-  Integrator(Config &config, Fields<Real, HostSpace> &qq,
-             Grid<Real, HostSpace> &grid, ExecContext<HostSpace> &exec_ctx)
+  Integrator(Config &config, Fields<Real, backend::Host> &qq,
+             Grid<Real, backend::Host> &grid, ExecContext<backend::Host> &exec_ctx)
       : grid(grid), eos(config), qq(qq), qq_argm(grid), qq_rslt(grid),
         halo_exchanger(grid, exec_ctx), bc(config), artdiff(config, grid, eos),
         pr(grid.i_total, grid.j_total, grid.k_total),

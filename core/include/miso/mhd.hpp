@@ -16,21 +16,21 @@ template <typename Real, typename BoundaryCondition, typename EOS,
           typename Source>
 struct MHD {
   Time<Real> &time;
-  Grid<Real, HostSpace> &grid;
+  Grid<Real, backend::Host> &grid;
 #ifdef USE_CUDA
-  Grid<Real, CUDASpace> grid_d;
+  Grid<Real, backend::CUDA> grid_d;
 #endif
 
-  Fields<Real, HostSpace> qq;  // Required for cpu and gpu both
+  Fields<Real, backend::Host> qq;  // Required for cpu and gpu both
 #ifdef USE_CUDA
-  Fields<Real, CUDASpace> qq_d;
+  Fields<Real, backend::CUDA> qq_d;
 #endif
 
 #ifdef USE_CUDA
-  ExecContext<CUDASpace> &exec_ctx;
+  ExecContext<backend::CUDA> &exec_ctx;
   impl_cuda::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #else
-  ExecContext<HostSpace> &exec_ctx;
+  ExecContext<backend::Host> &exec_ctx;
   impl_host::Integrator<Real, BoundaryCondition, EOS, Source> integrator;
 #endif
 
@@ -38,7 +38,7 @@ struct MHD {
   std::string mhd_save_dir;
 
   template <typename ExecContextType>
-  MHD(Config &config, Time<Real> &time, Grid<Real, HostSpace> &grid,
+  MHD(Config &config, Time<Real> &time, Grid<Real, backend::Host> &grid,
       ExecContextType &exec_ctx)
 #ifdef USE_CUDA
       : time(time), grid(grid), grid_d(grid), qq(grid), qq_d(grid_d),
@@ -65,7 +65,7 @@ struct MHD {
     std::ofstream ofs(filename, std::ios::binary);
     assert(ofs.is_open());
 
-    auto write_array = [&ofs](const Array3D<Real, HostSpace> &arr) {
+    auto write_array = [&ofs](const Array3D<Real, backend::Host> &arr) {
       ofs.write(reinterpret_cast<const char *>(arr.data()),
                 sizeof(Real) * arr.size());
     };
@@ -90,7 +90,7 @@ struct MHD {
     std::ifstream ifs(filename, std::ios::binary);
     assert(ifs.is_open());
 
-    auto read_array = [&ifs](Array3D<Real, HostSpace> &arr) {
+    auto read_array = [&ifs](Array3D<Real, backend::Host> &arr) {
       ifs.read(reinterpret_cast<char *>(arr.data()), sizeof(Real) * arr.size());
     };
     read_array(qq.ro);
