@@ -20,10 +20,13 @@ struct FieldsView {
         vz(fields.vz.view()), bx(fields.bx.view()), by(fields.by.view()),
         bz(fields.bz.view()), ei(fields.ei.view()), ph(fields.ph.view()) {}
 
-  __host__ __device__ int size_x() const noexcept { return ro.size_x(); }
-  __host__ __device__ int size_y() const noexcept { return ro.size_y(); }
-  __host__ __device__ int size_z() const noexcept { return ro.size_z(); }
-  __host__ __device__ size_t size() const noexcept { return ro.size(); }
+  __host__ __device__ int extent(int dim) const noexcept {
+    return ro.extent(dim);
+  }
+  __host__ __device__ std::array<int, 3> shape() const noexcept {
+    return ro.shape();
+  }
+  __host__ __device__ int size() const noexcept { return ro.size(); }
 };
 
 /// @brief Primitive MHD variables
