@@ -2,7 +2,6 @@
 #include <cassert>
 #include <doctest/doctest.h>
 
-#define USE_CUDA
 #include <miso/array3d.hpp>
 
 using namespace miso;

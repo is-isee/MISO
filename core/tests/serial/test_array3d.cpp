@@ -1,7 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#undef USE_CUDA
 #include <miso/array3d.hpp>
 
 using namespace miso;

@@ -118,7 +118,7 @@ inline int local_size() {
 }  // namespace mpi
 
 /// @brief Global environment for CUDA
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 namespace cuda {
 
 namespace internal {
@@ -174,12 +174,12 @@ struct Env {
 /// @details This instance should be created at the beginning of main().
 struct Env {
   mpi::Env mpi_env;
-#ifdef USE_CUDA
+#ifdef __CUDACC__
   cuda::Env cuda_env;
 #endif
 
   Env()
-#ifdef USE_CUDA
+#ifdef __CUDACC__
       : mpi_env(), cuda_env()
 #else
       : mpi_env()
@@ -188,7 +188,7 @@ struct Env {
   }
 
   Env(int &argc, char **&argv)
-#ifdef USE_CUDA
+#ifdef __CUDACC__
       : mpi_env(argc, argv), cuda_env()
 #else
       : mpi_env(argc, argv)

@@ -10,9 +10,9 @@
 
 #include <miso/config.hpp>
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_util.cuh>
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 namespace miso {
 
@@ -289,7 +289,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
   }
 };
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 /// @brief Simulation grid in CUDA device memory.
 template <typename Real> struct Grid<Real, backend::CUDA> {
   int i_total, j_total, k_total;
@@ -381,6 +381,6 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
   Grid<Real, backend::CUDA>(Grid<Real, backend::CUDA> &&) = delete;
   Grid<Real, backend::CUDA> &operator=(Grid<Real, backend::CUDA> &&) = delete;
 };
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 }  // namespace miso

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <miso/backend.hpp>
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 #include <miso/cuda_util.cuh>
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 namespace miso {
 namespace mhd {
@@ -21,7 +21,7 @@ template <> struct ExecContext<backend::Host> {
   mpi::Shape &mpi_shape;
 };
 
-#ifdef USE_CUDA
+#ifdef __CUDACC__
 /// @brief Execution context for MHD on GPU
 template <> struct ExecContext<backend::CUDA> {
   using memory_space = backend::CUDA;
@@ -29,7 +29,7 @@ template <> struct ExecContext<backend::CUDA> {
   mpi::Shape &mpi_shape;
   cuda::KernelShape3D &cu_shape;
 };
-#endif  // USE_CUDA
+#endif  // __CUDACC__
 
 }  // namespace mhd
 }  // namespace miso
