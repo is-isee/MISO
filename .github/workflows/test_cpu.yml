@@ -34,3 +34,8 @@ jobs:
           OMPI_MCA_btl_vader_single_copy_mechanism=none \
           OMPI_MCA_rmaps_base_oversubscribe=yes \
           ctest
+      - name: Build demo
+        working-directory: demo/mhd2d_vortex
+        run: |
+          cmake -B build -S . -DUSE_CUDA=OFF
+          make -C build

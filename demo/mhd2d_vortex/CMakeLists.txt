@@ -19,7 +19,7 @@ if(USE_CUDA)
 
     # Select GPU architecture (e.g., L40S/4090: Ada)
     set(CMAKE_CUDA_ARCHITECTURES native)
-endif()
+endif(USE_CUDA)
 
 # App sources
 set(app_name ${project_name})
@@ -36,7 +36,7 @@ if(USE_CUDA)
     # Force main.cpp to be treated as CUDA source
     set_source_files_properties(${app_main} PROPERTIES LANGUAGE CUDA)
     target_compile_definitions(${app_name} PRIVATE USE_CUDA ON)
-endif()
+endif(USE_CUDA)
 
 # MISO library (also fetches dependencies)
 include(FetchContent)
@@ -45,6 +45,11 @@ set(miso_src ${CMAKE_CURRENT_SOURCE_DIR}/../../core)
 set(ENABLE_TESTING
     OFF
     CACHE BOOL "Disable tests in MISO")
+if(USE_CUDA)
+    set(MISO_USE_CUDA
+        ON
+        CACHE BOOL "Enable CUDA support in MISO")
+endif(USE_CUDA)
 # Other options (e.g., USE_CUDA) is passed automatically
 FetchContent_Declare(MISO SOURCE_DIR ${miso_src})
 FetchContent_MakeAvailable(MISO)

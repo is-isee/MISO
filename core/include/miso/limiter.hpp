@@ -1,15 +1,15 @@
 #pragma once
 
+#include <miso/cuda_compat.hpp>
 #include <miso/utility.hpp>
 
 namespace miso {
-namespace mhd {
-
-namespace artificial_viscosity {
+namespace limiter {
 
 ///@brief inline functions for generalized minmod limiter
 template <typename Real>
-HOST_DEVICE inline Real dqq_eval(Real qq_dw, Real qq_cn, Real qq_up, Real ep) {
+__host__ __device__ inline Real dqq_eval(Real qq_dw, Real qq_cn, Real qq_up,
+                                         Real ep) {
   Real dqq_dw = qq_cn - qq_dw;
   Real dqq_up = qq_up - qq_cn;
   Real dqq_cn = (qq_up - qq_dw) * 0.5;
@@ -22,8 +22,8 @@ HOST_DEVICE inline Real dqq_eval(Real qq_dw, Real qq_cn, Real qq_up, Real ep) {
 
 ///@brief inline function for flux core calculation
 template <typename Real>
-HOST_DEVICE inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw,
-                                  Real dqq_up, Real cc, Real fh) {
+__host__ __device__ inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw,
+                                          Real dqq_up, Real cc, Real fh) {
   Real qql = qq_dw + 0.5 * dqq_dw;
   Real qqr = qq_up - 0.5 * dqq_up;
   Real dqq = qq_up - qq_dw;
@@ -36,6 +36,5 @@ HOST_DEVICE inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw,
   return -0.5 * cc * pp * (qqr - qql);
 }
 
-}  // namespace artificial_viscosity
-}  // namespace mhd
+}  // namespace limiter
 }  // namespace miso

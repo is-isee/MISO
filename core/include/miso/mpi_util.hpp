@@ -4,24 +4,47 @@
 #include <fstream>
 #include <iostream>
 
-#include <mpi.h>
-#include <yaml-cpp/yaml.h>
-
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 
+// clang-format off
+/// @brief Macro to check MPI errors
+#define MISO_MPI_CHECK(merr) \
+  do { miso::mpi::check_error((merr), __FILE__, __LINE__); } while (0)
+// clang-format on
+
 namespace miso {
+namespace mpi {
 
-namespace fs = std::filesystem;
-
-inline void check_mpi_error(int merr, const char *msg, MPI_Comm comm) {
+inline void check_error(int merr, const char *file, int line, bool abort = true) {
   if (merr != MPI_SUCCESS) {
-    std::cerr << "Error in " << msg << std::endl;
-    MPI_Abort(comm, merr);
+    char errstr[MPI_MAX_ERROR_STRING];
+    int len = 0;
+    int rc = MPI_Error_string(merr, errstr, &len);
+    if (rc == MPI_SUCCESS) {
+      // Ensure null-termination
+      if (len < 0)
+        len = 0;
+      if (len >= MPI_MAX_ERROR_STRING)
+        len = MPI_MAX_ERROR_STRING - 1;
+      errstr[len] = '\0';
+      std::fprintf(stderr, "MPI Error: %s %s %d\n", errstr, file, line);
+    } else {
+      std::fprintf(stderr, "MPI Error: %d %s %d\n", merr, file, line);
+    }
+    std::fflush(stderr);
+    if (abort)
+      MPI_Abort(mpi::comm(), EXIT_FAILURE);
   }
 }
 
-struct MPIManager {
+/// @brief MPI Datatype corresponding to Real type
+template <typename Real> MPI_Datatype data_type();
+template <> inline MPI_Datatype data_type<float>() { return MPI_FLOAT; }
+template <> inline MPI_Datatype data_type<double>() { return MPI_DOUBLE; }
+
+/// @brief Define Cartesian shape in MPI process topology
+struct Shape {
   MPI_Comm cart_comm = MPI_COMM_NULL;
   int myrank = -1;
   int n_procs = -1;
@@ -32,7 +55,7 @@ struct MPIManager {
   int x_procs_neg, y_procs_neg, z_procs_neg;
   std::string mpi_save_dir;
 
-  MPIManager(const Config &config) {
+  Shape(const Config &config) {
     mpi_save_dir = config.save_dir +
                    config["mpi"]["mpi_save_dir"].template as<std::string>();
     util::create_directories(mpi_save_dir);
@@ -68,16 +91,12 @@ struct MPIManager {
     }
 
     MPI_Cart_coords(cart_comm, myrank, ndims, coord);
-    int merr;
-    merr = MPI_Cart_shift(cart_comm, 0, 1, &x_procs_neg, &x_procs_pos);
-    check_mpi_error(merr, "MPI_Cart_shift x", cart_comm);
-    merr = MPI_Cart_shift(cart_comm, 1, 1, &y_procs_neg, &y_procs_pos);
-    check_mpi_error(merr, "MPI_Cart_shift y", cart_comm);
-    merr = MPI_Cart_shift(cart_comm, 2, 1, &z_procs_neg, &z_procs_pos);
-    check_mpi_error(merr, "MPI_Cart_shift z", cart_comm);
+    MISO_MPI_CHECK(MPI_Cart_shift(cart_comm, 0, 1, &x_procs_neg, &x_procs_pos));
+    MISO_MPI_CHECK(MPI_Cart_shift(cart_comm, 1, 1, &y_procs_neg, &y_procs_pos));
+    MISO_MPI_CHECK(MPI_Cart_shift(cart_comm, 2, 1, &z_procs_neg, &z_procs_pos));
   }
 
-  ~MPIManager() {
+  ~Shape() {
     if (cart_comm != MPI_COMM_NULL) {
       MPI_Comm_free(&cart_comm);
     }
@@ -99,4 +118,5 @@ struct MPIManager {
   }
 };
 
+}  // namespace mpi
 }  // namespace miso
