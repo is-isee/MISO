@@ -455,16 +455,16 @@ struct Integrator {
   cuda::KernelShape3D &cu_shape;
 
   /// @brief Spatial grid
-  Grid<Real, CUDASpace> &grid;
+  Grid<Real, backend::CUDA> &grid;
   /// @brief Equation of states
   EOS eos;
   /// @brief MHD state
-  Fields<Real, CUDASpace> &qq;
+  Fields<Real, backend::CUDA> &qq;
   /// @brief Workspace
-  Fields<Real, CUDASpace> qq_argm, qq_rslt;
+  Fields<Real, backend::CUDA> qq_argm, qq_rslt;
 
   /// @brief Halo exchanger
-  HaloExchanger<Real, CUDASpace> halo_exchanger;
+  HaloExchanger<Real, backend::CUDA> halo_exchanger;
   /// @brief Boundary condition for MHD equations
   BoundaryCondition bc;
   /// @brief Body source for MHD equations
@@ -476,13 +476,13 @@ struct Integrator {
   TimeStep<Real> time_step;
 
   /// @brief gas pressure
-  Array3D<Real, CUDASpace> pr;
+  Array3D<Real, backend::CUDA> pr;
   /// @brief magnetic field strength bx*bx + by*by + bz*bz
-  Array3D<Real, CUDASpace> bb;
+  Array3D<Real, backend::CUDA> bb;
   /// @brief enthalpy + 2*magnetic energy + kinetic energy
-  Array3D<Real, CUDASpace> ht;
+  Array3D<Real, backend::CUDA> ht;
   /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
-  Array3D<Real, CUDASpace> vb;
+  Array3D<Real, backend::CUDA> vb;
 
   /// @brief CFL number
   Real cfl_number;
@@ -493,8 +493,8 @@ struct Integrator {
   /// @brief damping time scape for divergence B
   Real tau_divb;
 
-  Integrator(Config &config, Fields<Real, CUDASpace> &qq,
-             Grid<Real, CUDASpace> &grid, ExecContext<CUDASpace> &exec_ctx)
+  Integrator(Config &config, Fields<Real, backend::CUDA> &qq,
+             Grid<Real, backend::CUDA> &grid, ExecContext<backend::CUDA> &exec_ctx)
       : cu_shape(exec_ctx.cu_shape), grid(grid), eos(config), qq(qq),
         qq_argm(grid), qq_rslt(grid), halo_exchanger(grid, exec_ctx), bc(config),
         artdiff(config, grid, eos, exec_ctx.cu_shape),
@@ -507,9 +507,9 @@ struct Integrator {
   }
 
   /// @brief Update MHD equations using 4th order space-centered scheme
-  void update_sc4(Fields<Real, CUDASpace> &qq_orgn,
-                  Fields<Real, CUDASpace> &qq_argm,
-                  Fields<Real, CUDASpace> &qq_rslt, const Real dt) {
+  void update_sc4(Fields<Real, backend::CUDA> &qq_orgn,
+                  Fields<Real, backend::CUDA> &qq_argm,
+                  Fields<Real, backend::CUDA> &qq_rslt, const Real dt) {
     pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
         qq_argm.view(), pr.view(), bb.view(), ht.view(), vb.view(), grid.view(),
         eos.gm);

@@ -19,7 +19,7 @@ TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   double zmin = 4.0;
   double zmax = 5.0;
 
-  Grid<double, HostSpace> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin,
+  Grid<double, backend::Host> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin,
                                ymax, zmin, zmax);
 
   // Check dimensions

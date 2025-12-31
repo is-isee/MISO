@@ -2,7 +2,7 @@
 
 #include <miso/grid.hpp>
 #include <miso/mhd_core.hpp>
-#include <miso/policy.hpp>
+#include <miso/backend.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_util.cuh>
 #endif  // USE_CUDA
@@ -36,10 +36,10 @@ template <typename Real> struct BuffersView {
 };
 
 /// @brief MHD communication buffers.
-template <typename Real, typename Space = HostSpace> struct Buffers;
+template <typename Real, typename Backend = backend::Host> struct Buffers;
 
 /// @brief MHD communication buffers on GPU.
-template <typename Real> struct Buffers<Real, CUDASpace> {
+template <typename Real> struct Buffers<Real, backend::CUDA> {
   Real *recv_x_pos = nullptr;
   Real *recv_x_neg = nullptr;
   Real *recv_y_pos = nullptr;
@@ -53,7 +53,7 @@ template <typename Real> struct Buffers<Real, CUDASpace> {
   Real *send_z_pos = nullptr;
   Real *send_z_neg = nullptr;
 
-  Buffers(const Grid<Real, CUDASpace> &grid) {
+  Buffers(const Grid<Real, backend::CUDA> &grid) {
     const auto buff_x_size =
         sizeof(Real) * grid.i_margin * grid.j_total * grid.k_total * n_fields;
     const auto buff_y_size =

@@ -125,7 +125,7 @@ bool is_physical_boundary(const Direction direction, const Side side,
 }
 
 template <typename Real>
-void symmetric(Array3D<Real, HostSpace> &arr, const Grid<Real, HostSpace> &grid,
+void symmetric(Array3D<Real, backend::Host> &arr, const Grid<Real, backend::Host> &grid,
                Real sign, Direction direction, Side side) {
   int i0_, i1_, j0_, j1_, k0_, k1_;
   range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
@@ -187,7 +187,7 @@ __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<Real> grid,
 }
 
 template <typename Real>
-void symmetric(Array3D<Real, CUDASpace> &arr, const Grid<Real, CUDASpace> &grid,
+void symmetric(Array3D<Real, backend::CUDA> &arr, const Grid<Real, backend::CUDA> &grid,
                Real sign, Direction direction, Side side) {
   dim3 block_dim(8, 8, 8);
   dim3 grid_dim((grid.i_total + block_dim.x - 1) / block_dim.x,

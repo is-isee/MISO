@@ -22,8 +22,8 @@ __global__ void test_array3d_kernel(Array3DView<double> arr) {
 }
 
 TEST_CASE("Test Array3D GPU" * doctest::test_suite("array3d")) {
-  Array3D<double, HostSpace> arr(3, 4, 5);
-  Array3D<double, CUDASpace> arr_d(3, 4, 5);
+  Array3D<double, backend::Host> arr(3, 4, 5);
+  Array3D<double, backend::CUDA> arr_d(3, 4, 5);
 
   const auto [nx0, nx1, nx2] = arr.shape();
   for (int i = 0; i < nx0; ++i) {

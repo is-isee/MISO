@@ -456,12 +456,12 @@ __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 }  // namespace artificial_viscosity
 
 template <typename Real, typename EOS> struct ArtificialViscosity {
-  Grid<Real, CUDASpace> &grid;
+  Grid<Real, backend::CUDA> &grid;
   EOS &eos;
   cuda::KernelShape3D &cu_shape;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
-  Array3D<Real, CUDASpace> cc;
+  Array3D<Real, backend::CUDA> cc;
   /// @brief Parameters for generalized minmod limiter
   Real ep;
   /// @brief Parameters for amplitude of artificial viscosity flux
@@ -473,7 +473,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   /// @brief Characteristic velocity factor for fluid velocity
   Real vv_fac;
 
-  ArtificialViscosity(Config &config, Grid<Real, CUDASpace> &grid, EOS &eos,
+  ArtificialViscosity(Config &config, Grid<Real, backend::CUDA> &grid, EOS &eos,
                       cuda::KernelShape3D &cu_shape)
       : grid(grid), eos(eos), cu_shape(cu_shape),
         cc(grid.i_total, grid.j_total, grid.k_total) {
@@ -486,13 +486,13 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
     assert(fh >= 0);
   }
 
-  void characteristic_velocity_eval(const Fields<Real, CUDASpace> &qq) {
+  void characteristic_velocity_eval(const Fields<Real, backend::CUDA> &qq) {
     artificial_viscosity::characteristic_velocity_eval_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
             cc.view(), qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
   }
 
-  void update(Fields<Real, CUDASpace> &qq, Fields<Real, CUDASpace> &qq_rslt,
+  void update(Fields<Real, backend::CUDA> &qq, Fields<Real, backend::CUDA> &qq_rslt,
               Direction direction, const Real dt) {
     int i0_ = 0;
     int i1_ = grid.i_total;

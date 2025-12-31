@@ -15,7 +15,7 @@ inline void run_boundary_condition_tests() {
   int i_size = 10, j_size = 11, k_size = 12;
   int margin = 2;
   Real xmin = 0.0, xmax = 1.0, ymin = 0.0, ymax = 2.0, zmin = 0.0, zmax = 3.0;
-  Grid<Real, HostSpace> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin,
+  Grid<Real, backend::Host> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin,
                              ymax, zmin, zmax);
 
   // Test the range_set function
@@ -46,10 +46,10 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k1_ == grid.k_margin);
 
   // test for a margin = 2 case
-  Array3D<Real, HostSpace> ro(grid.i_total, grid.j_total, grid.k_total);
+  Array3D<Real, backend::Host> ro(grid.i_total, grid.j_total, grid.k_total);
 #ifdef USE_CUDA
-  Grid<Real, CUDASpace> grid_d(grid);
-  Array3D<Real, CUDASpace> ro_d(grid.i_total, grid.j_total, grid.k_total);
+  Grid<Real, backend::CUDA> grid_d(grid);
+  Array3D<Real, backend::CUDA> ro_d(grid.i_total, grid.j_total, grid.k_total);
 #endif
 
   // x boundary test

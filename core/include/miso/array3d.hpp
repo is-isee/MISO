@@ -5,8 +5,8 @@
 #include <cassert>
 #include <limits>
 
+#include <miso/backend.hpp>
 #include <miso/cuda_compat.hpp>
-#include <miso/policy.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_util.cuh>
 #endif  // USE_CUDA
@@ -14,7 +14,7 @@
 namespace miso {
 
 /// @brief 3D Array in general execution/memory space.
-template <typename T, typename Space = HostSpace> class Array3D;
+template <typename T, typename Backend = backend::Host> class Array3D;
 
 /// @brief Lightweight non-owning view of MHD fields.
 template <typename T> class Array3DView {
@@ -25,7 +25,7 @@ private:
   // Always constructed from Array3D
   // to ensure that the array size is within the numeric limits of int.
   template <typename, typename> friend class Array3D;
-  __host__ __device__ Array3DView(T *data, int nx0, int nx1, int nx2) noexcept
+  Array3DView(T *data, int nx0, int nx1, int nx2) noexcept
       : data_(data), shape_{nx0, nx1, nx2} {}
 
 public:
@@ -89,7 +89,7 @@ public:
 };
 
 /// @brief 3D Array in host memory.
-template <typename T> class Array3D<T, HostSpace> {
+template <typename T> class Array3D<T, backend::Host> {
 private:
   T *data_ = nullptr;
   std::array<int, 3> shape_ = {-1, -1, -1};
@@ -171,7 +171,7 @@ public:
   }
 
   /// @brief Copy data from another Array3D in host memory.
-  void copy_from(const Array3D<T, HostSpace> &other) {
+  void copy_from(const Array3D<T, backend::Host> &other) {
     assert(other.data() && data());
     assert(other.shape() == shape());
     std::copy(other.data(), other.data() + other.size(), data());
@@ -179,7 +179,7 @@ public:
 
 #ifdef USE_CUDA
   /// @brief Copy data from another Array3D in CUDA memory.
-  void copy_from(const Array3D<T, CUDASpace> &other) {
+  void copy_from(const Array3D<T, backend::CUDA> &other) {
     assert(other.data() && data());
     assert(other.shape() == shape());
     MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * other.size(),
@@ -188,7 +188,7 @@ public:
 
   /// @brief Copy data from another Array3D in CUDA memory (async).
   /// @details The caller is responsible for synchronizing the stream.
-  void copy_from(const Array3D<T, CUDASpace> &other, cudaStream_t stream) {
+  void copy_from(const Array3D<T, backend::CUDA> &other, cudaStream_t stream) {
     assert(other.data() && data());
     assert(other.shape() == shape());
     MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(),
@@ -220,7 +220,7 @@ public:
 
 #ifdef USE_CUDA
 /// @brief 3D Array in CUDA device memory.
-template <typename T> class Array3D<T, CUDASpace> {
+template <typename T> class Array3D<T, backend::CUDA> {
 private:
   T *data_ = nullptr;
   std::array<int, 3> shape_ = {-1, -1, -1};
@@ -274,7 +274,7 @@ public:
   int size() const noexcept { return shape_[0] * shape_[1] * shape_[2]; }
 
   /// @brief Copy data from another Array3D in host memory.
-  void copy_from(const Array3D<T, HostSpace> &other) {
+  void copy_from(const Array3D<T, backend::Host> &other) {
     assert(other.data() && data());
     assert(other.shape() == shape());
     MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * size(),
@@ -282,7 +282,7 @@ public:
   }
 
   /// @brief Copy data from another Array3D in CUDA memory.
-  void copy_from(const Array3D<T, CUDASpace> &other) {
+  void copy_from(const Array3D<T, backend::CUDA> &other) {
     assert(other.data() && data());
     assert(other.shape() == shape());
     MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * size(),
@@ -291,7 +291,7 @@ public:
 
   /// @brief Copy data from another Array3D in host memory (async).
   /// @details The caller is responsible for synchronizing the stream.
-  void copy_from(const Array3D<T, HostSpace> &other, cudaStream_t stream) {
+  void copy_from(const Array3D<T, backend::Host> &other, cudaStream_t stream) {
     assert(other.data() && data());
     assert(other.shape() == shape());
     MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),
@@ -300,7 +300,7 @@ public:
 
   /// @brief Copy data from another Array3D in CUDA memory (async).
   /// @details The caller is responsible for synchronizing the stream.
-  void copy_from(const Array3D<T, CUDASpace> &other, cudaStream_t stream) {
+  void copy_from(const Array3D<T, backend::CUDA> &other, cudaStream_t stream) {
     assert(other.data() && data());
     assert(other.shape() == shape());
     MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),

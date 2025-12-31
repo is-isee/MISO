@@ -1,6 +1,6 @@
 #pragma once
 
-#include <miso/policy.hpp>
+#include <miso/backend.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_util.cuh>
 #endif  // USE_CUDA
@@ -12,20 +12,20 @@ namespace mhd {
 constexpr int n_fields = 9;
 
 /// @brief Execution context for MHD
-template <typename Space = HostSpace> struct ExecContext {};
+template <typename Backend = backend::Host> struct ExecContext {};
 
 /// @brief Execution context for MHD on CPU
-template <> struct ExecContext<HostSpace> {
-  using memory_space = HostSpace;
-  using Space = HostSpace;
+template <> struct ExecContext<backend::Host> {
+  using memory_space = backend::Host;
+  using Backend = backend::Host;
   mpi::Shape &mpi_shape;
 };
 
 #ifdef USE_CUDA
 /// @brief Execution context for MHD on GPU
-template <> struct ExecContext<CUDASpace> {
-  using memory_space = CUDASpace;
-  using Space = CUDASpace;
+template <> struct ExecContext<backend::CUDA> {
+  using memory_space = backend::CUDA;
+  using Backend = backend::CUDA;
   mpi::Shape &mpi_shape;
   cuda::KernelShape3D &cu_shape;
 };

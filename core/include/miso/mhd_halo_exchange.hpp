@@ -9,7 +9,7 @@
 #include <miso/mhd_core.hpp>
 #include <miso/mhd_fields.hpp>
 #include <miso/mpi_util.hpp>
-#include <miso/policy.hpp>
+#include <miso/backend.hpp>
 #ifdef USE_CUDA
 #include <miso/cuda_util.cuh>
 #endif  // USE_CUDA
@@ -17,9 +17,9 @@
 namespace miso {
 namespace mhd {
 
-template <typename Real, typename Space = HostSpace> struct HaloExchanger {};
+template <typename Real, typename Backend = backend::Host> struct HaloExchanger {};
 
-template <typename Real> struct HaloExchanger<Real, HostSpace> {
+template <typename Real> struct HaloExchanger<Real, backend::Host> {
   // MPI communication buffers
   Array4D<Real> recv_x_pos, recv_x_neg;
   Array4D<Real> recv_y_pos, recv_y_neg;
@@ -28,10 +28,10 @@ template <typename Real> struct HaloExchanger<Real, HostSpace> {
   Array4D<Real> send_y_pos, send_y_neg;
   Array4D<Real> send_z_pos, send_z_neg;
 
-  Grid<Real, HostSpace> &grid;
+  Grid<Real, backend::Host> &grid;
   mpi::Shape &mpi_shape;
 
-  HaloExchanger(Grid<Real, HostSpace> &grid, ExecContext<HostSpace> &exec_ctx)
+  HaloExchanger(Grid<Real, backend::Host> &grid, ExecContext<backend::Host> &exec_ctx)
       : recv_x_pos(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_x_neg(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_y_pos(grid.i_total, grid.j_margin, grid.k_total, n_fields),
@@ -46,8 +46,8 @@ template <typename Real> struct HaloExchanger<Real, HostSpace> {
         send_z_neg(grid.i_total, grid.j_total, grid.k_margin, n_fields),
         grid(grid), mpi_shape(exec_ctx.mpi_shape) {}
 
-  void apply(Fields<Real, HostSpace> &qq_trgt) {
-    std::array<Array3D<Real, HostSpace> *, 9> vars = {
+  void apply(Fields<Real, backend::Host> &qq_trgt) {
+    std::array<Array3D<Real, backend::Host> *, 9> vars = {
         &qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy, &qq_trgt.vz, &qq_trgt.bx,
         &qq_trgt.by, &qq_trgt.bz, &qq_trgt.ei, &qq_trgt.ph};
     MPI_Request reqs[12];
@@ -446,18 +446,18 @@ __global__ void unpack_z_recv(FieldsView<Real> qq_trgt,
   }
 };
 
-template <typename Real> struct HaloExchanger<Real, CUDASpace> {
-  Buffers<Real, CUDASpace> buff;
-  Grid<Real, CUDASpace> &grid;
+template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
+  Buffers<Real, backend::CUDA> buff;
+  Grid<Real, backend::CUDA> &grid;
   mpi::Shape &mpi_shape;
   cuda::KernelShape3D &cu_shape;
 
-  explicit HaloExchanger(Grid<Real, CUDASpace> &grid,
-                         ExecContext<CUDASpace> &exec_ctx)
+  explicit HaloExchanger(Grid<Real, backend::CUDA> &grid,
+                         ExecContext<backend::CUDA> &exec_ctx)
       : buff(grid), grid(grid), mpi_shape(exec_ctx.mpi_shape),
         cu_shape(exec_ctx.cu_shape) {}
 
-  void apply(Fields<Real, CUDASpace> &qq_trgt) {
+  void apply(Fields<Real, backend::CUDA> &qq_trgt) {
     MPI_Request reqs[12];
     int req_count = 0;
 

@@ -16,11 +16,11 @@ using miso::limiter::flux_core;
 /// @brief Artificial viscosity class for mhd simulations
 /// @tparam T Type of the data (Real)
 template <typename Real, typename EOS> struct ArtificialViscosity {
-  Grid<Real, HostSpace> &grid;
+  Grid<Real, backend::Host> &grid;
   EOS &eos;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
-  Array3D<Real, HostSpace> cc;
+  Array3D<Real, backend::Host> cc;
   /// @brief Parameters for generalized minmod limiter
   Real ep;
   /// @brief Parameters for amplitude of artificial viscosity flux
@@ -34,7 +34,7 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
 
   /// @brief Constructor for ArtificialViscosity
   /// @param model
-  ArtificialViscosity(Config &config, Grid<Real, HostSpace> &grid, EOS &eos)
+  ArtificialViscosity(Config &config, Grid<Real, backend::Host> &grid, EOS &eos)
       : grid(grid), eos(eos), cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();
