@@ -8,11 +8,11 @@ set -eu
 THIS_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Root directory
-MISO_ROOT="${THIS_DIR}/../.."
+MISO_ROOT=$(cd "${THIS_DIR}/../.." && pwd)
 
 # Source and binary directories
-MISO_SRC="${MISO_ROOT}/core"
-MISO_BIN="${MISO_SRC}/build"
+MISO_SRC="${MISO_ROOT}"/miso
+MISO_BIN="${MISO_SRC}"/build
 
 # Run commands
 set -x

@@ -40,7 +40,7 @@ endif(USE_CUDA)
 
 # MISO library (also fetches dependencies)
 include(FetchContent)
-set(miso_src ${CMAKE_CURRENT_SOURCE_DIR}/../../core)
+set(miso_src ${CMAKE_CURRENT_SOURCE_DIR}/../../miso)
 # ENABLE_TESTING is passed to MISO by a cache variable (for faster builds)
 set(ENABLE_TESTING
     OFF
