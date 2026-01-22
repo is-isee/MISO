@@ -5,6 +5,7 @@
 
 # -- import modules
 import pymiso
+# import os
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -49,37 +50,17 @@ autodoc_default_options = {
     "special-members": "__init__",
 }
 
-breathe_projects = {
-    "MISO-CPU": "../doxygen/cpu/xml",
-    "MISO-GPU": "../doxygen/gpu/xml",
+breathe_projects = {"CPP": "../doxygen/_build/xml"}
+breathe_default_project = "CPP"
+
+extensions.append("exhale")
+exhale_args = {
+    "containmentFolder": "./api/cpp",
+    "rootFileName": "root.rst",
+    "rootFileTitle": "MISO C++ API Reference",
+    "doxygenStripFromPath": "..",
+    "createTreeView": True,
 }
-
-import os
-
-target = os.environ.get("DOCS_TARGET", "CPU")
-
-if target == "CPU":
-    extensions.append("exhale")
-    breathe_default_project = "MISO-CPU"
-    exhale_args = {
-        "containmentFolder": "./api/cpp_cpu",
-        "rootFileName": "root.rst",
-        "rootFileTitle": "MISO C++ CPU API Reference",
-        "doxygenStripFromPath": "..",
-        "createTreeView": True,
-    }
-elif target == "GPU":
-    extensions.append("exhale")
-    breathe_default_project = "MISO-GPU"
-    exhale_args = {
-        "containmentFolder": "./api/cpp_gpu",
-        "rootFileName": "root.rst",
-        "rootFileTitle": "MISO C++ GPU API Reference",
-        "doxygenStripFromPath": "..",
-        "createTreeView": True,
-    }
-else:
-    breathe_default_project = "MISO-CPU"
 
 templates_path = ["_templates"]
 exclude_patterns = []

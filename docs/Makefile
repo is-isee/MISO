@@ -6,7 +6,7 @@
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
-BUILDDIR      = build
+BUILDDIR      = _build
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -18,16 +18,13 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@echo "Doxygen preprocessing..."
-	@doxygen ../docs/doxygen/Doxyfile_cpu
-	@doxygen ../docs/doxygen/Doxyfile_gpu
-	@echo "=== Building CPU docs ==="
-	@DOCS_TARGET=CPU $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)/cpu" $(SPHINXOPTS) $(O)
-	@echo "=== Building GPU docs ==="
-	@DOCS_TARGET=GPU $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)/gpu" $(SPHINXOPTS) $(O)
+	@doxygen ../docs/doxygen/Doxyfile
+	@echo "=== Building C++ docs ==="
+	@DOCS_TARGET=CPP $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)/cpu" $(SPHINXOPTS) $(O)
 	@echo "=== Merging CPU and GPU docs ==="
 	@DOCS_TARGET=MERGE $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	@echo "=== Cleaning up ==="
 	@rm -rf "$(BUILDDIR)/cpu" "$(BUILDDIR)/gpu"
 
 clean:
-	rm -rf build source/api
+	rm -rf _build source/api doxygen/_build
