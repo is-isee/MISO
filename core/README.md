@@ -1,2 +1,0 @@
-# MISO core package
-
