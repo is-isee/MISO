@@ -9,7 +9,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install dependencies
-        run: pip install -e "pymens[dev]"
+        run: pip install -e ".[dev]"
       - name: Check format
         run: ruff check pymiso
       - name: Lint code
