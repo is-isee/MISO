@@ -36,6 +36,7 @@
 
 # build directories
 build/
+_build/
 
 # Mac files
 .DS_Store

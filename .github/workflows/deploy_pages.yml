@@ -8,7 +8,6 @@ permissions:
   contents: write
   pages: write
 
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -16,29 +15,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Install Doxygen
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install sphinx sphinx-rtd-theme sphinx-automodapi sphinx-multiversion breathe exhale sphinx-copybutton sphinxcontrib-bibtex myst-parser 
-          pip install .
-
-
+          pip install --upgrade pip
+          pip install ".[docs]"
       - name: Build documentation
-        run: |
-          cd docs/
-          make html
-
+        run: make -C docs html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -46,4 +36,4 @@ jobs:
           publish_dir: ./docs/build/html
           publish_branch: gh-pages
           force_orphan: true
-          enable_jekyll: false           
+          enable_jekyll: false
