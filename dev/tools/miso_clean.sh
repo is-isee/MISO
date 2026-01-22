@@ -7,7 +7,14 @@ set -eu
 # Define directory of this script
 THIS_DIR=$(cd "$(dirname "$0")" && pwd)
 
+# Root directory
+MISO_ROOT=$(cd "${THIS_DIR}/../.." && pwd)
+
+# Source and binary directories
+MISO_SRC="${MISO_ROOT}"/miso
+MISO_BIN="${MISO_SRC}"/build
+
 # Run commands
 set -x
-rm -rf "${THIS_DIR}"/core/build
-"${THIS_DIR}"/demo/demo_clean.sh
+rm -rf "${MISO_BIN}"
+"${MISO_ROOT}"/demo/demo_clean.sh
