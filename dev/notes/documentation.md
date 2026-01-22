@@ -12,14 +12,13 @@ pip install sphinx sphinx-rtd-theme sphinx-automodapi sphinx-multiversion breath
 ```
 
 ```shell
-cd docs
-make html
+make -C docs html
 ```
 
 これで`docs/build/index.html`にHTMLが生成される。
 
-sphinxcontrib-bibtexを利用して、参考文献を管理している。
-参考文献は`docs/source/reference.bib`に記載して、
+`sphinxcontrib-bibtex` を利用して、参考文献を管理している。
+参考文献は `docs/source/reference.bib` に記載して、
 
 ```rst
 :cite:`sod_1978JCoPh..27....1S`
@@ -27,4 +26,4 @@ sphinxcontrib-bibtexを利用して、参考文献を管理している。
 
 として引用する。
 
-GitHub Pagesで公開する場合は、`.github/workflows/deploy_pages.yml`を利用する。mainブランチにpushすると、`gh-pages`ブランチに自動的にデプロイされる。
+GitHub Pagesで公開する場合は、`.github/workflows/deploy_pages.yml`を利用する。mainブランチにpushすると、`gh-pages`ブランチに自動的にデプロイされる。正式版は<https://is-isee.github.io/MISO/>、PR版は<https://is-isee.github.io/MISO/pr-${pr}/>からアクセス出来る。
