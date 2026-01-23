@@ -12,7 +12,7 @@ TEST_CASE("Test for_each 1D CPU" * doctest::test_suite("execution")) {
   Array1D<int, backend::Host> arr(5);
 
   auto view = arr.view();
-  for_each<backend::Host>(range, [&](int i) { view[i] = i * i; });
+  for_each(backend::Host{}, range, [&](int i) { view[i] = i * i; });
 
   // This also works, but users should use the view interface as API.
   // for_each<backend::Host>(range, [&](int i) { arr[i] = i * i; });
@@ -26,8 +26,9 @@ TEST_CASE("Test for_each 3D CPU" * doctest::test_suite("execution")) {
   Array3D<int, backend::Host> arr(2, 3, 4);
 
   auto view = arr.view();
-  for_each<backend::Host>(
-      range, MISO_LAMBDA(int i, int j, int k) { view(i, j, k) = i + j + k; });
+  for_each(
+      backend::Host{}, range,
+      MISO_LAMBDA(int i, int j, int k) { view(i, j, k) = i + j + k; });
 
   for (int i = 1; i < 2; ++i) {
     for (int j = 1; j < 3; ++j) {

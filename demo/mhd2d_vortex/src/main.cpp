@@ -3,6 +3,7 @@
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 #include <miso/eos.hpp>
+#include <miso/execution.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
 #include <miso/mpi_util.hpp>
@@ -24,14 +25,15 @@ using Backend = backend::Host;
 struct InitialCondition {
   // The signature must not be changed as it is called inside miso::mhd::MHD.
   template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid, EOS eos) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
+             const EOS &eos) const {
     const Real pr = 1.0 / eos.gm;
     const Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
     const Real v0 = 1.0;
+    Range3D range{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
 
-    for (int i = 0; i < grid.i_total; ++i) {
-      for (int j = 0; j < grid.j_total; ++j) {
-        for (int k = 0; k < grid.k_total; ++k) {
+    for_each(
+        Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
           qq.ro(i, j, k) = 1.0;
           qq.ei(i, j, k) = eos.roprtoei(qq.ro(i, j, k), pr);
           qq.vx(i, j, k) = -v0 * std::sin(2.0 * pi<Real> * grid.y[j]);
@@ -40,9 +42,7 @@ struct InitialCondition {
           qq.bx(i, j, k) = -b0 * std::sin(2.0 * pi<Real> * grid.y[j]);
           qq.by(i, j, k) = +b0 * std::sin(4.0 * pi<Real> * grid.x[i]);
           qq.bz(i, j, k) = 0.0;
-        }
-      }
-    }
+        });
   }
 };
 
@@ -115,7 +115,7 @@ struct Model {
     }
 
     save_metadata();
-    mhd.apply_initial_condition(ic, bc, grid);
+    mhd.apply_initial_condition(ic, bc);
 
     MPI_Barrier(mpi::comm());
 

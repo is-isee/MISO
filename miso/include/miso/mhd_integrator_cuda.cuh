@@ -414,7 +414,7 @@ struct Integrator<Real, EOS, backend::CUDA> {
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total) {
-    cfl_number = config["mhd"]["cfl_number"].template as<Real>();
+    cfl_number = config["mhd"]["cfl_number"].as<Real>();
   }
 
   /// @brief Update MHD equations using 4th order space-centered scheme

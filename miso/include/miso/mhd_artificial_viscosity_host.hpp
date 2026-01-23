@@ -36,11 +36,11 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   /// @param model
   ArtificialViscosity(Config &config, Grid<Real, backend::Host> &grid, EOS &eos)
       : grid(grid), eos(eos), cc(grid.i_total, grid.j_total, grid.k_total) {
-    ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
-    fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();
-    cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].template as<Real>();
-    ca_fac = config["mhd"]["artificial_viscosity"]["ca_fac"].template as<Real>();
-    vv_fac = config["mhd"]["artificial_viscosity"]["vv_fac"].template as<Real>();
+    ep = config["mhd"]["artificial_viscosity"]["ep"].as<Real>();
+    fh = config["mhd"]["artificial_viscosity"]["fh"].as<Real>();
+    cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].as<Real>();
+    ca_fac = config["mhd"]["artificial_viscosity"]["ca_fac"].as<Real>();
+    vv_fac = config["mhd"]["artificial_viscosity"]["vv_fac"].as<Real>();
     assert(ep >= 0);
     assert(fh >= 0);
   }
