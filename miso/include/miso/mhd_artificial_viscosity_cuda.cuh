@@ -477,11 +477,11 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
                       cuda::KernelShape3D &cu_shape)
       : grid(grid), eos(eos), cu_shape(cu_shape),
         cc(grid.i_total, grid.j_total, grid.k_total) {
-    ep = config["mhd"]["artificial_viscosity"]["ep"].template as<Real>();
-    fh = config["mhd"]["artificial_viscosity"]["fh"].template as<Real>();
-    cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].template as<Real>();
-    ca_fac = config["mhd"]["artificial_viscosity"]["ca_fac"].template as<Real>();
-    vv_fac = config["mhd"]["artificial_viscosity"]["vv_fac"].template as<Real>();
+    ep = config["mhd"]["artificial_viscosity"]["ep"].as<Real>();
+    fh = config["mhd"]["artificial_viscosity"]["fh"].as<Real>();
+    cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].as<Real>();
+    ca_fac = config["mhd"]["artificial_viscosity"]["ca_fac"].as<Real>();
+    vv_fac = config["mhd"]["artificial_viscosity"]["vv_fac"].as<Real>();
     assert(ep >= 0);
     assert(fh >= 0);
   }
@@ -492,8 +492,9 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
             cc.view(), qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
   }
 
-  void update(Fields<Real, backend::CUDA> &qq, Fields<Real, backend::CUDA> &qq_rslt,
-              Direction direction, const Real dt) {
+  void update(Fields<Real, backend::CUDA> &qq,
+              Fields<Real, backend::CUDA> &qq_rslt, Direction direction,
+              const Real dt) {
     int i0_ = 0;
     int i1_ = grid.i_total;
     int is = 0;

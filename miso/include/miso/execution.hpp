@@ -45,13 +45,13 @@ struct Range3D {
   }
 };
 
-template <class F> inline void for_each_impl(backend::Host, Range1D range, F f) {
+template <class F> inline void for_each(backend::Host, Range1D range, F f) {
   for (int i = range.begin; i < range.end; ++i) {
     f(i);
   }
 }
 
-template <class F> inline void for_each_impl(backend::Host, Range3D range, F f) {
+template <class F> inline void for_each(backend::Host, Range3D range, F f) {
   for (int i0 = range.range0.begin; i0 < range.range0.end; ++i0) {
     for (int i1 = range.range1.begin; i1 < range.range1.end; ++i1) {
       for (int i2 = range.range2.begin; i2 < range.range2.end; ++i2) {
@@ -71,7 +71,7 @@ template <class F> __global__ void for_each_kernel(Range1D range, F f) {
   }
 }
 
-template <class F> inline void for_each_impl(backend::CUDA, Range1D range, F f) {
+template <class F> inline void for_each(backend::CUDA, Range1D range, F f) {
   int n = range.size();
   if (n == 0)
     return;  // Avoid launching kernel with zero threads
@@ -88,7 +88,7 @@ template <class F> __global__ void for_each_kernel(Range3D range, F f) {
   }
 }
 
-template <class F> inline void for_each_impl(backend::CUDA, Range3D range, F f) {
+template <class F> inline void for_each(backend::CUDA, Range3D range, F f) {
   int n = range.size();
   if (n == 0)
     return;  // Avoid launching kernel with zero threads
@@ -98,15 +98,5 @@ template <class F> inline void for_each_impl(backend::CUDA, Range3D range, F f) 
 }
 
 #endif
-
-/// @brief Loop over a 1D range in the specified backend.
-template <class Backend, class F> inline void for_each(Range1D range, F f) {
-  for_each_impl(Backend{}, range, f);
-}
-
-/// @brief Loop over a 3D range in the CUDA backend.
-template <class Backend, class F> inline void for_each(Range3D range, F f) {
-  for_each_impl(Backend{}, range, f);
-}
 
 }  // namespace miso

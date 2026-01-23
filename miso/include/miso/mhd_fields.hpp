@@ -14,27 +14,42 @@ template <typename Real, typename Backend = backend::Host> struct Fields;
 
 /// @brief Lightweight non-owning view of MHD fields.
 template <typename T>  // Use T to represent Real or const Real
-class FieldsView {
-private:
-  // Always constructed from Fields.
-  template <typename, typename> friend struct Fields;
-  template <typename FieldsType>
-  explicit FieldsView(FieldsType &fields) noexcept
-      : ro(fields.ro.view()), vx(fields.vx.view()), vy(fields.vy.view()),
-        vz(fields.vz.view()), bx(fields.bx.view()), by(fields.by.view()),
-        bz(fields.bz.view()), ei(fields.ei.view()), ph(fields.ph.view()) {}
-
-public:
+struct FieldsView {
   Array3DView<T> ro, vx, vy, vz, bx, by, bz, ei, ph;
 
+  explicit FieldsView(Array3DView<T> ro_, Array3DView<T> vx_, Array3DView<T> vy_,
+                      Array3DView<T> vz_, Array3DView<T> bx_, Array3DView<T> by_,
+                      Array3DView<T> bz_, Array3DView<T> ei_,
+                      Array3DView<T> ph_) noexcept
+      : ro(ro_), vx(vx_), vy(vy_), vz(vz_), bx(bx_), by(by_), bz(bz_), ei(ei_),
+        ph(ph_) {}
+
+  /// @brief Get extent of specified dimension
   __host__ __device__ int extent(int dim) const noexcept {
     return ro.extent(dim);
   }
-  __host__ __device__ std::array<int, 3> shape() const noexcept {
-    return ro.shape();
-  }
+
+  /// @brief Get total size (number of elements)
   __host__ __device__ int size() const noexcept { return ro.size(); }
 };
+
+/// @brief Factory function to create FieldsView from Fields
+template <typename Real, typename Backend>
+FieldsView<Real> make_fields_view(Fields<Real, Backend> &fields) noexcept {
+  return FieldsView<Real>(fields.ro.view(), fields.vx.view(), fields.vy.view(),
+                          fields.vz.view(), fields.bx.view(), fields.by.view(),
+                          fields.bz.view(), fields.ei.view(), fields.ph.view());
+}
+
+/// @brief Factory function to create const FieldsView from Fields
+template <typename Real, typename Backend>
+FieldsView<const Real>
+make_fields_view(const Fields<Real, Backend> &fields) noexcept {
+  return FieldsView<const Real>(
+      fields.ro.view(), fields.vx.view(), fields.vy.view(), fields.vz.view(),
+      fields.bx.view(), fields.by.view(), fields.bz.view(), fields.ei.view(),
+      fields.ph.view());
+}
 
 /// @brief Primitive MHD variables on host
 template <typename Real> struct Fields<Real, backend::Host> {
@@ -59,11 +74,11 @@ template <typename Real> struct Fields<Real, backend::Host> {
         ei(grid.i_total, grid.j_total, grid.k_total),
         ph(grid.i_total, grid.j_total, grid.k_total) {}
 
-  FieldsView<Real> view() noexcept { return FieldsView<Real>(*this); }
-  FieldsView<const Real> view() const noexcept {
-    return FieldsView<const Real>(*this);
+  FieldsView<Real> view() noexcept { return make_fields_view(*this); }
+  FieldsView<const Real> view() const noexcept { return make_fields_view(*this); }
+  FieldsView<const Real> const_view() const noexcept {
+    return make_fields_view(*this);
   }
-  FieldsView<const Real> const_view() const noexcept { return view(); }
 
   void copy_from(const Fields<Real, backend::Host> &other) {
     ro.copy_from(other.ro);
@@ -125,12 +140,11 @@ template <typename Real> struct Fields<Real, backend::CUDA> {
         ei(grid.i_total, grid.j_total, grid.k_total),
         ph(grid.i_total, grid.j_total, grid.k_total) {}
 
-  FieldsView<Real> view() noexcept { return FieldsView<Real>(*this); }
-  FieldsView<const Real> view() const noexcept {
-    return FieldsView<const Real>(*this);
+  FieldsView<Real> view() noexcept { return make_fields_view(*this); }
+  FieldsView<const Real> view() const noexcept { return make_fields_view(*this); }
+  FieldsView<const Real> const_view() const noexcept {
+    return make_fields_view(*this);
   }
-  FieldsView<const Real> const_view() const noexcept { return view(); }
-
   void copy_from(const Fields<Real, backend::Host> &other) {
     ro.copy_from(other.ro);
     vx.copy_from(other.vx);

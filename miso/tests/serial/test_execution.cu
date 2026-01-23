@@ -12,7 +12,7 @@ TEST_CASE("Test for_each 1D CUDA" * doctest::test_suite("execution")) {
   Array1D<int, backend::CUDA> arr(5);
 
   auto view = arr.view();
-  for_each<backend::CUDA>(range, MISO_LAMBDA(int i) { view[i] = i * i; });
+  for_each(backend::CUDA{}, range, MISO_LAMBDA(int i) { view[i] = i * i; });
 
   Array1D<int, backend::Host> arr_host(5);
   arr_host.copy_from(arr);
@@ -27,8 +27,9 @@ TEST_CASE("Test for_each 3D CUDA" * doctest::test_suite("execution")) {
   Array3D<int, backend::CUDA> arr(2, 3, 4);
 
   auto view = arr.view();
-  for_each<backend::CUDA>(
-      range, MISO_LAMBDA(int i, int j, int k) { view(i, j, k) = i + j + k; });
+  for_each(
+      backend::CUDA{}, range,
+      MISO_LAMBDA(int i, int j, int k) { view(i, j, k) = i + j + k; });
 
   Array3D<int, backend::Host> arr_host(2, 3, 4);
   arr_host.copy_from(arr);

@@ -172,16 +172,16 @@ template <typename Real> struct GridGenerator {
 
   /// @brief Constructor to initialize the grid for MPI-GLOBAL geometry
   Grid(const Config &config)
-      : i_size(config["grid"]["i_size"].template as<int>()),
-        j_size(config["grid"]["j_size"].template as<int>()),
-        k_size(config["grid"]["k_size"].template as<int>()),
-        margin(config["grid"]["margin"].template as<int>()),
-        xmin(config["grid"]["xmin"].template as<Real>()),
-        xmax(config["grid"]["xmax"].template as<Real>()),
-        ymin(config["grid"]["ymin"].template as<Real>()),
-        ymax(config["grid"]["ymax"].template as<Real>()),
-        zmin(config["grid"]["zmin"].template as<Real>()),
-        zmax(config["grid"]["zmax"].template as<Real>()) {
+      : i_size(config["grid"]["i_size"].as<int>()),
+        j_size(config["grid"]["j_size"].as<int>()),
+        k_size(config["grid"]["k_size"].as<int>()),
+        margin(config["grid"]["margin"].as<int>()),
+        xmin(config["grid"]["xmin"].as<Real>()),
+        xmax(config["grid"]["xmax"].as<Real>()),
+        ymin(config["grid"]["ymin"].as<Real>()),
+        ymax(config["grid"]["ymax"].as<Real>()),
+        zmin(config["grid"]["zmin"].as<Real>()),
+        zmax(config["grid"]["zmax"].as<Real>()) {
     global_initialize();
   }
 
