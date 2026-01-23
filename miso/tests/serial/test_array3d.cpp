@@ -16,7 +16,9 @@ TEST_CASE("Test Array3D CPU" * doctest::test_suite("array3d")) {
   REQUIRE(arr.size() == 3 * 4 * 5);
 
   // Check access
-  arr(1, 2, 3) = 42;
+  auto view = arr.view();
+  view(1, 2, 3) = 42;
   REQUIRE(arr(1, 2, 3) == 42);
-  REQUIRE(arr(1, 2, 3) == arr[(1 * 4 + 2) * 5 + 3]);
+  REQUIRE(&view(1, 2, 3) == &arr(1, 2, 3));
+  REQUIRE(view(1, 2, 3) == arr[(1 * 4 + 2) * 5 + 3]);
 }

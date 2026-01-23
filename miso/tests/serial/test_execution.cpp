@@ -1,6 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
+#include <miso/array1d.hpp>
 #include <miso/array3d.hpp>
 #include <miso/execution.hpp>
 
@@ -8,7 +9,7 @@ using namespace miso;
 
 TEST_CASE("Test for_each 1D CPU" * doctest::test_suite("execution")) {
   Range1D range{2, 4};
-  Array3D<int, backend::Host> arr(5, 1, 1);
+  Array1D<int, backend::Host> arr(5);
 
   auto view = arr.view();
   for_each<backend::Host>(range, [&](int i) { view[i] = i * i; });

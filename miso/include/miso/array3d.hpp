@@ -126,16 +126,7 @@ public:
   int size() const noexcept { return shape_[0] * shape_[1] * shape_[2]; }
 
   /// @brief Return reference to the element at the given indices.
-  T &operator()(int i0, int i1, int i2) noexcept {
-    assert(data_);
-    assert(i0 >= 0 && i0 < shape_[0]);
-    assert(i1 >= 0 && i1 < shape_[1]);
-    assert(i2 >= 0 && i2 < shape_[2]);
-    return data_[(i0 * shape_[1] + i1) * shape_[2] + i2];
-  }
-
-  /// @brief Return const reference to the element at the given indices.
-  const T &operator()(int i0, int i1, int i2) const noexcept {
+  T &operator()(int i0, int i1, int i2) const noexcept {
     assert(data_);
     assert(i0 >= 0 && i0 < shape_[0]);
     assert(i1 >= 0 && i1 < shape_[1]);
@@ -144,14 +135,7 @@ public:
   }
 
   /// @brief Return reference to the element at the given linear index.
-  T &operator[](int idx) noexcept {
-    assert(data_);
-    assert(idx >= 0 && idx < size());
-    return data_[idx];
-  }
-
-  /// @brief Return const reference to the element at the given linear index.
-  const T &operator[](int idx) const noexcept {
+  T &operator[](int idx) const noexcept {
     assert(data_);
     assert(idx >= 0 && idx < size());
     return data_[idx];
