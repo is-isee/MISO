@@ -1,6 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
+#include <miso/array1d.hpp>
 #include <miso/array3d.hpp>
 #include <miso/execution.hpp>
 
@@ -8,12 +9,12 @@ using namespace miso;
 
 TEST_CASE("Test for_each 1D CUDA" * doctest::test_suite("execution")) {
   Range1D range{2, 5};
-  Array3D<int, backend::CUDA> arr(5, 1, 1);
+  Array1D<int, backend::CUDA> arr(5);
 
   auto view = arr.view();
   for_each<backend::CUDA>(range, MISO_LAMBDA(int i) { view[i] = i * i; });
 
-  Array3D<int, backend::Host> arr_host(5, 1, 1);
+  Array1D<int, backend::Host> arr_host(5);
   arr_host.copy_from(arr);
   const auto view_host = arr_host.view();
   for (int i = 2; i < 5; ++i) {
