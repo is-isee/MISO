@@ -1,6 +1,6 @@
 base:
   save_dir: data/
-  # if save_dir exiests
+  # if save_dir exists
   # continue: true -> continue simulation
   # continue: false -> start from scratch
   continue: false

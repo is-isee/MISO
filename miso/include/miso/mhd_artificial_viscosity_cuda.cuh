@@ -28,11 +28,11 @@ __global__ void characteristic_velocity_eval_kernel(Array3DView<Real> cc_d,
 
   if (i <= grid.i_total - 1 && j <= grid.j_total - 1 && k <= grid.k_total - 1) {
     // clang-format off
-    Real cs = std::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
-    Real vv = std::sqrt(qq.vx(i, j, k) * qq.vx(i, j, k) +
+    Real cs = util::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
+    Real vv = util::sqrt(qq.vx(i, j, k) * qq.vx(i, j, k) +
                         qq.vy(i, j, k) * qq.vy(i, j, k) +
                         qq.vz(i, j, k) * qq.vz(i, j, k));
-    Real ca = std::sqrt((qq.bx(i, j, k) * qq.bx(i, j, k) +
+    Real ca = util::sqrt((qq.bx(i, j, k) * qq.bx(i, j, k) +
                          qq.by(i, j, k) * qq.by(i, j, k) +
                          qq.bz(i, j, k) * qq.bz(i, j, k)) /
                          qq.ro(i, j, k) * pii4<Real>);
