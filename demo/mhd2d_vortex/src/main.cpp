@@ -28,7 +28,7 @@ struct InitialCondition {
   void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
              const EOS &eos) const {
     const Real pr = 1.0 / eos.gm;
-    const Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
+    const Real b0 = util::sqrt(4.0 * pi<Real>) / eos.gm;
     const Real v0 = 1.0;
     Range3D range{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
 
@@ -36,11 +36,11 @@ struct InitialCondition {
         Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
           qq.ro(i, j, k) = 1.0;
           qq.ei(i, j, k) = eos.roprtoei(qq.ro(i, j, k), pr);
-          qq.vx(i, j, k) = -v0 * std::sin(2.0 * pi<Real> * grid.y[j]);
-          qq.vy(i, j, k) = +v0 * std::sin(2.0 * pi<Real> * grid.x[i]);
+          qq.vx(i, j, k) = -v0 * util::sin(2.0 * pi<Real> * grid.y[j]);
+          qq.vy(i, j, k) = +v0 * util::sin(2.0 * pi<Real> * grid.x[i]);
           qq.vz(i, j, k) = 0.0;
-          qq.bx(i, j, k) = -b0 * std::sin(2.0 * pi<Real> * grid.y[j]);
-          qq.by(i, j, k) = +b0 * std::sin(4.0 * pi<Real> * grid.x[i]);
+          qq.bx(i, j, k) = -b0 * util::sin(2.0 * pi<Real> * grid.y[j]);
+          qq.by(i, j, k) = +b0 * util::sin(4.0 * pi<Real> * grid.x[i]);
           qq.bz(i, j, k) = 0.0;
         });
   }
