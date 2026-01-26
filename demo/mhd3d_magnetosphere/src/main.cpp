@@ -1,3 +1,5 @@
+#include <iomanip>
+#include <iostream>
 #include <string>
 
 #include <miso/config.hpp>
@@ -42,9 +44,6 @@ struct InitialCondition {
   void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
              const EOS &eos) const {
     Range3D range{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
-
-    for_each(Backend{}, range, MISO_LAMBDA(int i, int j, int k));
-    for_each<Backend>(range, MISO_LAMBDA(int i, int j, int k));
 
     for_each(
         Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
@@ -243,7 +242,7 @@ template <typename Real> struct ExternalSources {
   GridView<const Real> grid;
   Real g_grav;
 
-  explicit ExternalSources(Config &config, Grid<Real> &grid_) {
+  explicit ExternalSources(Config &config, Grid<Real, Backend> &grid_) {
     grid = grid_.const_view();
     g_grav =
         config.yaml_obj["magnetosphere"]["gravitational_acceleration"].as<Real>();
@@ -253,7 +252,7 @@ template <typename Real> struct ExternalSources {
   // The signature must not be changed as it is called by miso integrator.
   // force is defined in the unit of g/cm^2 s^2 i.e., force per unit volume
   // i.e., acceleration * density
-  __host__ __device__ inline Real vx(FieldsView<const Real> qq, int i, int j,
+  __host__ __device__ inline Real vx(mhd::FieldsView<const Real> qq, int i, int j,
                                      int k) const noexcept {
     return -qq.ro(i, j, k) * g_grav * grid.x[i] /
            util::pow3(util::sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] +
@@ -261,7 +260,7 @@ template <typename Real> struct ExternalSources {
   }
 
   // External force: y-direction
-  __host__ __device__ inline Real vy(FieldsView<const Real> qq, int i, int j,
+  __host__ __device__ inline Real vy(mhd::FieldsView<const Real> qq, int i, int j,
                                      int k) const noexcept {
     return -qq.ro(i, j, k) * g_grav * grid.y[j] /
            util::pow3(util::sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] +
@@ -269,7 +268,7 @@ template <typename Real> struct ExternalSources {
   }
 
   // External force: z-direction
-  __host__ __device__ inline Real vz(FieldsView<const Real> qq, int i, int j,
+  __host__ __device__ inline Real vz(mhd::FieldsView<const Real> qq, int i, int j,
                                      int k) const noexcept {
     return -qq.ro(i, j, k) * g_grav * grid.z[k] /
            util::pow3(util::sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] +
@@ -277,7 +276,7 @@ template <typename Real> struct ExternalSources {
   }
 
   // External heating
-  __host__ __device__ inline Real ei(FieldsView<const Real>, int, int,
+  __host__ __device__ inline Real ei(mhd::FieldsView<const Real>, int, int,
                                      int) const noexcept {
     return 0.0;
   }
@@ -300,7 +299,8 @@ struct Model {
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid_global(config),
         grid(grid_global, mpi_shape), exec_ctx(mpi_shape, grid), eos(config),
-        mhd(config, grid, exec_ctx, eos), ic(config), src(config, mhd.grid) {}
+        mhd(config, grid, exec_ctx, eos), ic(config), bc(config, grid, mpi_shape),
+        src(config, mhd.grid) {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
@@ -337,8 +337,8 @@ struct Model {
 
   /// @brief Main time integration loop
   void run() {
-    if (config["base"]["continue"].template as<bool>() &&
-        fs::exists(config.time_save_dir + "n_output.txt")) {
+    if (config["base"]["continue"].as<bool>() &&
+        fs::exists(time.time_save_dir + "n_output.txt")) {
       load_state();
     }
 
@@ -353,7 +353,7 @@ struct Model {
       const auto dt = mhd.cfl();
       mhd.update(dt, bc, src);
 
-      // Time is update after all procedures
+      // Time is updated after all procedures
       time.update(dt);
       save_if_needed();
     }

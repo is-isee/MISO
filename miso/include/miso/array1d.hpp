@@ -15,7 +15,7 @@ namespace miso {
 /// @brief 1D Array in general execution/memory space.
 template <typename T, typename Backend = backend::Host> class Array1D;
 
-/// @brief Lightweight non-owning view of MHD fields.
+/// @brief Lightweight non-owning view of 1D array data.
 template <typename T> class Array1DView {
 private:
   T *data_ = nullptr;

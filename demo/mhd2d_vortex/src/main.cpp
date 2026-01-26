@@ -110,8 +110,8 @@ struct Model {
 
   /// @brief Main time integration loop
   void run() {
-    if (config["base"]["continue"].template as<bool>() &&
-        fs::exists(config.time_save_dir + "n_output.txt")) {
+    if (config["base"]["continue"].as<bool>() &&
+        fs::exists(time.time_save_dir + "n_output.txt")) {
       load_state();
     }
 
@@ -126,7 +126,7 @@ struct Model {
       const auto dt = mhd.cfl();
       mhd.update(dt, bc, src);
 
-      // Time is update after all procedures
+      // Time is updated after all procedures
       time.update(dt);
       save_if_needed();
     }

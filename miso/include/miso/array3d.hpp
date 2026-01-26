@@ -16,7 +16,7 @@ namespace miso {
 /// @brief 3D Array in general execution/memory space.
 template <typename T, typename Backend = backend::Host> class Array3D;
 
-/// @brief Lightweight non-owning view of MHD fields.
+/// @brief Lightweight non-owning view of 3D array data.
 template <typename T> class Array3DView {
 private:
   T *data_ = nullptr;
