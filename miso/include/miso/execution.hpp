@@ -78,6 +78,7 @@ template <class F> inline void for_each(backend::CUDA, Range1D range, F f) {
   int block = 256;
   int grid = (n + block - 1) / block;
   for_each_kernel<<<grid, block>>>(range, f);
+  MISO_CUDA_CHECK(cudaGetLastError());
 }
 
 template <class F> __global__ void for_each_kernel(Range3D range, F f) {
@@ -95,6 +96,7 @@ template <class F> inline void for_each(backend::CUDA, Range3D range, F f) {
   int block = 256;
   int grid = (n + block - 1) / block;
   for_each_kernel<<<grid, block>>>(range, f);
+  MISO_CUDA_CHECK(cudaGetLastError());
 }
 
 #endif
