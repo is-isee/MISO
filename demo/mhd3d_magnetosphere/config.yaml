@@ -3,7 +3,7 @@ base:
   # if save_dir exists
   # continue: true -> continue simulation
   # continue: false -> start from scratch
-  continue: true
+  continue: false
 
 time:
   time_save_dir: time/
@@ -46,72 +46,26 @@ artificial_viscosity:
   cs_fac: 1.0
   ca_fac: 0.8
   vv_fac: 1.0
-boundary_condition:
-  # please use "standard" or "custom" for boundary_type
-  boundary_type: custom
 
+boundary_condition:
   periodic:
     x: false
     y: false
     z: false
 
-  ro:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vy:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  by:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ei:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ph:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
 solar_wind: # solar wind parameter at x = xmin boundary
-  ro_sw: 5.e-4
-  pr_sw: 3.56e-8
-  vx_sw: 0.05
-  bz_imf: -1.5e-4
+  mass_density: 5.e-4
+  gas_pressure: 3.56e-8
+  x_velocity_field: 0.05
+  z_magnetic_field: -1.5e-4
 
-geo_boundary:
-  pr_earth: 5.4e-7
+magnetosphere:
+  gas_pressure: 5.4e-7
   radius: 3.5
   a0: 100.0
+  gravitational_acceleration: 1.35e-6
 
 floor:
   ro_floor: 1.e-8
   pr_floor: 1.e-10
-  
+
