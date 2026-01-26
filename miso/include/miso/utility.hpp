@@ -7,7 +7,40 @@
 #include <sstream>
 #include <string>
 
+#ifndef __CUDACC__
+#include <cmath>
+#endif
 #include <miso/cuda_compat.hpp>
+
+#ifdef __CUDA_ARCH__
+
+#define MISO_MATH_UTILS(name, namef)                                             \
+  __host__ __device__ inline float name(float x) { return ::namef(x); }          \
+  __host__ __device__ inline double name(double x) { return ::name(x); }
+
+#define MISO_MATH_UTILS2(name, namef)                                            \
+  __host__ __device__ inline float name(float x, float y) {                      \
+    return ::namef(x, y);                                                        \
+  }                                                                              \
+  __host__ __device__ inline double name(double x, double y) {                   \
+    return ::name(x, y);                                                         \
+  }
+
+#else
+
+#define MISO_MATH_UTILS(name, namef)                                             \
+  __host__ __device__ inline float name(float x) { return std::name(x); }        \
+  __host__ __device__ inline double name(double x) { return std::name(x); }
+
+#define MISO_MATH_UTILS2(name, namef)                                            \
+  __host__ __device__ inline float name(float x, float y) {                      \
+    return std::name(x, y);                                                      \
+  }                                                                              \
+  __host__ __device__ inline double name(double x, double y) {                   \
+    return std::name(x, y);                                                      \
+  }
+
+#endif
 
 namespace miso {
 
@@ -80,6 +113,23 @@ template <typename T> __host__ __device__ inline T min3(T a, T b, T c) {
 template <typename T> __host__ __device__ inline T max3(T a, T b, T c) {
   return fmax_safe(fmax_safe(a, b), c);
 }
+
+MISO_MATH_UTILS(sqrt, sqrtf)
+MISO_MATH_UTILS(sin, sinf)
+MISO_MATH_UTILS(cos, cosf)
+MISO_MATH_UTILS(tan, tanf)
+MISO_MATH_UTILS(tanh, tanhf)
+MISO_MATH_UTILS(asin, asinf)
+MISO_MATH_UTILS(acos, acosf)
+MISO_MATH_UTILS(exp, expf)
+MISO_MATH_UTILS(log, logf)
+MISO_MATH_UTILS(log10, log10f)
+MISO_MATH_UTILS(fabs, fabsf)
+MISO_MATH_UTILS2(atan2, atan2f)
+MISO_MATH_UTILS2(copysign, copysignf)
+MISO_MATH_UTILS2(fmin, fminf)
+MISO_MATH_UTILS2(fmax, fmaxf)
+MISO_MATH_UTILS2(fmod, fmodf)
 
 // data Endian checker
 enum class Endian { Little, Big };

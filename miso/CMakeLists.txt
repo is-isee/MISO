@@ -30,7 +30,9 @@ target_include_directories(MISO INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 if(MISO_USE_CUDA)
     find_package(CUDAToolkit REQUIRED)
     target_link_libraries(MISO INTERFACE CUDA::cudart)
-    target_compile_definitions(MISO INTERFACE MISO_USE_CUDA ON)
+    target_compile_definitions(MISO INTERFACE MISO_USE_CUDA)
+    target_compile_options(
+        MISO INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>)
 endif(MISO_USE_CUDA)
 
 # MPI

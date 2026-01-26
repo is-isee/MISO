@@ -52,11 +52,11 @@ __global__ void cfl_kernel(FieldsView<const Real> qq, GridView<const Real> grid,
       j >= grid.j_margin && j < grid.j_total - grid.j_margin &&
       k >= grid.k_margin && k < grid.k_total - grid.k_margin) {
     // clang-format off
-    Real cs = std::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
-    Real vv = std::sqrt( + qq.vx(i, j, k) * qq.vx(i, j, k)
+    Real cs = util::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
+    Real vv = util::sqrt( + qq.vx(i, j, k) * qq.vx(i, j, k)
                          + qq.vy(i, j, k) * qq.vy(i, j, k)
                          + qq.vz(i, j, k) * qq.vz(i, j, k));
-    Real ca = std::sqrt((+ qq.bx(i, j, k) * qq.bx(i, j, k)
+    Real ca = util::sqrt((+ qq.bx(i, j, k) * qq.bx(i, j, k)
                          + qq.by(i, j, k) * qq.by(i, j, k)
                          + qq.bz(i, j, k) * qq.bz(i, j, k)) /
                         qq.ro(i, j, k) * pii4<Real>);
@@ -316,7 +316,7 @@ update_ph_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
            (- space_centered_4th(qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
             - space_centered_4th(qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
             - space_centered_4th(qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks))) *
-      std::exp(-dt / tau_divb);
+      util::exp(-dt / tau_divb);
   // clang-format on
 }
 
@@ -414,7 +414,7 @@ struct Integrator<Real, EOS, backend::CUDA> {
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total) {
-    cfl_number = config["mhd"]["cfl_number"].template as<Real>();
+    cfl_number = config["mhd"]["cfl_number"].as<Real>();
   }
 
   /// @brief Update MHD equations using 4th order space-centered scheme
@@ -477,6 +477,7 @@ struct Integrator<Real, EOS, backend::CUDA> {
   void apply_boundary_condition(const BoundaryCondition &bc,
                                 Fields<Real, backend::CUDA> &qq) {
     bc.apply(qq.view(), grid.const_view(), eos);
+    MISO_CUDA_CHECK(cudaDeviceSynchronize());  // May not be necessary
     halo_exchanger.apply(qq);
   }
 

@@ -36,16 +36,16 @@ template <typename Real> struct Time {
 
   /// @brief Default constructor
   Time(const Config &config)
-      : tend(config["time"]["tend"].template as<Real>()),
-        dt_output(config["time"]["dt_output"].template as<Real>()),
-        n_output_digits(config["time"]["n_output_digits"].template as<int>()) {
+      : tend(config["time"]["tend"].as<Real>()),
+        dt_output(config["time"]["dt_output"].as<Real>()),
+        n_output_digits(config["time"]["n_output_digits"].as<int>()) {
     assert(tend > 0);
     assert(dt_output > 0);
 
     initialize();
 
-    time_save_dir = config.save_dir +
-                    config["time"]["time_save_dir"].template as<std::string>();
+    time_save_dir =
+        config.save_dir + config["time"]["time_save_dir"].as<std::string>();
     util::create_directories(time_save_dir);
   }
 

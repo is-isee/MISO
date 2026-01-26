@@ -13,8 +13,7 @@ template <typename Real> struct IdealEOS {
 
   /// @brief Constructor
   /// @param gm_ Ratio of specific heats (gamma)
-  explicit IdealEOS(const Config &config)
-      : gm(config["eos"]["gm"].template as<Real>()) {}
+  explicit IdealEOS(const Config &config) : gm(config["eos"]["gm"].as<Real>()) {}
 
   /// @brief Compute gas pressure from mass density and specific internal energy
   __host__ __device__ inline Real roeitopr(Real ro, Real ei) const noexcept {

@@ -27,10 +27,10 @@ __host__ __device__ inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw,
   Real qql = qq_dw + 0.5 * dqq_dw;
   Real qqr = qq_up - 0.5 * dqq_up;
   Real dqq = qq_up - qq_dw;
-  dqq = std::copysign(util::max2(std::abs(dqq), Real(1e-20)), dqq);
+  dqq = util::copysign(util::max2(util::fabs(dqq), Real(1e-20)), dqq);
 
   Real ra = util::min2(Real(1.0), (qqr - qql) / dqq);
-  Real pp = (Real(0.5) + std::copysign(Real(0.5), ra)) *
+  Real pp = (Real(0.5) + util::copysign(Real(0.5), ra)) *
             util::max2(Real(0.0), Real(1.0) + fh * (ra - Real(1.0)));
 
   return -0.5 * cc * pp * (qqr - qql);

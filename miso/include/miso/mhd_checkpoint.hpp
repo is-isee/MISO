@@ -17,9 +17,9 @@ template <typename Real> struct Checkpoint {
   std::string mhd_save_dir;
 
   Checkpoint(Config &config, Grid<Real, backend::Host> &grid) : qq(grid) {
-    n_output_digits = config["mhd"]["n_output_digits"].template as<int>();
-    mhd_save_dir = config.save_dir +
-                   config["mhd"]["mhd_save_dir"].template as<std::string>();
+    n_output_digits = config["mhd"]["n_output_digits"].as<int>();
+    mhd_save_dir =
+        config.save_dir + config["mhd"]["mhd_save_dir"].as<std::string>();
   }
 
   std::string get_filename(const Time<Real> &time) const {

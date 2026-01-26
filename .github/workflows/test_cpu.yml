@@ -25,7 +25,7 @@ jobs:
           sudo apt-get install -y libyaml-cpp-dev libopenmpi-dev openmpi-bin
       - name: Generate build directory
         run: |
-          cmake -B build -S miso -DUSE_CUDA=OFF
+          cmake -B build -S miso -DMISO_USE_CUDA=OFF
           cmake --build build -j
       - name: Run unit tests
         working-directory: build

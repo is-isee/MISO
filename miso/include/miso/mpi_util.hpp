@@ -56,19 +56,19 @@ struct Shape {
   std::string mpi_save_dir;
 
   Shape(const Config &config) {
-    mpi_save_dir = config.save_dir +
-                   config["mpi"]["mpi_save_dir"].template as<std::string>();
+    mpi_save_dir =
+        config.save_dir + config["mpi"]["mpi_save_dir"].as<std::string>();
     util::create_directories(mpi_save_dir);
 
-    x_procs = config["mpi"]["x_procs"].template as<int>();
-    y_procs = config["mpi"]["y_procs"].template as<int>();
-    z_procs = config["mpi"]["z_procs"].template as<int>();
+    x_procs = config["mpi"]["x_procs"].as<int>();
+    y_procs = config["mpi"]["y_procs"].as<int>();
+    z_procs = config["mpi"]["z_procs"].as<int>();
 
     int dims[ndims] = {x_procs, y_procs, z_procs};
     int periods[ndims];
-    periods[0] = config["domain"]["periodic"]["x"].template as<bool>() ? 1 : 0;
-    periods[1] = config["domain"]["periodic"]["y"].template as<bool>() ? 1 : 0;
-    periods[2] = config["domain"]["periodic"]["z"].template as<bool>() ? 1 : 0;
+    periods[0] = config["domain"]["periodic"]["x"].as<bool>() ? 1 : 0;
+    periods[1] = config["domain"]["periodic"]["y"].as<bool>() ? 1 : 0;
+    periods[2] = config["domain"]["periodic"]["z"].as<bool>() ? 1 : 0;
 
     MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &cart_comm);
     MPI_Comm_rank(cart_comm, &myrank);

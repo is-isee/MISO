@@ -28,12 +28,8 @@ template <typename Real, typename EOS, typename Backend> struct MHD {
 
   template <typename InitialCondition, typename BoundaryCondition>
   void apply_initial_condition(const InitialCondition &ic,
-                               const BoundaryCondition &bc,
-                               Grid<Real, backend::Host> &grid_h) {
-    /// @todo: Should be initialized by the specified backend.
-    Fields<Real, backend::Host> qq_i(grid_h);
-    ic.apply(qq_i.view(), grid_h.const_view(), integrator.eos);
-    qq.copy_from(qq_i);
+                               const BoundaryCondition &bc) {
+    ic.apply(qq.view(), grid.const_view(), integrator.eos);
     integrator.apply_boundary_condition(bc, qq);
   }
 

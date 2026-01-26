@@ -3,6 +3,7 @@
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 #include <miso/eos.hpp>
+#include <miso/execution.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd.hpp>
 #include <miso/mpi_util.hpp>
@@ -24,32 +25,32 @@ using Backend = backend::Host;
 struct InitialCondition {
   // The signature must not be changed as it is called inside miso::mhd::MHD.
   template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid, EOS eos) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
+             const EOS &eos) const {
     const Real pr = 1.0 / eos.gm;
-    const Real b0 = std::sqrt(4.0 * pi<Real>) / eos.gm;
+    const Real b0 = util::sqrt(4.0 * pi<Real>) / eos.gm;
     const Real v0 = 1.0;
+    Range3D range{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
 
-    for (int i = 0; i < grid.i_total; ++i) {
-      for (int j = 0; j < grid.j_total; ++j) {
-        for (int k = 0; k < grid.k_total; ++k) {
+    for_each(
+        Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
           qq.ro(i, j, k) = 1.0;
           qq.ei(i, j, k) = eos.roprtoei(qq.ro(i, j, k), pr);
-          qq.vx(i, j, k) = -v0 * std::sin(2.0 * pi<Real> * grid.y[j]);
-          qq.vy(i, j, k) = +v0 * std::sin(2.0 * pi<Real> * grid.x[i]);
+          qq.vx(i, j, k) = -v0 * util::sin(2.0 * pi<Real> * grid.y[j]);
+          qq.vy(i, j, k) = +v0 * util::sin(2.0 * pi<Real> * grid.x[i]);
           qq.vz(i, j, k) = 0.0;
-          qq.bx(i, j, k) = -b0 * std::sin(2.0 * pi<Real> * grid.y[j]);
-          qq.by(i, j, k) = +b0 * std::sin(4.0 * pi<Real> * grid.x[i]);
+          qq.bx(i, j, k) = -b0 * util::sin(2.0 * pi<Real> * grid.y[j]);
+          qq.by(i, j, k) = +b0 * util::sin(4.0 * pi<Real> * grid.x[i]);
           qq.bz(i, j, k) = 0.0;
-        }
-      }
-    }
+        });
   }
 };
 
-struct EmptyBoundaryCondition {
+struct BoundaryCondition {
   // The signature must not be changed as it is called inside miso::mhd::MHD.
   template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid, EOS eos) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
+             const EOS &eos) const {
     // Periodic boundary condition is applied by MPI communication.
     // Be sure to set "periodic" in domain field of config.yaml.
   }
@@ -65,7 +66,7 @@ struct Model {
   mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
   InitialCondition ic;
-  EmptyBoundaryCondition bc;
+  BoundaryCondition bc;
   mhd::NoSource<Real> src;
   mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
 
@@ -109,13 +110,13 @@ struct Model {
 
   /// @brief Main time integration loop
   void run() {
-    if (config["base"]["continue"].template as<bool>() &&
-        fs::exists(config.time_save_dir + "n_output.txt")) {
+    if (config["base"]["continue"].as<bool>() &&
+        fs::exists(time.time_save_dir + "n_output.txt")) {
       load_state();
     }
 
     save_metadata();
-    mhd.apply_initial_condition(ic, bc, grid);
+    mhd.apply_initial_condition(ic, bc);
 
     MPI_Barrier(mpi::comm());
 
@@ -125,7 +126,7 @@ struct Model {
       const auto dt = mhd.cfl();
       mhd.update(dt, bc, src);
 
-      // Time is update after all procedures
+      // Time is updated after all procedures
       time.update(dt);
       save_if_needed();
     }
