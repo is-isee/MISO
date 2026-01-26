@@ -46,10 +46,11 @@ struct InitialCondition {
   }
 };
 
-struct EmptyBoundaryCondition {
+struct BoundaryCondition {
   // The signature must not be changed as it is called inside miso::mhd::MHD.
   template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid, EOS eos) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
+             const EOS &eos) const {
     // Periodic boundary condition is applied by MPI communication.
     // Be sure to set "periodic" in domain field of config.yaml.
   }
@@ -65,7 +66,7 @@ struct Model {
   mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
   InitialCondition ic;
-  EmptyBoundaryCondition bc;
+  BoundaryCondition bc;
   mhd::NoSource<Real> src;
   mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
 
