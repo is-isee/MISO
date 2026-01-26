@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include <miso/array3d.hpp>
+#include <miso/backend.hpp>
 #include <miso/grid.hpp>
 #include <miso/mpi_util.hpp>
 #include <miso/types.hpp>
@@ -33,8 +34,6 @@ inline Direction string_to_direction(const std::string &str) {
     return Direction::Z;
   throw std::invalid_argument("Invalid direction string");
 }
-
-enum class Side { INNER, OUTER };
 
 inline std::string side_to_string(Side side) {
   if (side == Side::INNER)
@@ -92,22 +91,6 @@ __host__ __device__ inline void symmetric_index(int i, int i_total, int i_margin
 }
 
 template <typename Real>
-__host__ __device__ inline void periodic_index(int i, int i_total, int i_margin,
-                                               int &i_ghst, int &i_trgt,
-                                               Side side) {
-  switch (side) {
-  case Side::INNER:
-    i_ghst = i;
-    i_trgt = i_total - 2 * i_margin + i;
-    break;
-  case Side::OUTER:
-    i_ghst = i_total - i_margin + i;
-    i_trgt = i_margin + i;
-    break;
-  }
-}
-
-template <typename Real>
 bool is_physical_boundary(const Direction direction, const Side side,
                           const mpi::Shape &mpi_shape) {
   switch (direction) {
@@ -124,12 +107,13 @@ bool is_physical_boundary(const Direction direction, const Side side,
   return false;
 }
 
+/// @brief Apply symmetric boundary condition to an given 3D array (Host backend).
 template <typename Real>
-void symmetric(Array3D<Real, backend::Host> &arr,
-               const Grid<Real, backend::Host> &grid, Real sign,
-               Direction direction, Side side) {
+void symmetric(backend::Host, Array3DView<Real> arr, GridView<const Real> grid,
+               Sign sign, Direction direction, Side side) {
   int i0_, i1_, j0_, j1_, k0_, k1_;
   range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
+  Real sign_f = (sign == Sign::Pos) ? Real(1.0) : Real(-1.0);
   for (int i = i0_; i < i1_; ++i) {
     for (int j = j0_; j < j1_; ++j) {
       for (int k = k0_; k < k1_; ++k) {
@@ -150,7 +134,7 @@ void symmetric(Array3D<Real, backend::Host> &arr,
                                 side);
           break;
         }
-        arr(i_ghst, j_ghst, k_ghst) = sign * arr(i_trgt, j_trgt, k_trgt);
+        arr(i_ghst, j_ghst, k_ghst) = sign_f * arr(i_trgt, j_trgt, k_trgt);
       }
     }
   }
@@ -159,13 +143,14 @@ void symmetric(Array3D<Real, backend::Host> &arr,
 #ifdef __CUDACC__
 template <typename Real>
 __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<const Real> grid,
-                                 Real sign, Direction direction, Side side) {
+                                 Sign sign, Direction direction, Side side) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
 
   int i0_, i1_, j0_, j1_, k0_, k1_;
   range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
+  Real sign_f = (sign == Sign::Pos) ? Real(1.0) : Real(-1.0);
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
     int i_ghst = i, i_trgt = i;
@@ -183,23 +168,22 @@ __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<const Real> gri
       symmetric_index<Real>(k, grid.k_total, grid.k_margin, k_ghst, k_trgt, side);
       break;
     }
-    arr(i_ghst, j_ghst, k_ghst) = sign * arr(i_trgt, j_trgt, k_trgt);
+    arr(i_ghst, j_ghst, k_ghst) = sign_f * arr(i_trgt, j_trgt, k_trgt);
   }
 }
 
+/// @brief Apply symmetric boundary condition to an given 3D array (CUDA backend).
 template <typename Real>
-void symmetric(Array3D<Real, backend::CUDA> &arr,
-               const Grid<Real, backend::CUDA> &grid, Real sign,
-               Direction direction, Side side) {
+void symmetric(backend::CUDA, Array3DView<Real> arr, GridView<const Real> grid,
+               Sign sign, Direction direction, Side side) {
   dim3 block_dim(8, 8, 8);
   dim3 grid_dim((grid.i_total + block_dim.x - 1) / block_dim.x,
                 (grid.j_total + block_dim.y - 1) / block_dim.y,
                 (grid.k_total + block_dim.z - 1) / block_dim.z);
 
   symmetric_kernel<Real>
-      <<<grid_dim, block_dim>>>(arr.view(), grid.view(), sign, direction, side);
+      <<<grid_dim, block_dim>>>(arr, grid, sign, direction, side);
   MISO_CUDA_CHECK(cudaGetLastError());
-  MISO_CUDA_CHECK(cudaDeviceSynchronize());
 };
 #endif  // __CUDACC__
 

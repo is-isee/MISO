@@ -477,6 +477,7 @@ struct Integrator<Real, EOS, backend::CUDA> {
   void apply_boundary_condition(const BoundaryCondition &bc,
                                 Fields<Real, backend::CUDA> &qq) {
     bc.apply(qq.view(), grid.const_view(), eos);
+    MISO_CUDA_CHECK(cudaDeviceSynchronize());  // May not be necessary
     halo_exchanger.apply(qq);
   }
 
