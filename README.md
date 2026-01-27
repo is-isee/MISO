@@ -1,4 +1,4 @@
-# MISO　(Mhd ISee Open source code)
+# MISO (Mhd ISee Open source code)
 
 [![Run tests on CPU](https://github.com/is-isee/MISO/actions/workflows/test_cpu.yml/badge.svg)](https://github.com/is-isee/MISO/actions/workflows/test_cpu.yml)
 [![Run tests of Python](https://github.com/is-isee/MISO/actions/workflows/test_python.yml/badge.svg)](https://github.com/is-isee/MISO/actions/workflows/test_python.yml)
