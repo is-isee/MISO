@@ -314,7 +314,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
         dyi(grid_d.j_total), dzi(grid_d.k_total), min_dxyz(grid_d.min_dxyz) {
     copy_from(grid_d);
   }
-#endif
+#endif  // __CUDACC__
 
   // Shallow-copy
   GridView<Real> view() noexcept {
@@ -348,6 +348,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
     }
   }
 
+#ifdef __CUDACC__
   void copy_from(const Grid<Real, backend::CUDA> &grid_d) {
     MISO_CUDA_CHECK(cudaMemcpy(x.data(), grid_d.x, sizeof(Real) * i_total,
                                cudaMemcpyDeviceToHost));
@@ -368,6 +369,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
     MISO_CUDA_CHECK(cudaMemcpy(dzi.data(), grid_d.dzi, sizeof(Real) * k_total,
                                cudaMemcpyDeviceToHost));
   }
+#endif  // __CUDACC__
 };
 
 #ifdef __CUDACC__
