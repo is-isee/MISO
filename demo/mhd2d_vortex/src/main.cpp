@@ -30,7 +30,6 @@ struct InitialCondition {
     const Real pr = 1.0 / eos.gm;
     const Real b0 = util::sqrt(4.0 * pi<Real>) / eos.gm;
     const Real v0 = 1.0;
-    Range3D range{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
 
     for (int k = 0; k < grid.k_total; ++k) {
       for (int j = 0; j < grid.j_total; ++j) {

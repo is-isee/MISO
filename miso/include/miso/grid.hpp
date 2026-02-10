@@ -55,10 +55,6 @@ template <typename Real> struct GridView {
         ks(ks), i_margin(i_margin), j_margin(j_margin), k_margin(k_margin), x(x),
         y(y), z(z), dx(dx), dy(dy), dz(dz), dxi(dxi), dyi(dyi), dzi(dzi),
         min_dxyz(min_dxyz) {}
-
-  __device__ inline int idx(int i, int j, int k) const {
-    return (i * j_total + j) * k_total + k;
-  }
 };
 
 /// @brief Simulation grid in general execution/memory space.
@@ -137,10 +133,6 @@ template <typename Real> struct Grid<Real, backend::Host> {
 
   /// @brief global minimum value of dx, dy, dz
   Real min_dxyz;
-
-  inline int idx(int i, int j, int k) const {
-    return (i * j_total + j) * k_total + k;
-  }
 
   void global_initialize(int margin) {
     assert(i_size > 0);
