@@ -25,7 +25,9 @@ TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   REQUIRE(grid.i_size == i_size);
   REQUIRE(grid.j_size == j_size);
   REQUIRE(grid.k_size == k_size);
-  REQUIRE(grid.margin == margin);
+  REQUIRE(grid.i_margin == margin);
+  REQUIRE(grid.j_margin == margin);
+  REQUIRE(grid.k_margin == margin);
   REQUIRE(grid.i_total == i_size + 2 * margin);
   REQUIRE(grid.j_total == j_size + 2 * margin);
   REQUIRE(grid.k_total == k_size + 2 * margin);
@@ -36,7 +38,7 @@ TEST_CASE("Test Grid CPU" * doctest::test_suite("grid")) {
   REQUIRE(grid.z.size() == grid.k_total);
 
   // Check dx values
-  for (int i = grid.i_margin; i < grid.i_total - grid.margin; ++i) {
+  for (int i = grid.i_margin; i < grid.i_total - grid.i_margin; ++i) {
     REQUIRE(grid.dx[i] > 0);
     REQUIRE(grid.x[i] >= grid.xmin);
     REQUIRE(grid.x[i] <= grid.xmax);

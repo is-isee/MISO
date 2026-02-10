@@ -34,11 +34,11 @@ TEST_CASE("Test Grid GPU" * doctest::test_suite("grid")) {
                                          xmax, ymin, ymax, zmin, zmax);
   miso::Grid<double, backend::CUDA> grid_d(grid);
 
-  grid_d.copy_from_host(grid);
+  grid_d.copy_from(grid);
 
   test_grid_kernel<<<dim3(1, 1, 1), dim3(i_size, j_size, k_size)>>>(
       grid_d.view());
-  grid_d.copy_to_host(grid);
+  grid.copy_from(grid_d);
 
   for (int i = 0; i < i_size; ++i) {
     REQUIRE(grid.x[i] == 1.0);

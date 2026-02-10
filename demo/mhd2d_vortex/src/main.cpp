@@ -32,8 +32,9 @@ struct InitialCondition {
     const Real v0 = 1.0;
     Range3D range{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
 
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
+    for (int k = 0; k < grid.k_total; ++k) {
+      for (int j = 0; j < grid.j_total; ++j) {
+        for (int i = 0; i < grid.i_total; ++i) {
           qq.ro(i, j, k) = 1.0;
           qq.ei(i, j, k) = eos.roprtoei(qq.ro(i, j, k), pr);
           qq.vx(i, j, k) = -v0 * util::sin(2.0 * pi<Real> * grid.y[j]);
@@ -42,7 +43,9 @@ struct InitialCondition {
           qq.bx(i, j, k) = -b0 * util::sin(2.0 * pi<Real> * grid.y[j]);
           qq.by(i, j, k) = +b0 * util::sin(4.0 * pi<Real> * grid.x[i]);
           qq.bz(i, j, k) = 0.0;
-        });
+        }
+      }
+    }
   }
 };
 
@@ -93,22 +96,19 @@ struct Model {
   }
 
   void save_if_needed() {
-    if (time.time >= time.dt_output * time.n_output) {
-      save_state();
+    if (time.time < time.dt_output * time.n_output)
+      return;
 
-      if (mpi::is_root()) {
-        std::cout << std::fixed << std::setprecision(2)
-                  << "time = " << std::setw(6) << time.time
-                  << ";  n_step = " << std::setw(8) << time.n_step
-                  << ";  n_output = " << std::setw(8) << time.n_output
-                  << std::endl;
-      }
-
-      time.n_output++;
+    save_state();
+    if (mpi::is_root()) {
+      std::cout << std::fixed << std::setprecision(2) << "time = " << std::setw(6)
+                << time.time << ";  n_step = " << std::setw(8) << time.n_step
+                << ";  n_output = " << std::setw(8) << time.n_output << std::endl;
     }
+    time.n_output++;
   }
 
-  /// @brief Main time integration loop
+  // Main time integration loop
   void run() {
     if (config["base"]["continue"].as<bool>() &&
         fs::exists(time.time_save_dir + "n_output.txt")) {

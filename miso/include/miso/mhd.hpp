@@ -29,7 +29,10 @@ template <typename Real, typename EOS, typename Backend> struct MHD {
   template <typename InitialCondition, typename BoundaryCondition>
   void apply_initial_condition(const InitialCondition &ic,
                                const BoundaryCondition &bc) {
-    ic.apply(qq.view(), grid.const_view(), integrator.eos);
+    Grid<Real, backend::Host> grid_h(grid);
+    Fields<Real, backend::Host> qq_h(grid_h);
+    ic.apply(qq_h.view(), grid_h.const_view(), integrator.eos);
+    qq.copy_from(qq_h);
     integrator.apply_boundary_condition(bc, qq);
   }
 

@@ -209,8 +209,8 @@ struct CustomBoundaryCondition
     }
 
 #ifdef USE_CUDA
-    qq_init_d.copy_from_host(qq_init, model.cu_shape);
-    f_sphere_d.copy_from_host(f_sphere);
+    qq_init_d.copy_from(qq_init, model.cu_shape);
+    f_sphere_d.copy_from(f_sphere);
 #endif
   }
 
