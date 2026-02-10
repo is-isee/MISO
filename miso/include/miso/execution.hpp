@@ -1,6 +1,9 @@
 #pragma once
 #include <miso/backend.hpp>
 #include <miso/cuda_compat.hpp>
+#ifdef __CUDACC__
+#include <miso/cuda_util.cuh>
+#endif  // __CUDACC__
 
 #define MISO_LAMBDA [=] __host__ __device__
 
