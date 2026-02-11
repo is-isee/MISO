@@ -67,15 +67,15 @@ struct Model {
 
   mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
+  mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
   InitialCondition ic;
   BoundaryCondition bc;
   mhd::NoSource<Real> src;
-  mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid_global(config),
         grid(grid_global, mpi_shape), exec_ctx(mpi_shape, grid), eos(config),
-        mhd(config, grid, exec_ctx, eos) {}
+        mhd(config, grid, exec_ctx, eos), ic(), bc(), src() {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());

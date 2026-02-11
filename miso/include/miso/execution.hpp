@@ -258,17 +258,33 @@ inline T reduce(backend::CUDA, Range range, T init, F map, Op op,
   return h;
 }
 
-/// @brief 1D parallel reduction in the CUDA backend.
+/// @brief 1D parallel reduction in the CUDA backend with helper.
 template <class T, class F, class Op>
 inline T reduce(backend::CUDA b, Range1D range, T init, F map, Op op,
                 ReduceHelper<T> &helper, cudaStream_t stream = 0) {
   return reduce<T, Range1D, F, Op>(b, range, init, map, op, helper, stream);
 }
 
-/// @brief 3D parallel reduction in the CUDA backend.
+/// @brief 3D parallel reduction in the CUDA backend with helper.
 template <class T, class F, class Op>
 inline T reduce(backend::CUDA b, Range3D range, T init, F map, Op op,
                 ReduceHelper<T> &helper, cudaStream_t stream = 0) {
+  return reduce<T, Range3D, F, Op>(b, range, init, map, op, helper, stream);
+}
+
+/// @brief 1D parallel reduction in the CUDA backend.
+template <class T, class F, class Op>
+inline T reduce(backend::CUDA b, Range1D range, T init, F map, Op op,
+                cudaStream_t stream = 0) {
+  ReduceHelper<T> helper;
+  return reduce<T, Range1D, F, Op>(b, range, init, map, op, helper, stream);
+}
+
+/// @brief 3D parallel reduction in the CUDA backend.
+template <class T, class F, class Op>
+inline T reduce(backend::CUDA b, Range3D range, T init, F map, Op op,
+                cudaStream_t stream = 0) {
+  ReduceHelper<T> helper;
   return reduce<T, Range3D, F, Op>(b, range, init, map, op, helper, stream);
 }
 

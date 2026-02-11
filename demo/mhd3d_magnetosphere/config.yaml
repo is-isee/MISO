@@ -12,9 +12,12 @@ time:
   n_output_digits: 8
 
 grid:
-  i_size: 128
-  j_size: 128
-  k_size: 128
+  # i_size: 128
+  # j_size: 128
+  # k_size: 128
+  i_size: 64
+  j_size: 64
+  k_size: 64
   margin: 2
   xmin: -44.8
   xmax:  44.8
@@ -25,33 +28,30 @@ grid:
 
 mpi:
   mpi_save_dir: mpi/
-  n_procs_digits: 8
   x_procs: 2
   y_procs: 1
   z_procs: 1
 
+domain:
+  periodic:
+    x: true
+    y: true
+    z: true
+
 mhd:
   mhd_save_dir: mhd/
+  n_output_digits: 8
+  cfl_number: 0.3
+  artificial_viscosity:
+    ep: 1.2
+    fh: 1.0
+    # for characteristic velocity
+    cs_fac: 1.0
+    ca_fac: 0.8
+    vv_fac: 1.0
 
 eos:
   gm: 1.6666666666666667
-
-time_integrator:
-  cfl_number: 0.3
-
-artificial_viscosity:
-  ep: 1.2
-  fh: 1.0
-  # for characteristic velocity
-  cs_fac: 1.0
-  ca_fac: 0.8
-  vv_fac: 1.0
-
-boundary_condition:
-  periodic:
-    x: false
-    y: false
-    z: false
 
 solar_wind: # solar wind parameter at x = xmin boundary
   mass_density: 5.e-4

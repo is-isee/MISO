@@ -18,7 +18,11 @@ if(USE_CUDA)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
     # Select GPU architecture (e.g., L40S/4090: Ada)
-    set(CMAKE_CUDA_ARCHITECTURES native)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES
+            native
+            CACHE STRING "CUDA architectures")
+    endif()
 endif(USE_CUDA)
 
 # App sources
@@ -35,7 +39,7 @@ if(USE_CUDA)
 
     # Force main.cpp to be treated as CUDA source
     set_source_files_properties(${app_main} PROPERTIES LANGUAGE CUDA)
-    target_compile_definitions(${app_name} PRIVATE USE_CUDA)
+    target_compile_definitions(${app_name} PRIVATE USE_CUDA ON)
 endif(USE_CUDA)
 
 # MISO library (also fetches dependencies)
@@ -54,7 +58,3 @@ endif(USE_CUDA)
 FetchContent_Declare(MISO SOURCE_DIR ${miso_src})
 FetchContent_MakeAvailable(MISO)
 target_link_libraries(${app_name} PRIVATE MISO::MISO)
-
-# TODO: SHOULD BE PASSED BY ARGS
-set(config_dir ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(${app_name} PRIVATE CONFIG_DIR="${config_dir}/")
