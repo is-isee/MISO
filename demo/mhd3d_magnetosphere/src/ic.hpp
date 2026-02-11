@@ -58,6 +58,13 @@ struct InitialCondition {
           qq.vz(i, j, k) = 0.0;
 
           qq.ph(i, j, k) = 0.0;
+
+          if (grid.x[i] < -44.0) {
+            qq.ro(i, j, k) = ro_sw;
+            qq.ei(i, j, k) = pr_sw / (eos.gm - 1.0) / qq.ro(i, j, k);
+            qq.vx(i, j, k) = vx_sw;
+            qq.bz(i, j, k) = bz_imf;
+          }
         }
       }
     }

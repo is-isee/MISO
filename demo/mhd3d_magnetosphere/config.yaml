@@ -31,9 +31,9 @@ mpi:
 
 domain:
   periodic:
-    x: true
-    y: true
-    z: true
+    x: false
+    y: false
+    z: false
 
 mhd:
   mhd_save_dir: mhd/
