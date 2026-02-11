@@ -13,7 +13,7 @@
 #endif  // __CUDACC__
 
 namespace miso {
-namespace bnd {
+namespace boundary_condition {
 
 inline std::string direction_to_string(const Direction direction) {
   if (direction == Direction::X)
@@ -51,7 +51,7 @@ inline Side string_to_side(const std::string &str) {
   throw std::invalid_argument("Invalid side string");
 }
 
-template <typename Real, typename GridType>
+template <typename GridType>
 __host__ __device__ inline void range_set(int &i0_, int &i1_, int &j0_, int &j1_,
                                           int &k0_, int &k1_, Direction direction,
                                           const GridType &grid) {
@@ -74,7 +74,6 @@ __host__ __device__ inline void range_set(int &i0_, int &i1_, int &j0_, int &j1_
   }
 }
 
-template <typename Real>
 __host__ __device__ inline void symmetric_index(int i, int i_total, int i_margin,
                                                 int &i_ghst, int &i_trgt,
                                                 Side side) {
@@ -90,7 +89,6 @@ __host__ __device__ inline void symmetric_index(int i, int i_total, int i_margin
   }
 }
 
-template <typename Real>
 bool is_physical_boundary(const Direction direction, const Side side,
                           const mpi::Shape &mpi_shape) {
   switch (direction) {
@@ -112,7 +110,7 @@ template <typename Real>
 void symmetric(backend::Host, Array3DView<Real> arr, GridView<const Real> grid,
                Sign sign, Direction direction, Side side) {
   int i0_, i1_, j0_, j1_, k0_, k1_;
-  range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
+  range_set(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
   Real sign_f = (sign == Sign::Pos) ? Real(1.0) : Real(-1.0);
   for (int i = i0_; i < i1_; ++i) {
     for (int j = j0_; j < j1_; ++j) {
@@ -122,16 +120,13 @@ void symmetric(backend::Host, Array3DView<Real> arr, GridView<const Real> grid,
         int k_ghst = k, k_trgt = k;
         switch (direction) {
         case Direction::X:
-          symmetric_index<Real>(i, grid.i_total, grid.i_margin, i_ghst, i_trgt,
-                                side);
+          symmetric_index(i, grid.i_total, grid.i_margin, i_ghst, i_trgt, side);
           break;
         case Direction::Y:
-          symmetric_index<Real>(j, grid.j_total, grid.j_margin, j_ghst, j_trgt,
-                                side);
+          symmetric_index(j, grid.j_total, grid.j_margin, j_ghst, j_trgt, side);
           break;
         case Direction::Z:
-          symmetric_index<Real>(k, grid.k_total, grid.k_margin, k_ghst, k_trgt,
-                                side);
+          symmetric_index(k, grid.k_total, grid.k_margin, k_ghst, k_trgt, side);
           break;
         }
         arr(i_ghst, j_ghst, k_ghst) = sign_f * arr(i_trgt, j_trgt, k_trgt);
@@ -149,7 +144,7 @@ __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<const Real> gri
   int k = blockIdx.z * blockDim.z + threadIdx.z;
 
   int i0_, i1_, j0_, j1_, k0_, k1_;
-  range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
+  range_set(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
   Real sign_f = (sign == Sign::Pos) ? Real(1.0) : Real(-1.0);
 
   if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
@@ -159,13 +154,13 @@ __global__ void symmetric_kernel(Array3DView<Real> arr, GridView<const Real> gri
 
     switch (direction) {
     case Direction::X:
-      symmetric_index<Real>(i, grid.i_total, grid.i_margin, i_ghst, i_trgt, side);
+      symmetric_index(i, grid.i_total, grid.i_margin, i_ghst, i_trgt, side);
       break;
     case Direction::Y:
-      symmetric_index<Real>(j, grid.j_total, grid.j_margin, j_ghst, j_trgt, side);
+      symmetric_index(j, grid.j_total, grid.j_margin, j_ghst, j_trgt, side);
       break;
     case Direction::Z:
-      symmetric_index<Real>(k, grid.k_total, grid.k_margin, k_ghst, k_trgt, side);
+      symmetric_index(k, grid.k_total, grid.k_margin, k_ghst, k_trgt, side);
       break;
     }
     arr(i_ghst, j_ghst, k_ghst) = sign_f * arr(i_trgt, j_trgt, k_trgt);
@@ -187,5 +182,5 @@ void symmetric(backend::CUDA, Array3DView<Real> arr, GridView<const Real> grid,
 };
 #endif  // __CUDACC__
 
-}  // namespace bnd
+}  // namespace boundary_condition
 }  // namespace miso
