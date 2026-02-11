@@ -54,7 +54,3 @@ endif(USE_CUDA)
 FetchContent_Declare(MISO SOURCE_DIR ${miso_src})
 FetchContent_MakeAvailable(MISO)
 target_link_libraries(${app_name} PRIVATE MISO::MISO)
-
-# TODO: SHOULD BE PASSED BY ARGS
-set(config_dir ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(${app_name} PRIVATE CONFIG_DIR="${config_dir}/")

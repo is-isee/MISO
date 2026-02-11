@@ -109,24 +109,24 @@ struct Model {
 
   // Main time integration loop
   void run() {
+    // Apply initial condition (load if continue is true)
+    mhd.apply_initial_condition(ic, bc);
     if (config["base"]["continue"].as<bool>() &&
         fs::exists(time.time_save_dir + "n_output.txt")) {
       load_state();
     }
 
     save_metadata();
-    mhd.apply_initial_condition(ic, bc);
-
-    MPI_Barrier(mpi::comm());
-
     save_if_needed();
-    while (time.time < time.tend) {
-      // basic MHD time integration
-      const auto dt = mhd.cfl();
-      mhd.update(dt, bc, src);
 
-      // Time is updated after all procedures
+    while (time.time < time.tend) {
+      // Determine time step size
+      const auto dt = mhd.cfl();
+
+      // Update MHD variables
+      mhd.update(dt, bc, src);
       time.update(dt);
+
       save_if_needed();
     }
   }
@@ -134,10 +134,15 @@ struct Model {
 
 int main(int argc, char *argv[]) {
   using namespace miso;
-  std::string config_dir = CONFIG_DIR;
 
+  // Initialize MPI and CUDA environments
   Env ctx(argc, argv);
-  Config config(config_dir + "config.yaml");
+
+  // Read configuration file
+  auto config_path = parse_config_filepath(argc, argv);
+  Config config(config_path.value_or("./config.yaml"));
+
+  // Run simulation
   Model model(config);
   model.run();
 }

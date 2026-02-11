@@ -22,6 +22,9 @@ set -a
 source "${THIS_DIR}"/../shared/openmpi_config.env
 set +a
 
+# Config file path
+CONFIG_PATH="${THIS_DIR}/config.yaml"
+
 # Run command
 set -x
-mpiexec -np ${NUM_PROCS} "${APP_NAME}"
+mpiexec -np ${NUM_PROCS} "${APP_NAME}" --config="${CONFIG_PATH}"

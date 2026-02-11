@@ -29,6 +29,12 @@ mpi:
   y_procs: 1
   z_procs: 1
 
+domain:
+  periodic:
+    x: true
+    y: true
+    z: true
+
 mhd:
   mhd_save_dir: mhd/
   n_output_digits: 8
@@ -43,9 +49,3 @@ mhd:
 
 eos:
   gm: 1.6666666666666667
-
-domain:
-  periodic:
-    x: true
-    y: true
-    z: true
