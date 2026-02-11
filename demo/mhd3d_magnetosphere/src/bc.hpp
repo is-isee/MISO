@@ -9,7 +9,6 @@ struct BoundaryCondition {
   Real vx_sw;
   Real bz_imf;
 
-  Real pr_earth;
   Real rra;
   Real a0;
 
@@ -24,7 +23,6 @@ struct BoundaryCondition {
     vx_sw = config["solar_wind"]["x_velocity_field"].as<Real>();
     bz_imf = config["solar_wind"]["z_magnetic_field"].as<Real>();
 
-    pr_earth = config["magnetosphere"]["gas_pressure"].as<Real>();
     rra = config["magnetosphere"]["radius"].as<Real>();
     a0 = config["magnetosphere"]["a0"].as<Real>();
 
@@ -101,6 +99,12 @@ struct BoundaryCondition {
 
     // Fix values at the upwind solar wind boundary (inner x-boundary)
     if (bc::is_physical_boundary(Direction::X, Side::INNER, mpi_shape)) {
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::X, Side::INNER);
+
       int i0, i1, j0, j1, k0, k1;
       bc::range_set(i0, i1, j0, j1, k0, k1, Direction::X, grid);
       Range3D range{{i0, i1}, {j0, j1}, {k0, k1}};

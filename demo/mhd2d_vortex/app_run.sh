@@ -24,6 +24,10 @@ set +a
 
 # Config file path
 CONFIG_PATH="${THIS_DIR}/config.yaml"
+if [[ ! -f "${CONFIG_PATH}" ]]; then
+    echo "Error: Config file not found at ${CONFIG_PATH}"
+    exit 1
+fi
 
 # Run command
 set -x

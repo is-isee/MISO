@@ -12,12 +12,9 @@ time:
   n_output_digits: 8
 
 grid:
-  # i_size: 128
-  # j_size: 128
-  # k_size: 128
-  i_size: 64
-  j_size: 64
-  k_size: 64
+  i_size: 128
+  j_size: 128
+  k_size: 128
   margin: 2
   xmin: -44.8
   xmax:  44.8
