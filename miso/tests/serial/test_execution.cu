@@ -42,3 +42,28 @@ TEST_CASE("Test for_each 3D CUDA" * doctest::test_suite("execution")) {
     }
   }
 }
+
+TEST_CASE("Test reduce 1D CUDA" * doctest::test_suite("execution")) {
+  int n = 100;
+  Range1D range{0, n};
+
+  ReduceHelper<int> helper;
+
+  const auto f = MISO_LAMBDA(int i) { return i; };
+  const auto op = MISO_LAMBDA(int a, int b) { return a + b; };
+  int sum = reduce(backend::CUDA{}, range, 0, f, op, helper);
+
+  CHECK(sum == (n * (n - 1)) / 2);
+}
+
+TEST_CASE("Test reduce 3D CUDA" * doctest::test_suite("execution")) {
+  Range3D range{{0, 10}, {0, 10}, {0, 10}};
+
+  ReduceHelper<int> helper;
+
+  const auto f = MISO_LAMBDA(int, int, int) { return 1; };
+  const auto op = MISO_LAMBDA(int a, int b) { return a + b; };
+  int count = reduce(backend::CUDA{}, range, 0, f, op, helper);
+
+  CHECK(count == 1000);
+}
