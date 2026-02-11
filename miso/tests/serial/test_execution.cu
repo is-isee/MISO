@@ -57,7 +57,7 @@ TEST_CASE("Test reduce 1D CUDA" * doctest::test_suite("execution")) {
 }
 
 TEST_CASE("Test reduce 3D CUDA" * doctest::test_suite("execution")) {
-  Range3D range{{0, 10}, {0, 10}, {0, 10}};
+  Range3D range{{1, 3}, {4, 7}, {8, 10}};
 
   ReduceHelper<int> helper;
 
@@ -65,5 +65,5 @@ TEST_CASE("Test reduce 3D CUDA" * doctest::test_suite("execution")) {
   const auto op = MISO_LAMBDA(int a, int b) { return a + b; };
   int count = reduce(backend::CUDA{}, range, 0, f, op, helper);
 
-  CHECK(count == 1000);
+  CHECK(count == range.size());
 }

@@ -18,7 +18,11 @@ if(USE_CUDA)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
     # Select GPU architecture (e.g., L40S/4090: Ada)
-    set(CMAKE_CUDA_ARCHITECTURES native)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES
+            native
+            CACHE STRING "CUDA architectures")
+    endif()
 endif(USE_CUDA)
 
 # App sources

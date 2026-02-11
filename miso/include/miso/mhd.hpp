@@ -36,7 +36,7 @@ template <typename Real, typename EOS, typename Backend> struct MHD {
     integrator.apply_boundary_condition(bc, qq);
   }
 
-  Real cfl() const { return integrator.cfl(qq); }
+  Real cfl() { return integrator.cfl(qq); }
 
   template <typename BoundaryCondition, typename Source>
   void update(Real dt, const BoundaryCondition &bc, const Source &src) {
