@@ -57,10 +57,10 @@ template <typename Real> struct GridView {
         min_dxyz(min_dxyz) {}
 };
 
-/// @brief Simulation grid in general execution/memory space.
+/// @brief Simulation grid in general backend.
 template <typename Real, typename Backend = backend::Host> struct Grid;
 
-/// @brief Simulation grid in host memory.
+/// @brief Simulation grid in host backend.
 template <typename Real> struct Grid<Real, backend::Host> {
   /// @brief  grid number in x direction without margin
   int i_size;
@@ -98,17 +98,17 @@ template <typename Real> struct Grid<Real, backend::Host> {
   int k_stt;
 
   /// @brief minimum value in x direction
-  Real xmin;
+  Real x_min;
   /// @brief maximum value in x direction
-  Real xmax;
+  Real x_max;
   /// @brief minimum value in y direction
-  Real ymin;
+  Real y_min;
   /// @brief maximum value in y direction
-  Real ymax;
+  Real y_max;
   /// @brief minimum value in z direction
-  Real zmin;
+  Real z_min;
   /// @brief maximum value in z direction
-  Real zmax;
+  Real z_max;
 
   /// @brief coordinate in x direction
   std::vector<Real> x;
@@ -139,9 +139,9 @@ template <typename Real> struct Grid<Real, backend::Host> {
     assert(j_size > 0);
     assert(k_size > 0);
     assert(margin >= 0);
-    assert(xmax > xmin);
-    assert(ymax > ymin);
-    assert(zmax > zmin);
+    assert(x_max > x_min);
+    assert(y_max > y_min);
+    assert(z_max > z_min);
 
     is = i_size > 1 ? 1 : 0;
     js = j_size > 1 ? 1 : 0;
@@ -161,12 +161,12 @@ template <typename Real> struct Grid<Real, backend::Host> {
 
     auto set_coordinate = [](std::vector<Real> &x, std::vector<Real> &dx,
                              std::vector<Real> &dxi, int i_size, int i_total,
-                             int i_margin, Real xmin, Real xmax) {
+                             int i_margin, Real x_min, Real x_max) {
       x.resize(i_total);
       dx.resize(i_total);
       dxi.resize(i_total);
 
-      Real dx0 = (xmax - xmin) / i_size;
+      Real dx0 = (x_max - x_min) / i_size;
       for (int i = 0; i < i_total; ++i) {
         // dx at i + 1/2
         dx[i] = dx0;
@@ -177,7 +177,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
         }
       }
 
-      x[i_margin] = xmin + 0.5 * dx[i_margin];
+      x[i_margin] = x_min + 0.5 * dx[i_margin];
       for (int i = i_margin + 1; i < i_total; ++i) {
         x[i] = x[i - 1] + dx[i - 1];
       }
@@ -185,9 +185,9 @@ template <typename Real> struct Grid<Real, backend::Host> {
         x[i] = x[i + 1] - dx[i];
       }
     };
-    set_coordinate(x, dx, dxi, i_size, i_total, i_margin, xmin, xmax);
-    set_coordinate(y, dy, dyi, j_size, j_total, j_margin, ymin, ymax);
-    set_coordinate(z, dz, dzi, k_size, k_total, k_margin, zmin, zmax);
+    set_coordinate(x, dx, dxi, i_size, i_total, i_margin, x_min, x_max);
+    set_coordinate(y, dy, dyi, j_size, j_total, j_margin, y_min, y_max);
+    set_coordinate(z, dz, dzi, k_size, k_total, k_margin, z_min, z_max);
 
     Real min_dx = 1.e30, min_dy = 1.e30, min_dz = 1.e30;
     /// TODO: additional communication is required for MPI version
@@ -204,10 +204,11 @@ template <typename Real> struct Grid<Real, backend::Host> {
   }
 
   // global settings
-  Grid(int i_size_, int j_size_, int k_size_, int margin_, Real xmin_, Real xmax_,
-       Real ymin_, Real ymax_, Real zmin_, Real zmax_)
-      : i_size(i_size_), j_size(j_size_), k_size(k_size_), xmin(xmin_),
-        xmax(xmax_), ymin(ymin_), ymax(ymax_), zmin(zmin_), zmax(zmax_) {
+  Grid(int i_size_, int j_size_, int k_size_, int margin_, Real x_min_,
+       Real x_max_, Real y_min_, Real y_max_, Real z_min_, Real z_max_)
+      : i_size(i_size_), j_size(j_size_), k_size(k_size_), x_min(x_min_),
+        x_max(x_max_), y_min(y_min_), y_max(y_max_), z_min(z_min_),
+        z_max(z_max_) {
     global_initialize(margin_);
   }
 
@@ -216,12 +217,12 @@ template <typename Real> struct Grid<Real, backend::Host> {
       : i_size(config["grid"]["i_size"].as<int>()),
         j_size(config["grid"]["j_size"].as<int>()),
         k_size(config["grid"]["k_size"].as<int>()),
-        xmin(config["grid"]["xmin"].as<Real>()),
-        xmax(config["grid"]["xmax"].as<Real>()),
-        ymin(config["grid"]["ymin"].as<Real>()),
-        ymax(config["grid"]["ymax"].as<Real>()),
-        zmin(config["grid"]["zmin"].as<Real>()),
-        zmax(config["grid"]["zmax"].as<Real>()) {
+        x_min(config["grid"]["x_min"].as<Real>()),
+        x_max(config["grid"]["x_max"].as<Real>()),
+        y_min(config["grid"]["y_min"].as<Real>()),
+        y_max(config["grid"]["y_max"].as<Real>()),
+        z_min(config["grid"]["z_min"].as<Real>()),
+        z_max(config["grid"]["z_max"].as<Real>()) {
     global_initialize(config["grid"]["margin"].as<int>());
   }
 
@@ -285,9 +286,9 @@ template <typename Real> struct Grid<Real, backend::Host> {
         i_total(grid_h.i_total), j_total(grid_h.j_total), k_total(grid_h.k_total),
         is(grid_h.is), js(grid_h.js), ks(grid_h.ks), i_margin(grid_h.i_margin),
         j_margin(grid_h.j_margin), k_margin(grid_h.k_margin), i_stt(grid_h.i_stt),
-        j_stt(grid_h.j_stt), k_stt(grid_h.k_stt), xmin(grid_h.xmin),
-        ymin(grid_h.ymin), zmin(grid_h.zmin), xmax(grid_h.xmax),
-        ymax(grid_h.ymax), zmax(grid_h.zmax), x(grid_h.x), y(grid_h.y),
+        j_stt(grid_h.j_stt), k_stt(grid_h.k_stt), x_min(grid_h.x_min),
+        y_min(grid_h.y_min), z_min(grid_h.z_min), x_max(grid_h.x_max),
+        y_max(grid_h.y_max), z_max(grid_h.z_max), x(grid_h.x), y(grid_h.y),
         z(grid_h.z), dx(grid_h.dx), dy(grid_h.dy), dz(grid_h.dz), dxi(grid_h.dxi),
         dyi(grid_h.dyi), dzi(grid_h.dzi), min_dxyz(grid_h.min_dxyz) {}
 
@@ -298,9 +299,9 @@ template <typename Real> struct Grid<Real, backend::Host> {
         i_total(grid_d.i_total), j_total(grid_d.j_total), k_total(grid_d.k_total),
         is(grid_d.is), js(grid_d.js), ks(grid_d.ks), i_margin(grid_d.i_margin),
         j_margin(grid_d.j_margin), k_margin(grid_d.k_margin), i_stt(grid_d.i_stt),
-        j_stt(grid_d.j_stt), k_stt(grid_d.k_stt), xmin(grid_d.xmin),
-        ymin(grid_d.ymin), zmin(grid_d.zmin), xmax(grid_d.xmax),
-        ymax(grid_d.ymax), zmax(grid_d.zmax), x(grid_d.i_total),
+        j_stt(grid_d.j_stt), k_stt(grid_d.k_stt), x_min(grid_d.x_min),
+        y_min(grid_d.y_min), z_min(grid_d.z_min), x_max(grid_d.x_max),
+        y_max(grid_d.y_max), z_max(grid_d.z_max), x(grid_d.i_total),
         y(grid_d.j_total), z(grid_d.k_total), dx(grid_d.i_total),
         dy(grid_d.j_total), dz(grid_d.k_total), dxi(grid_d.i_total),
         dyi(grid_d.j_total), dzi(grid_d.k_total), min_dxyz(grid_d.min_dxyz) {
@@ -365,7 +366,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
 };
 
 #ifdef __CUDACC__
-/// @brief Simulation grid in CUDA device memory.
+/// @brief Simulation grid in CUDA backend.
 template <typename Real> struct Grid<Real, backend::CUDA> {
   /// @brief  grid number in x direction without margin
   int i_size;
@@ -403,17 +404,17 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
   int k_stt;
 
   /// @brief minimum value in x direction
-  Real xmin;
+  Real x_min;
   /// @brief maximum value in x direction
-  Real xmax;
+  Real x_max;
   /// @brief minimum value in y direction
-  Real ymin;
+  Real y_min;
   /// @brief maximum value in y direction
-  Real ymax;
+  Real y_max;
   /// @brief minimum value in z direction
-  Real zmin;
+  Real z_min;
   /// @brief maximum value in z direction
-  Real zmax;
+  Real z_max;
 
   /// @brief coordinate in x/y/z direction
   Real *x = nullptr, *y = nullptr, *z = nullptr;
@@ -430,9 +431,9 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
         i_total(grid.i_total), j_total(grid.j_total), k_total(grid.k_total),
         is(grid.is), js(grid.js), ks(grid.ks), i_margin(grid.i_margin),
         j_margin(grid.j_margin), k_margin(grid.k_margin), i_stt(grid.i_stt),
-        j_stt(grid.j_stt), k_stt(grid.k_stt), xmin(grid.xmin), xmax(grid.xmax),
-        ymin(grid.ymin), ymax(grid.ymax), zmin(grid.zmin), zmax(grid.zmax),
-        min_dxyz(grid.min_dxyz) {
+        j_stt(grid.j_stt), k_stt(grid.k_stt), x_min(grid.x_min),
+        x_max(grid.x_max), y_min(grid.y_min), y_max(grid.y_max),
+        z_min(grid.z_min), z_max(grid.z_max), min_dxyz(grid.min_dxyz) {
     MISO_CUDA_CHECK(cudaMalloc(&x, sizeof(Real) * i_total));
     MISO_CUDA_CHECK(cudaMalloc(&y, sizeof(Real) * j_total));
     MISO_CUDA_CHECK(cudaMalloc(&z, sizeof(Real) * k_total));
