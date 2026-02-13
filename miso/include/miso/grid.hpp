@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <utility>
 #include <vector>
 
 #include <miso/backend.hpp>
@@ -15,6 +16,87 @@
 #endif  // __CUDACC__
 
 namespace miso {
+
+/// @brief Provider of uniform grid axis.
+template <typename Real> struct UniformAxisProvider {
+  Real min_value, max_value;
+  int size;
+
+  /// @brief Spacing of i-th grid point.
+  Real space(int) const { return (max_value - min_value) / Real(size); }
+
+  /// @brief Location of i-th grid point.
+  Real loc(int i) const { return min_value + (Real(i) + Real(0.5)) * space(i); }
+};
+
+/// @brief 1D grid along an axis.
+template <typename Real> struct AxisGrid {
+  /// @brief number of grid points without margin
+  int size;
+
+  /// @brief number of grid points with margin
+  int total;
+
+  /// @brief margin size
+  int margin;
+
+  /// @brief stride indicator (1 if size > 1, else 0)
+  int stride;
+
+  /// @brief beginning index
+  int begin;
+
+  /// @brief ending index
+  int end;
+
+  /// @brief offset of indexing (from global to local)
+  int offset;
+
+  /// @brief grid point locations
+  std::vector<Real> s;
+
+  /// @brief grid spacings
+  std::vector<Real> ds;
+
+  /// @brief inverse grid spacings
+  std::vector<Real> dsi;
+
+  /// @brief Construct axis grid.
+  template <typename AxisProvider>
+  explicit AxisGrid(int size_, int margin_, int offset_, const AxisProvider &ap) {
+    size = size_;
+    stride = size > 1 ? 1 : 0;
+    margin = margin_ * stride;
+    total = size + 2 * margin;
+    begin = margin;
+    end = margin + size;
+    offset = offset_;
+    assert(size > 0);
+    assert(margin >= 0);
+    assert(begin >= 0);
+    assert(end - begin == size);
+
+    s.resize(total);
+    ds.resize(total);
+    dsi.resize(total);
+
+    if (size == 1) {
+      assert(margin == 0);
+      assert(offset == 0);
+      s[0] = ap.loc(0);
+      ds[0] = 1.e30;  // very large value
+      dsi[0] = 0.0;
+      return;
+    }
+
+    for (int i = 0; i < total; ++i) {
+      const int ig = i - begin + offset;
+      s[i] = ap.loc(ig);
+      ds[i] = ap.space(ig);
+      dsi[i] = 1.0 / ds[i];
+    }
+  }
+};
 
 /// @brief Lightweight non-owning view of Grid data.
 template <typename Real> struct GridView {
@@ -90,13 +172,6 @@ template <typename Real> struct Grid<Real, backend::Host> {
   /// @brief  margin size in z direction
   int k_margin;
 
-  /// @brief starting index in x direction (for MPI calculation)
-  int i_stt;
-  /// @brief starting index in y direction (for MPI calculation)
-  int j_stt;
-  /// @brief starting index in z direction (for MPI calculation)
-  int k_stt;
-
   /// @brief minimum value in x direction
   Real x_min;
   /// @brief maximum value in x direction
@@ -134,86 +209,39 @@ template <typename Real> struct Grid<Real, backend::Host> {
   /// @brief global minimum value of dx, dy, dz
   Real min_dxyz;
 
-  void global_initialize(int margin) {
-    assert(i_size > 0);
-    assert(j_size > 0);
-    assert(k_size > 0);
-    assert(margin >= 0);
-    assert(x_max > x_min);
-    assert(y_max > y_min);
-    assert(z_max > z_min);
+  void assemble_from_axes(AxisGrid<Real> &&x_grid, AxisGrid<Real> &&y_grid,
+                          AxisGrid<Real> &&z_grid) {
+    i_total = x_grid.total;
+    j_total = y_grid.total;
+    k_total = z_grid.total;
 
-    is = i_size > 1 ? 1 : 0;
-    js = j_size > 1 ? 1 : 0;
-    ks = k_size > 1 ? 1 : 0;
+    is = x_grid.stride;
+    js = y_grid.stride;
+    ks = z_grid.stride;
 
-    i_margin = margin * is;
-    j_margin = margin * js;
-    k_margin = margin * ks;
+    i_margin = x_grid.margin;
+    j_margin = y_grid.margin;
+    k_margin = z_grid.margin;
 
-    i_total = i_size + 2 * i_margin;
-    j_total = j_size + 2 * j_margin;
-    k_total = k_size + 2 * k_margin;
+    x = std::move(x_grid.s);
+    y = std::move(y_grid.s);
+    z = std::move(z_grid.s);
 
-    i_stt = 0;
-    j_stt = 0;
-    k_stt = 0;
+    dx = std::move(x_grid.ds);
+    dy = std::move(y_grid.ds);
+    dz = std::move(z_grid.ds);
 
-    auto set_coordinate = [](std::vector<Real> &x, std::vector<Real> &dx,
-                             std::vector<Real> &dxi, int i_size, int i_total,
-                             int i_margin, Real x_min, Real x_max) {
-      x.resize(i_total);
-      dx.resize(i_total);
-      dxi.resize(i_total);
+    dxi = std::move(x_grid.dsi);
+    dyi = std::move(y_grid.dsi);
+    dzi = std::move(z_grid.dsi);
 
-      Real dx0 = (x_max - x_min) / i_size;
-      for (int i = 0; i < i_total; ++i) {
-        // dx at i + 1/2
-        dx[i] = dx0;
-        dxi[i] = 1.0 / dx[i];
-        if (i_size == 1) {
-          dx[i] = 1.e30;
-          dxi[i] = 0.0;
-        }
-      }
-
-      x[i_margin] = x_min + 0.5 * dx[i_margin];
-      for (int i = i_margin + 1; i < i_total; ++i) {
-        x[i] = x[i - 1] + dx[i - 1];
-      }
-      for (int i = i_margin - 1; i >= 0; --i) {
-        x[i] = x[i + 1] - dx[i];
-      }
-    };
-    set_coordinate(x, dx, dxi, i_size, i_total, i_margin, x_min, x_max);
-    set_coordinate(y, dy, dyi, j_size, j_total, j_margin, y_min, y_max);
-    set_coordinate(z, dz, dzi, k_size, k_total, k_margin, z_min, z_max);
-
-    Real min_dx = 1.e30, min_dy = 1.e30, min_dz = 1.e30;
-    /// TODO: additional communication is required for MPI version
-    for (int i = 0; i < i_total; ++i) {
-      min_dx = std::min<Real>(min_dx, dx[i]);
-    }
-    for (int j = 0; j < j_total; ++j) {
-      min_dy = std::min<Real>(min_dy, dy[j]);
-    }
-    for (int k = 0; k < k_total; ++k) {
-      min_dz = std::min<Real>(min_dz, dz[k]);
-    }
-    min_dxyz = std::min<Real>({min_dx, min_dy, min_dz});
+    /// Compute global minimum value of dx, dy, dz
+    /// TODO: Assuming uniform spacing.
+    min_dxyz = util::min3(dx[0], dy[0], dz[0]);
   }
 
-  // global settings
-  Grid(int i_size_, int j_size_, int k_size_, int margin_, Real x_min_,
-       Real x_max_, Real y_min_, Real y_max_, Real z_min_, Real z_max_)
-      : i_size(i_size_), j_size(j_size_), k_size(k_size_), x_min(x_min_),
-        x_max(x_max_), y_min(y_min_), y_max(y_max_), z_min(z_min_),
-        z_max(z_max_) {
-    global_initialize(margin_);
-  }
-
-  /// @brief Constructor to initialize the grid for MPI-GLOBAL geometry
-  Grid(const Config &config)
+  /// @brief Construct simulation grid.
+  explicit Grid(const Config &config, const mpi::Shape &mpi_shape)
       : i_size(config["grid"]["i_size"].as<int>()),
         j_size(config["grid"]["j_size"].as<int>()),
         k_size(config["grid"]["k_size"].as<int>()),
@@ -223,79 +251,61 @@ template <typename Real> struct Grid<Real, backend::Host> {
         y_max(config["grid"]["y_max"].as<Real>()),
         z_min(config["grid"]["z_min"].as<Real>()),
         z_max(config["grid"]["z_max"].as<Real>()) {
-    global_initialize(config["grid"]["margin"].as<int>());
+    const int margin = config["grid"]["margin"].as<int>();
+
+    auto x_provider =
+        UniformAxisProvider<Real>{x_min, x_max, i_size * mpi_shape.x_procs};
+    auto y_provider =
+        UniformAxisProvider<Real>{y_min, y_max, j_size * mpi_shape.y_procs};
+    auto z_provider =
+        UniformAxisProvider<Real>{z_min, z_max, k_size * mpi_shape.z_procs};
+
+    auto x_grid =
+        AxisGrid<Real>(i_size, margin, mpi_shape.coord[0] * i_size, x_provider);
+    auto y_grid =
+        AxisGrid<Real>(j_size, margin, mpi_shape.coord[1] * j_size, y_provider);
+    auto z_grid =
+        AxisGrid<Real>(k_size, margin, mpi_shape.coord[2] * k_size, z_provider);
+
+    assemble_from_axes(std::move(x_grid), std::move(y_grid), std::move(z_grid));
   }
 
-  ///@brief Constructor to initialize the grid for MPI-LOCAL geometry
-  /// @param grid_global Global grid object
-  Grid(const Grid<Real, backend::Host> &grid_global,
-       const mpi::Shape &mpi_shape) {
-    i_size = grid_global.i_size / mpi_shape.x_procs;
-    j_size = grid_global.j_size / mpi_shape.y_procs;
-    k_size = grid_global.k_size / mpi_shape.z_procs;
+  /// @brief Construct simulation grid from axis grids (serial version).
+  explicit Grid(int i_size_, int j_size_, int k_size_, int margin_, Real x_min_,
+                Real x_max_, Real y_min_, Real y_max_, Real z_min_, Real z_max_)
+      : i_size(i_size_), j_size(j_size_), k_size(k_size_), x_min(x_min_),
+        x_max(x_max_), y_min(y_min_), y_max(y_max_), z_min(z_min_),
+        z_max(z_max_) {
 
-    is = grid_global.is;
-    js = grid_global.js;
-    ks = grid_global.ks;
+    auto x_provider = UniformAxisProvider<Real>{x_min, x_max, i_size};
+    auto y_provider = UniformAxisProvider<Real>{y_min, y_max, j_size};
+    auto z_provider = UniformAxisProvider<Real>{z_min, z_max, k_size};
 
-    i_margin = grid_global.i_margin;
-    j_margin = grid_global.j_margin;
-    k_margin = grid_global.k_margin;
+    auto x_grid = AxisGrid<Real>(i_size, margin_, 0, x_provider);
+    auto y_grid = AxisGrid<Real>(j_size, margin_, 0, y_provider);
+    auto z_grid = AxisGrid<Real>(k_size, margin_, 0, z_provider);
 
-    i_total = i_size + 2 * i_margin;
-    j_total = j_size + 2 * j_margin;
-    k_total = k_size + 2 * k_margin;
-
-    i_stt = mpi_shape.coord[0] * i_size;
-    j_stt = mpi_shape.coord[1] * j_size;
-    k_stt = mpi_shape.coord[2] * k_size;
-
-    x.resize(i_total);
-    dx.resize(i_total);
-    dxi.resize(i_total);
-    y.resize(j_total);
-    dy.resize(j_total);
-    dyi.resize(j_total);
-    z.resize(k_total);
-    dz.resize(k_total);
-    dzi.resize(k_total);
-
-    for (int i = 0; i < i_total; ++i) {
-      x[i] = grid_global.x[i_stt + i];
-      dx[i] = grid_global.dx[i_stt + i];
-      dxi[i] = grid_global.dxi[i_stt + i];
-    }
-
-    for (int j = 0; j < j_total; ++j) {
-      y[j] = grid_global.y[j_stt + j];
-      dy[j] = grid_global.dy[j_stt + j];
-      dyi[j] = grid_global.dyi[j_stt + j];
-    }
-
-    for (int k = 0; k < k_total; ++k) {
-      z[k] = grid_global.z[k_stt + k];
-      dz[k] = grid_global.dz[k_stt + k];
-      dzi[k] = grid_global.dzi[k_stt + k];
-    }
-    min_dxyz = grid_global.min_dxyz;
+    assemble_from_axes(std::move(x_grid), std::move(y_grid), std::move(z_grid));
   }
 
-  /// @brief Copy constructor (deep copy) from another host grid.
-  explicit Grid(const Grid<Real, backend::Host> &grid_h) = default;
+  /// @brief Copy constructor.
+  explicit Grid(const Grid<Real, backend::Host> &) = default;
+
+  /// @brief Copy assignment operator.
+  Grid<Real, backend::Host> &
+  operator=(const Grid<Real, backend::Host> &) = default;
 
 #ifdef __CUDACC__
-  /// @brief Copy constructor (deep copy) from a CUDA grid.
+  /// @brief Constructor from a CUDA grid.
   explicit Grid(const Grid<Real, backend::CUDA> &grid_d)
       : i_size(grid_d.i_size), j_size(grid_d.j_size), k_size(grid_d.k_size),
         i_total(grid_d.i_total), j_total(grid_d.j_total), k_total(grid_d.k_total),
         is(grid_d.is), js(grid_d.js), ks(grid_d.ks), i_margin(grid_d.i_margin),
-        j_margin(grid_d.j_margin), k_margin(grid_d.k_margin), i_stt(grid_d.i_stt),
-        j_stt(grid_d.j_stt), k_stt(grid_d.k_stt), x_min(grid_d.x_min),
-        y_min(grid_d.y_min), z_min(grid_d.z_min), x_max(grid_d.x_max),
-        y_max(grid_d.y_max), z_max(grid_d.z_max), x(grid_d.i_total),
-        y(grid_d.j_total), z(grid_d.k_total), dx(grid_d.i_total),
-        dy(grid_d.j_total), dz(grid_d.k_total), dxi(grid_d.i_total),
-        dyi(grid_d.j_total), dzi(grid_d.k_total), min_dxyz(grid_d.min_dxyz) {
+        j_margin(grid_d.j_margin), k_margin(grid_d.k_margin), x_min(grid_d.x_min),
+        x_max(grid_d.x_max), y_min(grid_d.y_min), y_max(grid_d.y_max),
+        z_min(grid_d.z_min), z_max(grid_d.z_max), x(i_total), y(j_total),
+        z(k_total), dx(i_total), dy(j_total), dz(k_total), dxi(i_total),
+        dyi(j_total), dzi(k_total), min_dxyz(grid_d.min_dxyz) {
     copy_from(grid_d);
   }
 #endif  // __CUDACC__
@@ -334,6 +344,9 @@ template <typename Real> struct Grid<Real, backend::Host> {
 
 #ifdef __CUDACC__
   void copy_from(const Grid<Real, backend::CUDA> &grid_d) {
+    assert(i_total == grid_d.i_total);
+    assert(j_total == grid_d.j_total);
+    assert(k_total == grid_d.k_total);
     MISO_CUDA_CHECK(cudaMemcpy(x.data(), grid_d.x, sizeof(Real) * i_total,
                                cudaMemcpyDeviceToHost));
     MISO_CUDA_CHECK(cudaMemcpy(y.data(), grid_d.y, sizeof(Real) * j_total,
@@ -387,13 +400,6 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
   /// @brief  margin size in z direction
   int k_margin;
 
-  /// @brief starting index in x direction (for MPI calculation)
-  int i_stt;
-  /// @brief starting index in y direction (for MPI calculation)
-  int j_stt;
-  /// @brief starting index in z direction (for MPI calculation)
-  int k_stt;
-
   /// @brief minimum value in x direction
   Real x_min;
   /// @brief maximum value in x direction
@@ -421,8 +427,7 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
       : i_size(grid.i_size), j_size(grid.j_size), k_size(grid.k_size),
         i_total(grid.i_total), j_total(grid.j_total), k_total(grid.k_total),
         is(grid.is), js(grid.js), ks(grid.ks), i_margin(grid.i_margin),
-        j_margin(grid.j_margin), k_margin(grid.k_margin), i_stt(grid.i_stt),
-        j_stt(grid.j_stt), k_stt(grid.k_stt), x_min(grid.x_min),
+        j_margin(grid.j_margin), k_margin(grid.k_margin), x_min(grid.x_min),
         x_max(grid.x_max), y_min(grid.y_min), y_max(grid.y_max),
         z_min(grid.z_min), z_max(grid.z_max), min_dxyz(grid.min_dxyz) {
     MISO_CUDA_CHECK(cudaMalloc(&x, sizeof(Real) * i_total));
@@ -450,14 +455,21 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
     // clang-format on
   }
 
-  // Shallow-copy
+  /// @brief Return a lightweight view.
   GridView<Real> view() noexcept { return GridView<Real>(*this); }
+
+  /// @brief Return a constant lightweight view.
   GridView<const Real> view() const noexcept {
     return GridView<const Real>(*this);
   }
+
+  /// @brief Return a constant lightweight view.
   GridView<const Real> const_view() const noexcept { return view(); }
 
   void copy_from(const Grid<Real, backend::Host> &grid_h) {
+    assert(i_total == grid_h.i_total);
+    assert(j_total == grid_h.j_total);
+    assert(k_total == grid_h.k_total);
     MISO_CUDA_CHECK(cudaMemcpy(x, grid_h.x.data(), sizeof(Real) * i_total,
                                cudaMemcpyHostToDevice));
     MISO_CUDA_CHECK(cudaMemcpy(y, grid_h.y.data(), sizeof(Real) * j_total,
@@ -478,10 +490,12 @@ template <typename Real> struct Grid<Real, backend::CUDA> {
                                cudaMemcpyHostToDevice));
   }
 
-  // Prohibit copy and move
+  // Prohibit copy semantics
   Grid<Real, backend::CUDA>(const Grid<Real, backend::CUDA> &) = delete;
   Grid<Real, backend::CUDA> &
   operator=(const Grid<Real, backend::CUDA> &) = delete;
+
+  // Prohibit move semantics
   Grid<Real, backend::CUDA>(Grid<Real, backend::CUDA> &&) = delete;
   Grid<Real, backend::CUDA> &operator=(Grid<Real, backend::CUDA> &&) = delete;
 };
