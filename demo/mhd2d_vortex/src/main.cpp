@@ -42,6 +42,7 @@ struct InitialCondition {
           qq.bx(i, j, k) = -b0 * util::sin(2.0 * pi<Real> * grid.y[j]);
           qq.by(i, j, k) = +b0 * util::sin(4.0 * pi<Real> * grid.x[i]);
           qq.bz(i, j, k) = 0.0;
+          qq.ph(i, j, k) = 0.0;
         }
       }
     }

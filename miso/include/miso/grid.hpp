@@ -281,16 +281,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
   }
 
   /// @brief Copy constructor (deep copy) from another host grid.
-  explicit Grid(const Grid<Real, backend::Host> &grid_h)
-      : i_size(grid_h.i_size), j_size(grid_h.j_size), k_size(grid_h.k_size),
-        i_total(grid_h.i_total), j_total(grid_h.j_total), k_total(grid_h.k_total),
-        is(grid_h.is), js(grid_h.js), ks(grid_h.ks), i_margin(grid_h.i_margin),
-        j_margin(grid_h.j_margin), k_margin(grid_h.k_margin), i_stt(grid_h.i_stt),
-        j_stt(grid_h.j_stt), k_stt(grid_h.k_stt), x_min(grid_h.x_min),
-        y_min(grid_h.y_min), z_min(grid_h.z_min), x_max(grid_h.x_max),
-        y_max(grid_h.y_max), z_max(grid_h.z_max), x(grid_h.x), y(grid_h.y),
-        z(grid_h.z), dx(grid_h.dx), dy(grid_h.dy), dz(grid_h.dz), dxi(grid_h.dxi),
-        dyi(grid_h.dyi), dzi(grid_h.dzi), min_dxyz(grid_h.min_dxyz) {}
+  explicit Grid(const Grid<Real, backend::Host> &grid_h) = default;
 
 #ifdef __CUDACC__
   /// @brief Copy constructor (deep copy) from a CUDA grid.

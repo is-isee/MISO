@@ -39,7 +39,7 @@ if(USE_CUDA)
 
     # Force main.cpp to be treated as CUDA source
     set_source_files_properties(${app_main} PROPERTIES LANGUAGE CUDA)
-    target_compile_definitions(${app_name} PRIVATE USE_CUDA ON)
+    target_compile_definitions(${app_name} PRIVATE USE_CUDA)
 endif(USE_CUDA)
 
 # MISO library (also fetches dependencies)

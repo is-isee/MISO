@@ -33,8 +33,8 @@ struct TimeStep {
                            qq_v.ro(i, j, k) * pii4<Real>);
       Real total_vel = (cs + vv + ca);
 
-      Real rr = std::sqrt(util::pow2(grid_v.x[i]) + util::pow2(grid_v.y[j]) +
-                          util::pow2(grid_v.z[k]));
+      Real rr = util::sqrt(util::pow2(grid_v.x[i]) + util::pow2(grid_v.y[j]) +
+                           util::pow2(grid_v.z[k]));
       Real mask = rr > rra ? 1.0 : 0.0;
       Real masked_vel = total_vel * mask + slow_speed * (1.0 - mask);
 
