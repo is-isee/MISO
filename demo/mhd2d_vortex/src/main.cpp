@@ -63,7 +63,6 @@ struct Model {
   Config &config;
   mpi::Shape mpi_shape;
   Time<Real> time;
-  Grid<Real, backend::Host> grid_global;
   Grid<Real, backend::Host> grid;
 
   mhd::ExecContext<Backend> exec_ctx;
@@ -74,14 +73,14 @@ struct Model {
   mhd::NoSource<Real> src;
 
   Model(Config &config)
-      : config(config), mpi_shape(config), time(config), grid_global(config),
-        grid(grid_global, mpi_shape), exec_ctx(mpi_shape, grid), eos(config),
-        mhd(config, grid, exec_ctx, eos), ic(), bc(), src() {}
+      : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
+        exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx, eos),
+        ic(), bc(), src() {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
     config.save();
-    grid_global.save(config);
+    grid.save(config, mpi_shape);
     exec_ctx.mpi_shape.save();
   }
 

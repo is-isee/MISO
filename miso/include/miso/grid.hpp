@@ -242,31 +242,32 @@ template <typename Real> struct Grid<Real, backend::Host> {
 
   /// @brief Construct simulation grid.
   explicit Grid(const Config &config, const mpi::Shape &mpi_shape)
-      : i_size(config["grid"]["i_size"].as<int>()),
-        j_size(config["grid"]["j_size"].as<int>()),
-        k_size(config["grid"]["k_size"].as<int>()),
-        x_min(config["grid"]["x_min"].as<Real>()),
+      : x_min(config["grid"]["x_min"].as<Real>()),
         x_max(config["grid"]["x_max"].as<Real>()),
         y_min(config["grid"]["y_min"].as<Real>()),
         y_max(config["grid"]["y_max"].as<Real>()),
         z_min(config["grid"]["z_min"].as<Real>()),
         z_max(config["grid"]["z_max"].as<Real>()) {
     const int margin = config["grid"]["margin"].as<int>();
+    const int i_size_g = config["grid"]["i_size"].as<int>();
+    const int j_size_g = config["grid"]["j_size"].as<int>();
+    const int k_size_g = config["grid"]["k_size"].as<int>();
 
-    auto x_provider =
-        UniformAxisProvider<Real>{x_min, x_max, i_size * mpi_shape.x_procs};
-    auto y_provider =
-        UniformAxisProvider<Real>{y_min, y_max, j_size * mpi_shape.y_procs};
-    auto z_provider =
-        UniformAxisProvider<Real>{z_min, z_max, k_size * mpi_shape.z_procs};
+    i_size = i_size_g / mpi_shape.x_procs;
+    j_size = j_size_g / mpi_shape.y_procs;
+    k_size = k_size_g / mpi_shape.z_procs;
 
-    auto x_grid =
-        AxisGrid<Real>(i_size, margin, mpi_shape.coord[0] * i_size, x_provider);
-    auto y_grid =
-        AxisGrid<Real>(j_size, margin, mpi_shape.coord[1] * j_size, y_provider);
-    auto z_grid =
-        AxisGrid<Real>(k_size, margin, mpi_shape.coord[2] * k_size, z_provider);
+    auto x_provider = UniformAxisProvider<Real>{x_min, x_max, i_size_g};
+    auto y_provider = UniformAxisProvider<Real>{y_min, y_max, j_size_g};
+    auto z_provider = UniformAxisProvider<Real>{z_min, z_max, k_size_g};
 
+    const int i_offset = mpi_shape.coord[0] * i_size;
+    const int j_offset = mpi_shape.coord[1] * j_size;
+    const int k_offset = mpi_shape.coord[2] * k_size;
+
+    auto x_grid = AxisGrid<Real>(i_size, margin, i_offset, x_provider);
+    auto y_grid = AxisGrid<Real>(j_size, margin, j_offset, y_provider);
+    auto z_grid = AxisGrid<Real>(k_size, margin, k_offset, z_provider);
     assemble_from_axes(std::move(x_grid), std::move(y_grid), std::move(z_grid));
   }
 
@@ -327,18 +328,37 @@ template <typename Real> struct Grid<Real, backend::Host> {
 
   /// @brief save grid data to a binary file
   /// @param config
-  void save(const Config &config) const {
+  void save(const Config &config, const mpi::Shape &mpi_shape) const {
     if (mpi::is_root()) {
-      std::ofstream ofs_bin(config.save_dir + "/grid.bin", std::ios::binary);
-      assert(ofs_bin.is_open());
+      // Generate global grid for saving
+      /// TODO: This should be implemented by MPI_gather.
+      const int margin = config["grid"]["margin"].as<int>();
+      const int i_size_g = config["grid"]["i_size"].as<int>();
+      const int j_size_g = config["grid"]["j_size"].as<int>();
+      const int k_size_g = config["grid"]["k_size"].as<int>();
+      assert(i_size == i_size_g / mpi_shape.x_procs);
+      assert(j_size == j_size_g / mpi_shape.y_procs);
+      assert(k_size == k_size_g / mpi_shape.z_procs);
 
-      auto write_array = [&ofs_bin](const std::vector<Real> &x) {
-        ofs_bin.write(reinterpret_cast<const char *>(x.data()),
-                      sizeof(Real) * x.size());
+      auto x_provider = UniformAxisProvider<Real>{x_min, x_max, i_size_g};
+      auto y_provider = UniformAxisProvider<Real>{y_min, y_max, j_size_g};
+      auto z_provider = UniformAxisProvider<Real>{z_min, z_max, k_size_g};
+
+      auto x_grid = AxisGrid<Real>(i_size_g, margin, 0, x_provider);
+      auto y_grid = AxisGrid<Real>(j_size_g, margin, 0, y_provider);
+      auto z_grid = AxisGrid<Real>(k_size_g, margin, 0, z_provider);
+
+      // Save global grid to a binary file
+      std::ofstream ofs(config.save_dir + "/grid.bin", std::ios::binary);
+      assert(ofs.is_open());
+
+      auto write_array = [&ofs](const std::vector<Real> &x) {
+        ofs.write(reinterpret_cast<const char *>(x.data()),
+                  sizeof(Real) * x.size());
       };
-      write_array(x);
-      write_array(y);
-      write_array(z);
+      write_array(x_grid.s);
+      write_array(y_grid.s);
+      write_array(z_grid.s);
     }
   }
 

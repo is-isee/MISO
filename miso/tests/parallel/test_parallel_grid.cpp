@@ -10,7 +10,6 @@
 using namespace miso;
 
 TEST_CASE("Test MPI" * doctest::test_suite("mpi")) {
-  // Test MPI initialization and finalization
   Env env;
   std::string config_dir = CONFIG_DIR;
   std::vector<std::string> directions = {"x", "y", "z"};
