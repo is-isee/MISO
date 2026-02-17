@@ -32,7 +32,6 @@ template <typename Real> struct ArtificialViscosity {
   Real vv_fac;
 
   /// @brief Constructor for ArtificialViscosity
-  /// @param model
   ArtificialViscosity(Config &config, Grid<Real, backend::Host> &grid)
       : grid(grid), cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].as<Real>();
