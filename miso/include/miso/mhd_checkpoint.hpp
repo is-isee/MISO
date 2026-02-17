@@ -1,10 +1,10 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/env.hpp>
-#include <miso/grid.hpp>
-#include <miso/mhd_fields.hpp>
-#include <miso/time.hpp>
+#include "array3d.hpp"
+#include "env.hpp"
+#include "grid.hpp"
+#include "mhd_fields.hpp"
+#include "time.hpp"
 
 namespace miso {
 namespace mhd {

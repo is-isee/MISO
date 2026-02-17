@@ -2,10 +2,14 @@
 #include <cassert>
 #include <filesystem>
 
-#include <miso/config.hpp>
-#include <miso/env.hpp>
-#include <miso/mpi_util.hpp>
-#include <miso/utility.hpp>
+// header for std::cout, std::fixed, std::setprecision, std::setw
+#include <iomanip>
+#include <iostream>
+
+#include "config.hpp"
+#include "env.hpp"
+#include "mpi_util.hpp"
+#include "utility.hpp"
 
 namespace miso {
 
@@ -96,6 +100,15 @@ template <typename Real> struct Time {
     MPI_Bcast(&time, 1, mpi::data_type<Real>(), 0, mpi::comm());
     MPI_Bcast(&n_output, 1, MPI_INT, 0, mpi::comm());
     MPI_Bcast(&n_step, 1, MPI_INT, 0, mpi::comm());
+  }
+
+  /// @brief Log time parameters to console
+  void log() const {
+    if (mpi::is_root()) {
+      std::cout << std::fixed << std::setprecision(2) << "time = " << std::setw(6)
+                << time << ";  n_step = " << std::setw(8) << n_step
+                << ";  n_output = " << std::setw(8) << n_output << std::endl;
+    }
   }
 };
 

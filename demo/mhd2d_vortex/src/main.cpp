@@ -10,9 +10,6 @@
 #include <miso/time.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
-#ifdef USE_CUDA
-#include <miso/cuda_util.cuh>
-#endif
 
 using namespace miso;
 
@@ -80,7 +77,7 @@ struct Model {
   void save_metadata() {
     MPI_Barrier(mpi::comm());
     config.save();
-    grid.save(config, mpi_shape);
+    grid.save(config);
     exec_ctx.mpi_shape.save();
   }
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <miso/grid.hpp>
-#include <miso/mhd_core.hpp>
-#include <miso/backend.hpp>
+#include "backend.hpp"
+#include "grid.hpp"
+#include "mhd_core.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {

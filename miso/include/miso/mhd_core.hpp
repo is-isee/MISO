@@ -1,8 +1,8 @@
 #pragma once
 
-#include <miso/backend.hpp>
+#include "backend.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {

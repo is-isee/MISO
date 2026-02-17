@@ -1,18 +1,19 @@
 #pragma once
 
 #include <cassert>
+#include <exception>
 #include <utility>
 #include <vector>
 
-#include <miso/backend.hpp>
-#include <miso/cuda_compat.hpp>
-#include <miso/env.hpp>
-#include <miso/mpi_util.hpp>
+#include "backend.hpp"
+#include "cuda_compat.hpp"
+#include "env.hpp"
+#include "mpi_util.hpp"
 
-#include <miso/config.hpp>
+#include "config.hpp"
 
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {
@@ -240,6 +241,40 @@ template <typename Real> struct Grid<Real, backend::Host> {
     min_dxyz = util::min3(dx[0], dy[0], dz[0]);
   }
 
+  void check_margin(int margin) const {
+    if (margin < 1) {
+      throw std::runtime_error("Invalid margin size: margin < 1");
+    }
+  }
+
+  void check_size(int i_size, int j_size, int k_size) const {
+    if (i_size <= 0 || j_size <= 0 || k_size <= 0) {
+      throw std::runtime_error("Invalid grid size: i_size <= 0 or j_size <= 0 or "
+                               "k_size <= 0");
+    }
+  }
+
+  void check_range(Real x_min, Real x_max, Real y_min, Real y_max, Real z_min,
+                   Real z_max) const {
+    if (x_min >= x_max || y_min >= y_max || z_min >= z_max) {
+      throw std::runtime_error("Invalid grid range: x_min >= x_max or y_min >= "
+                               "y_max or z_min >= z_max");
+    }
+  }
+
+  void check_divisibility(int i_size_g, int j_size_g, int k_size_g,
+                          const mpi::Shape &mpi_shape) const {
+    if (i_size_g % mpi_shape.x_procs != 0 || j_size_g % mpi_shape.y_procs != 0 ||
+        k_size_g % mpi_shape.z_procs != 0) {
+      printf("i_size_g = %d, j_size_g = %d, k_size_g = %d\n", i_size_g, j_size_g,
+             k_size_g);
+      printf("x_procs = %d, y_procs = %d, z_procs = %d\n", mpi_shape.x_procs,
+             mpi_shape.y_procs, mpi_shape.z_procs);
+      throw std::runtime_error(
+          "Grid size is not divisible by the number of MPI processes.");
+    }
+  }
+
   /// @brief Construct simulation grid.
   explicit Grid(const Config &config, const mpi::Shape &mpi_shape)
       : x_min(config["grid"]["x_min"].as<Real>()),
@@ -269,6 +304,12 @@ template <typename Real> struct Grid<Real, backend::Host> {
     auto y_grid = AxisGrid<Real>(j_size, margin, j_offset, y_provider);
     auto z_grid = AxisGrid<Real>(k_size, margin, k_offset, z_provider);
     assemble_from_axes(std::move(x_grid), std::move(y_grid), std::move(z_grid));
+
+    // Argument check
+    check_margin(margin);
+    check_divisibility(i_size_g, j_size_g, k_size_g, mpi_shape);
+    check_size(i_size, j_size, k_size);
+    check_range(x_min, x_max, y_min, y_max, z_min, z_max);
   }
 
   /// @brief Construct simulation grid from axis grids (serial version).
@@ -282,11 +323,17 @@ template <typename Real> struct Grid<Real, backend::Host> {
     auto y_provider = UniformAxisProvider<Real>{y_min, y_max, j_size};
     auto z_provider = UniformAxisProvider<Real>{z_min, z_max, k_size};
 
-    auto x_grid = AxisGrid<Real>(i_size, margin_, 0, x_provider);
-    auto y_grid = AxisGrid<Real>(j_size, margin_, 0, y_provider);
-    auto z_grid = AxisGrid<Real>(k_size, margin_, 0, z_provider);
+    constexpr int offset = 0;  // No offset for serial version
+    auto x_grid = AxisGrid<Real>(i_size, margin_, offset, x_provider);
+    auto y_grid = AxisGrid<Real>(j_size, margin_, offset, y_provider);
+    auto z_grid = AxisGrid<Real>(k_size, margin_, offset, z_provider);
 
     assemble_from_axes(std::move(x_grid), std::move(y_grid), std::move(z_grid));
+
+    // Argument check
+    check_margin(margin_);
+    check_size(i_size_, j_size_, k_size_);
+    check_range(x_min_, x_max_, y_min_, y_max_, z_min_, z_max_);
   }
 
   /// @brief Copy constructor.
@@ -295,21 +342,6 @@ template <typename Real> struct Grid<Real, backend::Host> {
   /// @brief Copy assignment operator.
   Grid<Real, backend::Host> &
   operator=(const Grid<Real, backend::Host> &) = default;
-
-#ifdef __CUDACC__
-  /// @brief Constructor from a CUDA grid.
-  explicit Grid(const Grid<Real, backend::CUDA> &grid_d)
-      : i_size(grid_d.i_size), j_size(grid_d.j_size), k_size(grid_d.k_size),
-        i_total(grid_d.i_total), j_total(grid_d.j_total), k_total(grid_d.k_total),
-        is(grid_d.is), js(grid_d.js), ks(grid_d.ks), i_margin(grid_d.i_margin),
-        j_margin(grid_d.j_margin), k_margin(grid_d.k_margin), x_min(grid_d.x_min),
-        x_max(grid_d.x_max), y_min(grid_d.y_min), y_max(grid_d.y_max),
-        z_min(grid_d.z_min), z_max(grid_d.z_max), x(i_total), y(j_total),
-        z(k_total), dx(i_total), dy(j_total), dz(k_total), dxi(i_total),
-        dyi(j_total), dzi(k_total), min_dxyz(grid_d.min_dxyz) {
-    copy_from(grid_d);
-  }
-#endif  // __CUDACC__
 
   // Shallow-copy
   GridView<Real> view() noexcept {
@@ -328,7 +360,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
 
   /// @brief save grid data to a binary file
   /// @param config
-  void save(const Config &config, const mpi::Shape &mpi_shape) const {
+  void save(const Config &config) const {
     if (mpi::is_root()) {
       // Generate global grid for saving
       /// TODO: This should be implemented by MPI_gather.
@@ -336,9 +368,6 @@ template <typename Real> struct Grid<Real, backend::Host> {
       const int i_size_g = config["grid"]["i_size"].as<int>();
       const int j_size_g = config["grid"]["j_size"].as<int>();
       const int k_size_g = config["grid"]["k_size"].as<int>();
-      assert(i_size == i_size_g / mpi_shape.x_procs);
-      assert(j_size == j_size_g / mpi_shape.y_procs);
-      assert(k_size == k_size_g / mpi_shape.z_procs);
 
       auto x_provider = UniformAxisProvider<Real>{x_min, x_max, i_size_g};
       auto y_provider = UniformAxisProvider<Real>{y_min, y_max, j_size_g};

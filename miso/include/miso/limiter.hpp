@@ -1,7 +1,7 @@
 #pragma once
 
-#include <miso/cuda_compat.hpp>
-#include <miso/utility.hpp>
+#include "cuda_compat.hpp"
+#include "utility.hpp"
 
 namespace miso {
 namespace limiter {

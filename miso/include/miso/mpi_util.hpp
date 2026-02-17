@@ -4,8 +4,8 @@
 #include <fstream>
 #include <iostream>
 
-#include <miso/config.hpp>
-#include <miso/env.hpp>
+#include "config.hpp"
+#include "env.hpp"
 
 // clang-format off
 /// @brief Macro to check MPI errors

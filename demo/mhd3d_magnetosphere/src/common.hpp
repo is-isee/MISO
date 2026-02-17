@@ -12,9 +12,6 @@
 #include <miso/time.hpp>
 #include <miso/types.hpp>
 #include <miso/utility.hpp>
-#ifdef USE_CUDA
-#include <miso/cuda_util.cuh>
-#endif
 
 using namespace miso;
 

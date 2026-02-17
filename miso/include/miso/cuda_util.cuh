@@ -2,8 +2,8 @@
 
 #include <cstdio>
 
-#include <miso/cuda_compat.hpp>
-#include <miso/env.hpp>
+#include "cuda_compat.hpp"
+#include "env.hpp"
 
 // clang-format off
 /// @brief Macro to check CUDA errors

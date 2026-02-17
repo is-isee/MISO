@@ -8,9 +8,9 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <miso/env.hpp>
-#include <miso/types.hpp>
-#include <miso/utility.hpp>
+#include "env.hpp"
+#include "types.hpp"
+#include "utility.hpp"
 
 namespace miso {
 

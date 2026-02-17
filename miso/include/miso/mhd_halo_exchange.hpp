@@ -2,16 +2,16 @@
 
 #include <array>
 
-#include <miso/array3d.hpp>
-#include <miso/array4d.hpp>
-#include <miso/backend.hpp>
-#include <miso/grid.hpp>
-#include <miso/mhd_buffers.hpp>
-#include <miso/mhd_core.hpp>
-#include <miso/mhd_fields.hpp>
-#include <miso/mpi_util.hpp>
+#include "array3d.hpp"
+#include "array4d.hpp"
+#include "backend.hpp"
+#include "grid.hpp"
+#include "mhd_buffers.hpp"
+#include "mhd_core.hpp"
+#include "mhd_fields.hpp"
+#include "mpi_util.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {

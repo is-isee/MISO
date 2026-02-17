@@ -8,7 +8,6 @@ struct Model {
   Config &config;
   mpi::Shape mpi_shape;
   Time<Real> time;
-  Grid<Real, backend::Host> grid_global;
   Grid<Real, backend::Host> grid;
 
   mhd::ExecContext<Backend> exec_ctx;
@@ -20,16 +19,15 @@ struct Model {
   TimeStep timestep;
 
   Model(Config &config)
-      : config(config), mpi_shape(config), time(config), grid_global(config),
-        grid(grid_global, mpi_shape), exec_ctx(mpi_shape, grid), eos(config),
-        mhd(config, grid, exec_ctx, eos), ic(config),
-        bc(config, mhd.grid, mpi_shape), src(config, mhd.grid),
+      : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
+        exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx, eos),
+        ic(config), bc(config, mhd.grid, mpi_shape), src(config, mhd.grid),
         timestep(config, mhd.grid) {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
     config.save();
-    grid_global.save(config);
+    grid.save(config);
     exec_ctx.mpi_shape.save();
   }
 

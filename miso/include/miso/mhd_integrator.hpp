@@ -1,9 +1,9 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/constants.hpp>
-#include <miso/cuda_compat.hpp>
-#include <miso/mhd_fields.hpp>
+#include "array3d.hpp"
+#include "constants.hpp"
+#include "cuda_compat.hpp"
+#include "mhd_fields.hpp"
 
 namespace miso {
 namespace mhd {
@@ -87,8 +87,8 @@ space_centered_4th(Array3DView<const Real> qq1, Array3DView<const Real> qq2,
 }  // namespace mhd
 }  // namespace miso
 
-#include <miso/mhd_integrator_host.hpp>
+#include "mhd_integrator_host.hpp"
 
 #ifdef __CUDACC__
-#include <miso/mhd_integrator_cuda.cuh>
+#include "mhd_integrator_cuda.cuh"
 #endif

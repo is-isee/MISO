@@ -1,10 +1,10 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/constants.hpp>
-#include <miso/env.hpp>
-#include <miso/mhd_artificial_viscosity_host.hpp>
-#include <miso/mhd_fields.hpp>
+#include "array3d.hpp"
+#include "constants.hpp"
+#include "env.hpp"
+#include "mhd_artificial_viscosity_host.hpp"
+#include "mhd_fields.hpp"
 
 namespace miso {
 namespace mhd {

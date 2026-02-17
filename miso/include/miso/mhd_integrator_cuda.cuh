@@ -1,14 +1,14 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/constants.hpp>
-#include <miso/cuda_compat.hpp>
-#include <miso/cuda_util.cuh>
-#include <miso/env.hpp>
-#include <miso/execution.hpp>
-#include <miso/mhd_artificial_viscosity_cuda.cuh>
-#include <miso/mhd_fields.hpp>
-#include <miso/mhd_halo_exchange.hpp>
+#include "array3d.hpp"
+#include "constants.hpp"
+#include "cuda_compat.hpp"
+#include "cuda_util.cuh"
+#include "env.hpp"
+#include "execution.hpp"
+#include "mhd_artificial_viscosity_cuda.cuh"
+#include "mhd_fields.hpp"
+#include "mhd_halo_exchange.hpp"
 
 namespace miso {
 namespace mhd {
