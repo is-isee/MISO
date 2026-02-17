@@ -20,7 +20,6 @@ class Data:
         data_dir : str
             The directory where the ``config.yaml`` file is located
         """
-
         self.conf = Conf(data_dir)
         self.mpi = MPI(self.conf)
         self.grid = Grid(self.conf)
@@ -35,17 +34,7 @@ class Data:
         n_output : int
             The output number to load the data from
         """
-
         shape_global = (self.grid.i_size, self.grid.j_size, self.grid.k_size)
-        self.ro = np.zeros(shape_global, dtype=self.conf.dtype)
-        self.vx = np.zeros_like(self.ro)
-        self.vy = np.zeros_like(self.ro)
-        self.vz = np.zeros_like(self.ro)
-        self.bx = np.zeros_like(self.ro)
-        self.by = np.zeros_like(self.ro)
-        self.bz = np.zeros_like(self.ro)
-        self.ei = np.zeros_like(self.ro)
-        self.ph = np.zeros_like(self.ro)
 
         self.time.load(n_output)
 
@@ -58,15 +47,12 @@ class Data:
 
         for rank in range(self.mpi.n_procs):
             filename = self.conf.mhd_data_dir / (
-                "mhd."
-                + str(n_output).zfill(self.conf.time.n_output_digits)
-                + "."
-                + str(rank).zfill(self.conf.mhd.n_output_digits)
-                + ".bin"
+                f"mhd.{n_output:0{self.conf.time.n_output_digits}d}"
+                f".{rank:0{self.conf.mhd.n_output_digits}d}.bin"
             )
 
             if self.mpi.n_procs > 1:
-                ijk_global = [
+                ijk_global = (
                     slice(
                         self.mpi.coords["x"][rank] * self.grid.i_size_local,
                         (self.mpi.coords["x"][rank] + 1) * self.grid.i_size_local,
@@ -79,48 +65,53 @@ class Data:
                         self.mpi.coords["z"][rank] * self.grid.k_size_local,
                         (self.mpi.coords["z"][rank] + 1) * self.grid.k_size_local,
                     ),
-                ]
+                )
             else:
-                ijk_global = [
+                ijk_global = (
                     slice(0, self.grid.i_size_local),
                     slice(0, self.grid.j_size_local),
                     slice(0, self.grid.k_size_local),
-                ]
+                )
 
-            ijk_local = [
+            ijk_local = (
                 slice(self.grid.i_margin, self.grid.i_total_local - self.grid.i_margin),
                 slice(self.grid.j_margin, self.grid.j_total_local - self.grid.j_margin),
                 slice(self.grid.k_margin, self.grid.k_total_local - self.grid.k_margin),
-            ]
+            )
 
             with open(filename, "rb") as f:
-                self.ro[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.vx[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.vy[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.vz[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.bx[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.by[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.bz[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.ei[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
-                self.ph[tuple(ijk_global)] = np.fromfile(
-                    f, dtype=self.conf.endian + self.conf.dtype, count=count
-                ).reshape(shape, order="C")[tuple(ijk_local)]
+                elem_size = np.fromfile(f, dtype=self.conf.endian + "u4", count=1)[0]
+                if elem_size == 4:
+                    elem_base = "f4"
+                elif elem_size == 8:
+                    elem_base = "f8"
+                else:
+                    raise ValueError(f"Unexpected element size: {elem_size}")
+                nvar = 9  # ro, vx, vy, vz, bx, by, bz, ei, ph
+
+                if rank == 0:
+                    self.ro = np.zeros(shape_global, dtype=elem_base)
+                    self.vx = np.zeros_like(self.ro)
+                    self.vy = np.zeros_like(self.ro)
+                    self.vz = np.zeros_like(self.ro)
+                    self.bx = np.zeros_like(self.ro)
+                    self.by = np.zeros_like(self.ro)
+                    self.bz = np.zeros_like(self.ro)
+                    self.ei = np.zeros_like(self.ro)
+                    self.ph = np.zeros_like(self.ro)
+
+                data = np.fromfile(
+                    f, dtype=self.conf.endian + elem_base, count=nvar * count
+                ).reshape((nvar, *shape), order="C")
+                self.ro[ijk_global] = data[0][ijk_local]
+                self.vx[ijk_global] = data[1][ijk_local]
+                self.vy[ijk_global] = data[2][ijk_local]
+                self.vz[ijk_global] = data[3][ijk_local]
+                self.bx[ijk_global] = data[4][ijk_local]
+                self.by[ijk_global] = data[5][ijk_local]
+                self.bz[ijk_global] = data[6][ijk_local]
+                self.ei[ijk_global] = data[7][ijk_local]
+                self.ph[ijk_global] = data[8][ijk_local]
 
         self.ro = np.squeeze(self.ro)
         self.vx = np.squeeze(self.vx)

@@ -403,6 +403,10 @@ template <typename Real> struct Grid<Real, backend::Host> {
       std::ofstream ofs(config.save_dir + "/grid.bin", std::ios::binary);
       assert(ofs.is_open());
 
+      constexpr std::uint32_t elem_size = sizeof(Real);
+      ofs.write(reinterpret_cast<const char *>(&elem_size),
+                sizeof(std::uint32_t));
+
       auto write_array = [&ofs](const std::vector<Real> &x) {
         ofs.write(reinterpret_cast<const char *>(x.data()),
                   sizeof(Real) * x.size());

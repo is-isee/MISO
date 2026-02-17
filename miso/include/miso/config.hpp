@@ -9,7 +9,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include "env.hpp"
-#include "types.hpp"
 #include "utility.hpp"
 
 namespace miso {
@@ -52,15 +51,6 @@ struct Config {
         throw std::runtime_error("Config file not found: " + load_filepath);
       }
       yaml_obj = YAML::LoadFile(load_filepath);
-
-      // output Real type
-      if constexpr (std::is_same_v<Real, float>) {
-        yaml_obj["data_type"]["Real"] = "float";
-      } else if constexpr (std::is_same_v<Real, double>) {
-        yaml_obj["data_type"]["Real"] = "double";
-      } else {
-        throw std::runtime_error("Unsupported Real type");
-      }
 
       // output Endian type
       if (util::get_endian() == util::Endian::Little) {
