@@ -178,6 +178,7 @@ int main(int argc, char **argv) {
 
   // Read configuration file
   auto config_path = parse_config_filepath(argc, argv);
+  // by default, x-direction shock tube config is loaded.
   Config config(config_path.value_or("./config/config_x.yaml"));
 
   // Run simulation
