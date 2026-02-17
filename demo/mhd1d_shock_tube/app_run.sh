@@ -28,7 +28,7 @@ if [[ ! -f "${CONFIG_PATH_X}" ]]; then
     echo "Error: Config file not found at ${CONFIG_PATH_X}"
     exit 1
 fi
-    CONFIG_PATH_Y="${THIS_DIR}/config/config_y.yaml"
+CONFIG_PATH_Y="${THIS_DIR}/config/config_y.yaml"
 if [[ ! -f "${CONFIG_PATH_Y}" ]]; then
     echo "Error: Config file not found at ${CONFIG_PATH_Y}"
     exit 1

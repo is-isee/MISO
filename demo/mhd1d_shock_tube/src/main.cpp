@@ -55,6 +55,9 @@ struct InitialCondition {
             xyz = grid.z[k];
             b_main = &qq.bz(i, j, k);
             b_perp = &qq.bx(i, j, k);
+          } else {
+            throw std::runtime_error(
+                "At least one of grid dimensions must be greater than 1.");
           }
 
           *b_main = bm * util::sqrt(4 * pi<Real>);

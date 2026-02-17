@@ -45,6 +45,9 @@ struct InitialCondition {
             xyz = grid.y[j];
           } else if (grid.k_total > 1) {
             xyz = grid.z[k];
+          } else {
+            throw std::runtime_error(
+                "At least one of grid dimensions must be greater than 1.");
           }
 
           if (xyz < 0.5) {
