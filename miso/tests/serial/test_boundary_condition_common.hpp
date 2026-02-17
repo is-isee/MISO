@@ -10,14 +10,17 @@
 #include <miso/grid.hpp>
 #include <miso/types.hpp>
 
+using Real = float;
+
 inline void run_boundary_condition_tests() {
   using namespace miso;
   namespace bc = miso::boundary_condition;
   int i_size = 10, j_size = 11, k_size = 12;
   int margin = 2;
-  Real x_min = 0.0, x_max = 1.0, y_min = 0.0, y_max = 2.0, z_min = 0.0, z_max = 3.0;
-  Grid<Real, backend::Host> grid(i_size, j_size, k_size, margin, x_min, x_max, y_min,
-                                 y_max, z_min, z_max);
+  Real x_min = 0.0, x_max = 1.0, y_min = 0.0, y_max = 2.0, z_min = 0.0,
+       z_max = 3.0;
+  Grid<Real, backend::Host> grid(i_size, j_size, k_size, margin, x_min, x_max,
+                                 y_min, y_max, z_min, z_max);
 
   // Test the range_set function
   int i0_, i1_, j0_, j1_, k0_, k1_;

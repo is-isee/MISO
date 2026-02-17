@@ -1,7 +1,7 @@
 #pragma once
 
-#include <miso/mhd_artificial_viscosity_host.hpp>
+#include "mhd_artificial_viscosity_host.hpp"
 
 #ifdef __CUDACC__
-#include <miso/mhd_artificial_viscosity_cuda.cuh>
+#include "mhd_artificial_viscosity_cuda.cuh"
 #endif

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/constants.hpp>
-#include <miso/cuda_util.cuh>
-#include <miso/grid.hpp>
-#include <miso/limiter.hpp>
-#include <miso/mhd_fields.hpp>
+#include "array3d.hpp"
+#include "constants.hpp"
+#include "cuda_util.cuh"
+#include "grid.hpp"
+#include "limiter.hpp"
+#include "mhd_fields.hpp"
 
 namespace miso {
 namespace mhd {
@@ -455,9 +455,8 @@ __global__ void update_ei_kernel(FieldsView<Real> qq, FieldsView<Real> qq_rslt,
 
 }  // namespace artificial_viscosity
 
-template <typename Real, typename EOS> struct ArtificialViscosity {
+template <typename Real> struct ArtificialViscosity {
   Grid<Real, backend::CUDA> &grid;
-  EOS &eos;
   cuda::KernelShape3D &cu_shape;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
@@ -473,9 +472,10 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   /// @brief Characteristic velocity factor for fluid velocity
   Real vv_fac;
 
-  ArtificialViscosity(Config &config, Grid<Real, backend::CUDA> &grid, EOS &eos,
+  /// @brief Constructor for ArtificialViscosity
+  ArtificialViscosity(Config &config, Grid<Real, backend::CUDA> &grid,
                       cuda::KernelShape3D &cu_shape)
-      : grid(grid), eos(eos), cu_shape(cu_shape),
+      : grid(grid), cu_shape(cu_shape),
         cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].as<Real>();
@@ -486,7 +486,10 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
     assert(fh >= 0);
   }
 
-  void characteristic_velocity_eval(const Fields<Real, backend::CUDA> &qq) {
+  /// @brief Evaluate the characteristic velocity
+  template <typename EOS>
+  void characteristic_velocity_eval(const Fields<Real, backend::CUDA> &qq,
+                                    const EOS &eos) {
     artificial_viscosity::characteristic_velocity_eval_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
             cc.view(), qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);

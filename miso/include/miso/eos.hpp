@@ -1,6 +1,6 @@
 #pragma once
 
-#include <miso/config.hpp>
+#include "config.hpp"
 
 namespace miso {
 namespace eos {

@@ -1,8 +1,8 @@
 #pragma once
-#include <miso/backend.hpp>
-#include <miso/cuda_compat.hpp>
+#include "backend.hpp"
+#include "cuda_compat.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 #ifdef __CUDACC__

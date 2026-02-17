@@ -1,42 +1,14 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/constants.hpp>
-#include <miso/cuda_compat.hpp>
-#include <miso/mhd_fields.hpp>
+#include "array3d.hpp"
+#include "constants.hpp"
+#include "cuda_compat.hpp"
+#include "mhd_fields.hpp"
 
 namespace miso {
 namespace mhd {
 
-template <typename Real, typename EOS, typename Backend> struct Integrator;
-
-/// @brief Dummy source class (without source terms)
-/// @details Volumetric heat / force terms are expected.
-template <typename Real> struct NoSource {
-  /// External force: x-direction
-  __host__ __device__ inline Real vx(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: y-direction
-  __host__ __device__ inline Real vy(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: z-direction
-  __host__ __device__ inline Real vz(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External heating
-  __host__ __device__ inline Real ei(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-};
+template <typename Real, typename Backend> struct Integrator;
 
 /// @brief Calculate 4th order space-centered derivative for qq
 template <typename Real>
@@ -87,8 +59,8 @@ space_centered_4th(Array3DView<const Real> qq1, Array3DView<const Real> qq2,
 }  // namespace mhd
 }  // namespace miso
 
-#include <miso/mhd_integrator_host.hpp>
+#include "mhd_integrator_host.hpp"
 
 #ifdef __CUDACC__
-#include <miso/mhd_integrator_cuda.cuh>
+#include "mhd_integrator_cuda.cuh"
 #endif

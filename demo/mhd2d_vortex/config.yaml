@@ -3,13 +3,13 @@ base:
   # if save_dir exists
   # continue: true -> continue simulation
   # continue: false -> start from scratch
-  continue: false
+  continue: true
 
 time:
   time_save_dir: time/
+  n_output_digits: 8
   tend: 0.8
   dt_output: 0.01
-  n_output_digits: 8
 
 grid:
   i_size: 128

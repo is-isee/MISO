@@ -2,14 +2,14 @@
 
 #include <stdexcept>
 
-#include <miso/array3d.hpp>
-#include <miso/backend.hpp>
-#include <miso/grid.hpp>
-#include <miso/mpi_util.hpp>
-#include <miso/types.hpp>
-#include <miso/utility.hpp>
+#include "array3d.hpp"
+#include "backend.hpp"
+#include "grid.hpp"
+#include "mpi_util.hpp"
+#include "types.hpp"
+#include "utility.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {

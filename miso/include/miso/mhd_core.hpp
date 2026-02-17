@@ -1,8 +1,8 @@
 #pragma once
 
-#include <miso/backend.hpp>
+#include "backend.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {
@@ -12,10 +12,10 @@ namespace mhd {
 constexpr int n_fields = 9;
 
 /// @brief Execution context for MHD
-template <typename Backend = backend::Host> struct ExecContext {};
+template <typename Real, typename Backend> struct ExecContext {};
 
 /// @brief Execution context for MHD on CPU
-template <> struct ExecContext<backend::Host> {
+template <typename Real> struct ExecContext<Real, backend::Host> {
   mpi::Shape &mpi_shape;
 
   ExecContext(mpi::Shape &mpi_shape_, const Grid<Real, backend::Host> &)
@@ -24,7 +24,7 @@ template <> struct ExecContext<backend::Host> {
 
 #ifdef __CUDACC__
 /// @brief Execution context for MHD on GPU
-template <> struct ExecContext<backend::CUDA> {
+template <typename Real> struct ExecContext<Real, backend::CUDA> {
   mpi::Shape &mpi_shape;
   cuda::KernelShape3D cu_shape;
 

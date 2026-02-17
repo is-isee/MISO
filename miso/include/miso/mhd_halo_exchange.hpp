@@ -2,23 +2,23 @@
 
 #include <array>
 
-#include <miso/array3d.hpp>
-#include <miso/array4d.hpp>
-#include <miso/backend.hpp>
-#include <miso/grid.hpp>
-#include <miso/mhd_buffers.hpp>
-#include <miso/mhd_core.hpp>
-#include <miso/mhd_fields.hpp>
-#include <miso/mpi_util.hpp>
+#include "array3d.hpp"
+#include "array4d.hpp"
+#include "backend.hpp"
+#include "grid.hpp"
+#include "mhd_buffers.hpp"
+#include "mhd_core.hpp"
+#include "mhd_fields.hpp"
+#include "mpi_util.hpp"
+#include "types.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {
 namespace mhd {
 
-template <typename Real, typename Backend = backend::Host>
-struct HaloExchanger {};
+template <typename Real, typename Backend> struct HaloExchanger {};
 
 template <typename Real> struct HaloExchanger<Real, backend::Host> {
   // MPI communication buffers
@@ -33,7 +33,7 @@ template <typename Real> struct HaloExchanger<Real, backend::Host> {
   mpi::Shape &mpi_shape;
 
   HaloExchanger(Grid<Real, backend::Host> &grid,
-                ExecContext<backend::Host> &exec_ctx)
+                ExecContext<Real, backend::Host> &exec_ctx)
       : recv_x_pos(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_x_neg(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_y_pos(grid.i_total, grid.j_margin, grid.k_total, n_fields),
@@ -455,7 +455,7 @@ template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
   cuda::KernelShape3D &cu_shape;
 
   explicit HaloExchanger(Grid<Real, backend::CUDA> &grid,
-                         ExecContext<backend::CUDA> &exec_ctx)
+                         ExecContext<Real, backend::CUDA> &exec_ctx)
       : buff(grid), grid(grid), mpi_shape(exec_ctx.mpi_shape),
         cu_shape(exec_ctx.cu_shape) {}
 

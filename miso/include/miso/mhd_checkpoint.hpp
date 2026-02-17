@@ -1,10 +1,10 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/env.hpp>
-#include <miso/grid.hpp>
-#include <miso/mhd_fields.hpp>
-#include <miso/time.hpp>
+#include "array3d.hpp"
+#include "env.hpp"
+#include "grid.hpp"
+#include "mhd_fields.hpp"
+#include "time.hpp"
 
 namespace miso {
 namespace mhd {
@@ -37,6 +37,9 @@ template <typename Real> struct Checkpoint {
     std::ofstream ofs(filename, std::ios::binary);
     assert(ofs.is_open());
 
+    constexpr std::uint32_t elem_size = sizeof(Real);
+    ofs.write(reinterpret_cast<const char *>(&elem_size), sizeof(std::uint32_t));
+
     auto write_array = [&ofs](const Array3D<Real, backend::Host> &arr) {
       ofs.write(reinterpret_cast<const char *>(arr.data()),
                 sizeof(Real) * arr.size());
@@ -57,6 +60,13 @@ template <typename Real> struct Checkpoint {
     std::string filename = get_filename(time);
     std::ifstream ifs(filename, std::ios::binary);
     assert(ifs.is_open());
+
+    std::uint32_t elem_size;
+    ifs.read(reinterpret_cast<char *>(&elem_size), sizeof(std::uint32_t));
+    if (elem_size != sizeof(Real)) {
+      throw std::runtime_error(
+          "Checkpoint file element size does not match Real type size.");
+    }
 
     auto read_array = [&ifs](Array3D<Real, backend::Host> &arr) {
       ifs.read(reinterpret_cast<char *>(arr.data()), sizeof(Real) * arr.size());

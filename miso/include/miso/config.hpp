@@ -8,14 +8,13 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <miso/env.hpp>
-#include <miso/types.hpp>
-#include <miso/utility.hpp>
+#include "env.hpp"
+#include "utility.hpp"
 
 namespace miso {
 
 /// @brief Parse the path of configuration file from command line arguments
-inline std::optional<std::string> parse_config_filepath(int argc, char *argv[]) {
+inline std::optional<std::string> parse_config_filepath(int argc, char **argv) {
   for (int i = 1; i < argc; ++i) {
     std::string_view arg(argv[i]);
 
@@ -52,15 +51,6 @@ struct Config {
         throw std::runtime_error("Config file not found: " + load_filepath);
       }
       yaml_obj = YAML::LoadFile(load_filepath);
-
-      // output Real type
-      if constexpr (std::is_same_v<Real, float>) {
-        yaml_obj["data_type"]["Real"] = "float";
-      } else if constexpr (std::is_same_v<Real, double>) {
-        yaml_obj["data_type"]["Real"] = "double";
-      } else {
-        throw std::runtime_error("Unsupported Real type");
-      }
 
       // output Endian type
       if (util::get_endian() == util::Endian::Little) {

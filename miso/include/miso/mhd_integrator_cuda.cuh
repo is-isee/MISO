@@ -1,14 +1,14 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/constants.hpp>
-#include <miso/cuda_compat.hpp>
-#include <miso/cuda_util.cuh>
-#include <miso/env.hpp>
-#include <miso/execution.hpp>
-#include <miso/mhd_artificial_viscosity_cuda.cuh>
-#include <miso/mhd_fields.hpp>
-#include <miso/mhd_halo_exchange.hpp>
+#include "array3d.hpp"
+#include "constants.hpp"
+#include "cuda_compat.hpp"
+#include "cuda_util.cuh"
+#include "env.hpp"
+#include "execution.hpp"
+#include "mhd_artificial_viscosity_cuda.cuh"
+#include "mhd_fields.hpp"
+#include "mhd_halo_exchange.hpp"
 
 namespace miso {
 namespace mhd {
@@ -290,22 +290,19 @@ update_ei_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
   // clang-format on
 }
 
-template <typename Real, typename EOS>
-struct Integrator<Real, EOS, backend::CUDA> {
+template <typename Real> struct Integrator<Real, backend::CUDA> {
   /// @brief CUDA kernel shape
   cuda::KernelShape3D &cu_shape;
 
   /// @brief Spatial grid
   Grid<Real, backend::CUDA> &grid;
-  /// @brief Equation of states
-  EOS &eos;
   /// @brief Workspace
   Fields<Real, backend::CUDA> qq_argm, qq_rslt;
 
   /// @brief Halo exchanger
   HaloExchanger<Real, backend::CUDA> halo_exchanger;
   /// @brief Artificial viscosity for MHD equations
-  impl_cuda::ArtificialViscosity<Real, EOS> artdiff;
+  impl_cuda::ArtificialViscosity<Real> artdiff;
 
   /// @brief Workspace for timestep calculation
   ReduceHelper<Real> cfl_helper;
@@ -329,10 +326,9 @@ struct Integrator<Real, EOS, backend::CUDA> {
   Real tau_divb;
 
   Integrator(Config &config, Grid<Real, backend::CUDA> &grid,
-             ExecContext<backend::CUDA> &exec_ctx, EOS &eos)
-      : cu_shape(exec_ctx.cu_shape), grid(grid), eos(eos), qq_argm(grid),
-        qq_rslt(grid), halo_exchanger(grid, exec_ctx),
-        artdiff(config, grid, eos, exec_ctx.cu_shape),
+             ExecContext<Real, backend::CUDA> &exec_ctx)
+      : cu_shape(exec_ctx.cu_shape), grid(grid), qq_argm(grid), qq_rslt(grid),
+        halo_exchanger(grid, exec_ctx), artdiff(config, grid, exec_ctx.cu_shape),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
@@ -341,8 +337,8 @@ struct Integrator<Real, EOS, backend::CUDA> {
   }
 
   /// @brief Update MHD equations using 4th order space-centered scheme
-  template <typename Source>
-  void update_sc4(const Real dt, const Source &src,
+  template <typename EOS, typename Source>
+  void update_sc4(const Real dt, const EOS &eos, const Source &src,
                   const Fields<Real, backend::CUDA> &qq_orgn,
                   const Fields<Real, backend::CUDA> &qq_argm,
                   Fields<Real, backend::CUDA> &qq_rslt) {
@@ -399,37 +395,39 @@ struct Integrator<Real, EOS, backend::CUDA> {
   template <typename BoundaryCondition>
   void apply_boundary_condition(const BoundaryCondition &bc,
                                 Fields<Real, backend::CUDA> &qq) {
-    bc.apply(qq.view(), grid.const_view(), eos);
+    bc.apply(qq.view(), grid.const_view());
     MISO_CUDA_CHECK(cudaDeviceSynchronize());  // May not be necessary
     halo_exchanger.apply(qq);
   }
 
   /// @brief Runge-Kutta 4th order time integration step
-  template <typename BoundaryCondition, typename Source>
-  void runge_kutta_4step(const Real dt, const BoundaryCondition &bc,
-                         const Source &src, Fields<Real, backend::CUDA> &qq) {
-    update_sc4(dt / 4.0, src, qq, qq, qq_rslt);
+  template <typename EOS, typename BoundaryCondition, typename Source>
+  void runge_kutta_4step(const Real dt, const EOS &eos,
+                         const BoundaryCondition &bc, const Source &src,
+                         Fields<Real, backend::CUDA> &qq) {
+    update_sc4(dt / 4.0, eos, src, qq, qq, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt / 3.0, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt / 3.0, eos, src, qq, qq_argm, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt / 2.0, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt / 2.0, eos, src, qq, qq_argm, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt, eos, src, qq, qq_argm, qq_rslt);
     qq.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq);
   }
 
   /// @brief Apply artificial viscosity
-  template <typename BoundaryCondition>
-  void apply_artificial_viscosity(const Real dt, const BoundaryCondition &bc,
+  template <typename EOS, typename BoundaryCondition>
+  void apply_artificial_viscosity(const Real dt, const EOS &eos,
+                                  const BoundaryCondition &bc,
                                   Fields<Real, backend::CUDA> &qq) {
-    artdiff.characteristic_velocity_eval(qq);
+    artdiff.characteristic_velocity_eval(qq, eos);
 
     // x direction
     artdiff.update(qq, qq_rslt, Direction::X, dt);
@@ -448,7 +446,8 @@ struct Integrator<Real, EOS, backend::CUDA> {
   }
 
   /// @brief Calculate time spacing based on CFL condition
-  Real cfl(const Fields<Real, backend::CUDA> &qq) {
+  template <typename EOS>
+  Real cfl(const Fields<Real, backend::CUDA> &qq, const EOS &eos) {
     auto qq_v = qq.const_view();
     auto grid_v = grid.const_view();
 
@@ -485,12 +484,12 @@ struct Integrator<Real, EOS, backend::CUDA> {
   }
 
   /// @brief Update MHD equations by one time step
-  template <typename BoundaryCondition, typename Source>
-  void update(Real dt, const BoundaryCondition &bc, const Source &src,
-              Fields<Real, backend::CUDA> &qq) {
+  template <typename EOS, typename BoundaryCondition, typename Source>
+  void update(Real dt, const EOS &eos, const BoundaryCondition &bc,
+              const Source &src, Fields<Real, backend::CUDA> &qq) {
     divb_parameters_set(dt);
-    runge_kutta_4step(dt, bc, src, qq);
-    apply_artificial_viscosity(dt, bc, qq);
+    runge_kutta_4step(dt, eos, bc, src, qq);
+    apply_artificial_viscosity(dt, eos, bc, qq);
   }
 
   // Prohibit copy and move

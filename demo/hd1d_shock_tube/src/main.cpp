@@ -1,113 +1,173 @@
-#include <cmath>
-#include <cstdlib>
-#include <filesystem>
-#include <iostream>
-#include <string>
-#include <vector>
+#include <miso/boundary_condition.hpp>
+#include <miso/mhd_model_base.hpp>
 
-#include "config.hpp"
-#include "model.hpp"
-#include "mpi_manager.hpp"
-#include "time_integrator_cpu.hpp"
-#include "types.hpp"
-#include "utility.hpp"
+using namespace miso;
 
-using util::pow2;
+using Real = float;
 
-template <typename Real> struct Init {
-  Real xm;
+#ifdef USE_CUDA
+using Backend = backend::CUDA;
+#else
+using Backend = backend::Host;
+#endif
+
+struct InitialCondition {
+  eos::IdealEOS<Real> &eos;
   Real rol, prl, vvl;
   Real ror, prr, vvr;
+
+  explicit InitialCondition(Config &config, eos::IdealEOS<Real> &eos)
+      : eos(eos), rol(config["shock_tube"]["rol"].as<Real>()),
+        prl(config["shock_tube"]["prl"].as<Real>()),
+        vvl(config["shock_tube"]["vvl"].as<Real>()),
+        ror(config["shock_tube"]["ror"].as<Real>()),
+        prr(config["shock_tube"]["prr"].as<Real>()),
+        vvr(config["shock_tube"]["vvr"].as<Real>()) {}
+
+  // The signature must not be changed as it is called inside miso::mhd::MHD.
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
+
+    for (int k = 0; k < grid.k_total; ++k) {
+      for (int j = 0; j < grid.j_total; ++j) {
+        for (int i = 0; i < grid.i_total; ++i) {
+          qq.vx(i, j, k) = 0.0;
+          qq.vy(i, j, k) = 0.0;
+          qq.vz(i, j, k) = 0.0;
+          qq.bx(i, j, k) = 0.0;
+          qq.by(i, j, k) = 0.0;
+          qq.bz(i, j, k) = 0.0;
+          qq.ph(i, j, k) = 0.0;
+
+          Real xyz;
+          if (grid.i_total > 1) {
+            xyz = grid.x[i];
+          } else if (grid.j_total > 1) {
+            xyz = grid.y[j];
+          } else if (grid.k_total > 1) {
+            xyz = grid.z[k];
+          } else {
+            throw std::runtime_error(
+                "At least one of grid dimensions must be greater than 1.");
+          }
+
+          if (xyz < 0.5) {
+            qq.ro(i, j, k) = rol;
+            qq.ei(i, j, k) = prl / (eos.gm - 1.0) / qq.ro(i, j, k);
+            qq.vx(i, j, k) = vvl;
+          } else {
+            qq.ro(i, j, k) = ror;
+            qq.ei(i, j, k) = prr / (eos.gm - 1.0) / qq.ro(i, j, k);
+            qq.vx(i, j, k) = vvr;
+          }
+        }
+      }
+    }
+  }
 };
 
-template <typename Real>
-void initial_condition(Model<Real> &model, const Init<Real> &init,
-                       std::string direction);
+struct BoundaryCondition {
+  mpi::Shape &mpi_shape;
 
-int main() {
-  std::string config_dir = CONFIG_DIR;
-  // initial condition setting
-  Init<Real> init;
-  init.rol = 1.0;
-  init.prl = 1.0;
-  init.vvl = 0.0;
-  init.ror = 0.125;
-  init.prr = 0.1;
-  init.vvr = 0.0;
+  BoundaryCondition(mpi::Shape &mpi_shape) : mpi_shape(mpi_shape) {}
 
-  std::vector<std::string> directions = {"x", "y", "z"};
-  MPIManager mpi;
-  int m = 0;
-  for (const auto &direction : directions) {
-    {
-      if (mpi.myrank == 0) {
-        std::cout << "####################################################"
-                  << std::endl;
-        std::cout << "Running simulation in direction: " << direction
-                  << std::endl;
-        std::cout << "####################################################"
-                  << std::endl;
-      }
+  // The signature must not be changed as it is called by miso integrator.
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
+    namespace bc = miso::boundary_condition;
+    Backend btag{};
 
-      Config config(config_dir + "config_" + direction + ".yaml", mpi);
-      mpi.setup_mpi(config.yaml_obj);
-      Model<Real> model(config);
-
-      model.save_metadata();
-
-      initial_condition<Real>(model, init, direction);
-
-      TimeIntegrator<Real> time_integrator(model);
-      time_integrator.run();
+    if (bc::is_physical_boundary(Direction::X, Side::INNER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::X, Side::INNER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::X, Side::INNER);
     }
-    m++;
-  }
 
-  return 0;
-}
+    if (bc::is_physical_boundary(Direction::X, Side::OUTER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::X, Side::OUTER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::X, Side::OUTER);
+    }
 
-template <typename Real>
-void initial_condition(Model<Real> &model, const Init<Real> &init,
-                       std::string direction) {
-  MHDCore<Real> &qq = model.mhd.qq;
-  const auto &grid = model.grid_local;
-  const auto &eos = model.eos;
+    if (bc::is_physical_boundary(Direction::Y, Side::INNER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::Y, Side::INNER);
+    }
 
-  Real xyz;
+    if (bc::is_physical_boundary(Direction::Y, Side::OUTER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::Y, Side::OUTER);
+    }
 
-  for (int i = 0; i < grid.i_total; ++i) {
-    for (int j = 0; j < grid.j_total; ++j) {
-      for (int k = 0; k < grid.k_total; ++k) {
+    if (bc::is_physical_boundary(Direction::Z, Side::INNER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::Z, Side::INNER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::Z, Side::INNER);
+    }
 
-        qq.vx(i, j, k) = 0.0;
-        qq.vy(i, j, k) = 0.0;
-        qq.vz(i, j, k) = 0.0;
-        qq.bx(i, j, k) = 0.0;
-        qq.by(i, j, k) = 0.0;
-        qq.bz(i, j, k) = 0.0;
-        qq.ph(i, j, k) = 0.0;
-
-        if (direction == "x") {
-          xyz = grid.x[i];
-        } else if (direction == "y") {
-          xyz = grid.y[j];
-        } else if (direction == "z") {
-          xyz = grid.z[k];
-        } else {
-          std::cerr << "Invalid direction: " << direction << std::endl;
-          return;
-        }
-
-        if (xyz < 0.5) {
-          qq.ro(i, j, k) = init.rol;
-          qq.ei(i, j, k) = init.prl / (eos.gm - 1.0) / qq.ro(i, j, k);
-          qq.vx(i, j, k) = init.vvl;
-        } else {
-          qq.ro(i, j, k) = init.ror;
-          qq.ei(i, j, k) = init.prr / (eos.gm - 1.0) / qq.ro(i, j, k);
-          qq.vx(i, j, k) = init.vvr;
-        }
-      }
+    if (bc::is_physical_boundary(Direction::Z, Side::OUTER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::Z, Side::OUTER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::Z, Side::OUTER);
     }
   }
+};
+
+struct Model : public mhd::ModelBase<Model, Real, Backend> {
+  eos::IdealEOS<Real> eos;
+  InitialCondition ic;
+  BoundaryCondition bc;
+  mhd::EmptySourceTerm<Real> src;
+
+  Model(Config &config)
+      : ModelBase(config), eos(config), ic(config, eos), bc(mpi_shape), src() {}
+};
+
+int main(int argc, char **argv) {
+  // Initialize MPI and CUDA environments
+  Env env(argc, argv);
+
+  // Read configuration file
+  auto config_path = parse_config_filepath(argc, argv);
+  Config config(config_path.value_or("./config.yaml"));
+
+  // Run simulation
+  Model model(config);
+  model.run();
 }

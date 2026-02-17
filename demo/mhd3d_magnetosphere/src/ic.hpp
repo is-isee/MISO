@@ -1,24 +1,25 @@
+#pragma once
 #include "common.hpp"
 
 struct InitialCondition {
+  eos::IdealEOS<Real> &eos;
+
   Real ro_sw;
   Real pr_sw;
   Real vx_sw;
   Real bz_imf;
   Real pr_earth;
 
-  explicit InitialCondition(Config &config) {
-    ro_sw = config.yaml_obj["solar_wind"]["mass_density"].as<Real>();
-    pr_sw = config.yaml_obj["solar_wind"]["gas_pressure"].as<Real>();
-    vx_sw = config.yaml_obj["solar_wind"]["x_velocity_field"].as<Real>();
-    bz_imf = config.yaml_obj["solar_wind"]["z_magnetic_field"].as<Real>();
-    pr_earth = config.yaml_obj["magnetosphere"]["gas_pressure"].as<Real>();
+  explicit InitialCondition(Config &config, eos::IdealEOS<Real> &eos) : eos(eos) {
+    ro_sw = config["solar_wind"]["mass_density"].as<Real>();
+    pr_sw = config["solar_wind"]["gas_pressure"].as<Real>();
+    vx_sw = config["solar_wind"]["x_velocity_field"].as<Real>();
+    bz_imf = config["solar_wind"]["z_magnetic_field"].as<Real>();
+    pr_earth = config["magnetosphere"]["gas_pressure"].as<Real>();
   }
 
   // The signature must not be changed as it is called inside miso::mhd::MHD.
-  template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
-             const EOS &eos) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
     for (int k = 0; k < grid.k_total; ++k) {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int i = 0; i < grid.i_total; ++i) {

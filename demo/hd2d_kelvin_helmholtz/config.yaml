@@ -7,9 +7,9 @@ base:
 
 time:
   time_save_dir: time/
+  n_output_digits: 8
   tend: 2.0
   dt_output: 0.02
-  n_output_digits: 8
 
 grid:
   i_size: 512
@@ -25,77 +25,33 @@ grid:
 
 mpi:
   mpi_save_dir: mpi/
-  n_procs_digits: 8
   x_procs: 2
   y_procs: 1
   z_procs: 1
 
-mhd:
-  mhd_save_dir: mhd/
-
-eos:
-  gm: 1.4
-
-time_integrator:
-  cfl_number: 1.0
-
-artificial_viscosity:
-  ep: 1.5
-  fh: 1.5
-  # for characteristic velocity
-  cs_fac: 0.5
-  ca_fac: 1.0
-  vv_fac: 1.0
-boundary_condition:
-  # please use "standard" or "custom" for boundary_type
-  boundary_type: standard
-
+domain:
   periodic:
     x: true
     y: false
     z: true
 
-  ro:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
+mhd:
+  mhd_save_dir: mhd/
+  n_output_digits: 8
+  cfl_number: 1.0
+  artificial_viscosity:
+    ep: 1.5
+    fh: 1.5
+    # for characteristic velocity
+    cs_fac: 0.5
+    ca_fac: 1.0
+    vv_fac: 1.0
 
-  vx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
+eos:
+  gm: 1.4
 
-  vy:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  vz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bx:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  by:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  bz:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ei:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
-
-  ph:
-    x: [symmetric, symmetric]
-    y: [symmetric, symmetric]
-    z: [symmetric, symmetric]
+kelvin_helmholtz:
+  v_amp: 1.e-3
+  pr: 2.5
+  ro_upper: 1.0
+  ro_lower: 2.0

@@ -2,8 +2,8 @@
 
 #include <cstdio>
 
-#include <miso/cuda_compat.hpp>
-#include <miso/env.hpp>
+#include "cuda_compat.hpp"
+#include "env.hpp"
 
 // clang-format off
 /// @brief Macro to check CUDA errors
@@ -20,8 +20,15 @@ inline void check_error(cudaError_t code, const char *file, int line,
     const char *errstr = cudaGetErrorString(code);
     std::fprintf(stderr, "CUDA Error: %s %s %d\n", errstr, file, line);
     std::fflush(stderr);
-    if (abort)
-      MPI_Abort(mpi::comm(), EXIT_FAILURE);
+    if (abort) {
+      int is_mpi_initialized = false;
+      MPI_Initialized(&is_mpi_initialized);
+      if (is_mpi_initialized) {
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+      } else {
+        std::abort();
+      }
+    }
   }
 }
 

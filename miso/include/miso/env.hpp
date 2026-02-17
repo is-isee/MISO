@@ -4,7 +4,7 @@
 
 #include <mpi.h>
 
-#include <miso/cuda_compat.hpp>
+#include "cuda_compat.hpp"
 
 namespace miso {
 

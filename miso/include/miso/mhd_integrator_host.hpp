@@ -1,28 +1,25 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/constants.hpp>
-#include <miso/env.hpp>
-#include <miso/mhd_artificial_viscosity_host.hpp>
-#include <miso/mhd_fields.hpp>
+#include "array3d.hpp"
+#include "constants.hpp"
+#include "env.hpp"
+#include "mhd_artificial_viscosity_host.hpp"
+#include "mhd_fields.hpp"
 
 namespace miso {
 namespace mhd {
 
 /// @brief Class for time integration of MHD equations
-template <typename Real, typename EOS>
-struct Integrator<Real, EOS, backend::Host> {
+template <typename Real> struct Integrator<Real, backend::Host> {
   /// @brief Spatial grid
   Grid<Real, backend::Host> &grid;
-  /// @brief Equation of states
-  EOS &eos;
   /// @brief Workspace
   Fields<Real, backend::Host> qq_argm, qq_rslt;
 
   /// @brief Halo exchanger
   HaloExchanger<Real, backend::Host> halo_exchanger;
   /// @brief Artificial viscosity for MHD equations
-  impl_host::ArtificialViscosity<Real, EOS> artdiff;
+  impl_host::ArtificialViscosity<Real> artdiff;
 
   /// @brief gas pressure
   Array3D<Real, backend::Host> pr;
@@ -44,10 +41,9 @@ struct Integrator<Real, EOS, backend::Host> {
 
   /// @brief Constructor
   Integrator(Config &config, Grid<Real, backend::Host> &grid,
-             ExecContext<backend::Host> &exec_ctx, EOS &eos)
-      : grid(grid), eos(eos), qq_argm(grid), qq_rslt(grid),
-        halo_exchanger(grid, exec_ctx), artdiff(config, grid, eos),
-        pr(grid.i_total, grid.j_total, grid.k_total),
+             ExecContext<Real, backend::Host> &exec_ctx)
+      : grid(grid), qq_argm(grid), qq_rslt(grid), halo_exchanger(grid, exec_ctx),
+        artdiff(config, grid), pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total) {
@@ -55,9 +51,10 @@ struct Integrator<Real, EOS, backend::Host> {
   }
 
   /// @brief Update MHD equations using 4th order space-centered scheme
-  template <typename Source>
-  void update_sc4(const Real dt, const Source &src, const Fields<Real> &qq_orgn,
-                  const Fields<Real> &qq_argm, Fields<Real> &qq_rslt) {
+  template <typename EOS, typename Source>
+  void update_sc4(const Real dt, const EOS &eos, const Source &src,
+                  const Fields<Real> &qq_orgn, const Fields<Real> &qq_argm,
+                  Fields<Real> &qq_rslt) {
     for (int i = 0; i < grid.i_total; ++i) {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
@@ -244,40 +241,43 @@ struct Integrator<Real, EOS, backend::Host> {
       }
     }
   }
+
   /// @brief Apply boundary condition and halo exchange
   template <typename BoundaryCondition>
   void apply_boundary_condition(const BoundaryCondition &bc,
                                 Fields<Real, backend::Host> &qq) {
-    bc.apply(qq.view(), grid.const_view(), eos);
+    bc.apply(qq.view(), grid.const_view());
     halo_exchanger.apply(qq);
   }
 
   /// @brief Runge-Kutta 4th order time integration step
-  template <typename BoundaryCondition, typename Source>
-  void runge_kutta_4step(const Real dt, const BoundaryCondition &bc,
-                         const Source &src, Fields<Real, backend::Host> &qq) {
-    update_sc4(dt / 4.0, src, qq, qq, qq_rslt);
+  template <typename EOS, typename BoundaryCondition, typename Source>
+  void runge_kutta_4step(const Real dt, const EOS &eos,
+                         const BoundaryCondition &bc, const Source &src,
+                         Fields<Real, backend::Host> &qq) {
+    update_sc4(dt / 4.0, eos, src, qq, qq, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt / 3.0, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt / 3.0, eos, src, qq, qq_argm, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt / 2.0, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt / 2.0, eos, src, qq, qq_argm, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt, eos, src, qq, qq_argm, qq_rslt);
     qq.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq);
   }
 
   /// @brief Apply artificial viscosity
-  template <typename BoundaryCondition>
-  void apply_artificial_viscosity(const Real dt, const BoundaryCondition &bc,
+  template <typename EOS, typename BoundaryCondition>
+  void apply_artificial_viscosity(const Real dt, const EOS &eos,
+                                  const BoundaryCondition &bc,
                                   Fields<Real, backend::Host> &qq) {
-    artdiff.characteristic_velocity_eval(qq);
+    artdiff.characteristic_velocity_eval(qq, eos);
 
     // x direction
     artdiff.update(qq, qq_rslt, Direction::X, dt);
@@ -296,7 +296,8 @@ struct Integrator<Real, EOS, backend::Host> {
   }
 
   /// @brief Calculate time spacing based on CFL condition
-  Real cfl(const Fields<Real, backend::Host> &qq) const {
+  template <typename EOS>
+  Real cfl(const Fields<Real, backend::Host> &qq, const EOS &eos) const {
     Real dt = 1.e10;
     for (int i = grid.i_margin; i < grid.i_total - grid.i_margin; ++i) {
       for (int j = grid.j_margin; j < grid.j_total - grid.j_margin; ++j) {
@@ -336,12 +337,12 @@ struct Integrator<Real, EOS, backend::Host> {
   }
 
   /// @brief Update MHD equations by one time step
-  template <typename BoundaryCondition, typename Source>
-  void update(Real dt, const BoundaryCondition &bc, const Source &src,
-              Fields<Real, backend::Host> &qq) {
+  template <typename EOS, typename BoundaryCondition, typename Source>
+  void update(Real dt, const EOS &eos, const BoundaryCondition &bc,
+              const Source &src, Fields<Real, backend::Host> &qq) {
     divb_parameters_set(dt);
-    runge_kutta_4step(dt, bc, src, qq);
-    apply_artificial_viscosity(dt, bc, qq);
+    runge_kutta_4step(dt, eos, bc, src, qq);
+    apply_artificial_viscosity(dt, eos, bc, qq);
   }
 
   // Prohibit copy and move

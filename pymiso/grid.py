@@ -33,31 +33,32 @@ class Grid:
             setattr(self, group, values)
         self.set_ijk_params(conf)
 
-        dtype = np.dtype(
-            [
-                ("x", conf.endian + str(self.i_total) + conf.dtype),
-                ("y", conf.endian + str(self.j_total) + conf.dtype),
-                ("z", conf.endian + str(self.k_total) + conf.dtype),
-            ]
-        )
         with self.grid_file.open(mode="rb") as f:
-            data = np.fromfile(f, dtype=dtype)
+            elem_size = np.fromfile(f, dtype=conf.endian + "u4", count=1)[0]
+            if elem_size == 4:
+                base = "f4"
+            elif elem_size == 8:
+                base = "f8"
+            else:
+                raise ValueError(f"Unexpected element size: {elem_size}")
+            dtype = np.dtype(
+                [
+                    ("x", conf.endian + base, (self.i_total,)),
+                    ("y", conf.endian + base, (self.j_total,)),
+                    ("z", conf.endian + base, (self.k_total,)),
+                ]
+            )
+            data = np.fromfile(f, dtype=dtype, count=1)[0]
 
             # geometry is defined at cell center
-            self.x = data["x"].reshape((self.i_total), order="C")[
-                self.margin : -self.margin
-            ]
-            self.y = data["y"].reshape((self.j_total), order="C")[
-                self.margin : -self.margin
-            ]
-            self.z = data["z"].reshape((self.k_total), order="C")[
-                self.margin : -self.margin
-            ]
+            self.x = data["x"][self.margin : -self.margin]
+            self.y = data["y"][self.margin : -self.margin]
+            self.z = data["z"][self.margin : -self.margin]
 
             # geometry at cell edge
-            self.x_edge = np.empty(self.i_size + 1, dtype=conf.dtype)
-            self.y_edge = np.empty(self.j_size + 1, dtype=conf.dtype)
-            self.z_edge = np.empty(self.k_size + 1, dtype=conf.dtype)
+            self.x_edge = np.empty(self.i_size + 1, dtype=self.x.dtype)
+            self.y_edge = np.empty(self.j_size + 1, dtype=self.y.dtype)
+            self.z_edge = np.empty(self.k_size + 1, dtype=self.z.dtype)
 
             self.x_edge[1:-1] = 0.5 * (self.x[1:] + self.x[:-1])
             self.y_edge[1:-1] = 0.5 * (self.y[1:] + self.y[:-1])

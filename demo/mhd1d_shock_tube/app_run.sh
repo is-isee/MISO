@@ -22,6 +22,25 @@ set -a
 source "${THIS_DIR}"/../shared/openmpi_config.env
 set +a
 
+# Config file path
+CONFIG_PATH_X="${THIS_DIR}/config/config_x.yaml"
+if [[ ! -f "${CONFIG_PATH_X}" ]]; then
+    echo "Error: Config file not found at ${CONFIG_PATH_X}"
+    exit 1
+fi
+CONFIG_PATH_Y="${THIS_DIR}/config/config_y.yaml"
+if [[ ! -f "${CONFIG_PATH_Y}" ]]; then
+    echo "Error: Config file not found at ${CONFIG_PATH_Y}"
+    exit 1
+fi
+CONFIG_PATH_Z="${THIS_DIR}/config/config_z.yaml"
+if [[ ! -f "${CONFIG_PATH_Z}" ]]; then
+    echo "Error: Config file not found at ${CONFIG_PATH_Z}"
+    exit 1
+fi
+
 # Run command
 set -x
-mpiexec -np ${NUM_PROCS} "${APP_NAME}"
+mpiexec -np ${NUM_PROCS} "${APP_NAME}" --config="${CONFIG_PATH_X}"
+mpiexec -np ${NUM_PROCS} "${APP_NAME}" --config="${CONFIG_PATH_Y}"
+mpiexec -np ${NUM_PROCS} "${APP_NAME}" --config="${CONFIG_PATH_Z}"

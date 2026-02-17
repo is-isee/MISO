@@ -1,9 +1,9 @@
 #pragma once
 
-#include <miso/array3d.hpp>
-#include <miso/backend.hpp>
+#include "array3d.hpp"
+#include "backend.hpp"
 #ifdef __CUDACC__
-#include <miso/cuda_util.cuh>
+#include "cuda_util.cuh"
 #endif  // __CUDACC__
 
 namespace miso {

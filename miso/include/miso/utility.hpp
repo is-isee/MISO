@@ -10,7 +10,7 @@
 #ifndef __CUDACC__
 #include <cmath>
 #endif
-#include <miso/cuda_compat.hpp>
+#include "cuda_compat.hpp"
 
 #ifdef __CUDA_ARCH__
 
