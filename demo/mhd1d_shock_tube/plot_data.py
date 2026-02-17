@@ -68,5 +68,7 @@ fig.tight_layout()
 
 fig_dir = Path(this_dir / "figs")
 fig_dir.mkdir(exist_ok=True)
-fig.savefig(fig_dir / "mhd_shock_tube_1d.png")
+fig_file = fig_dir / "mhd_shock_tube_1d.png"
+fig.savefig(fig_file)
+print(f"Saved: {fig_file}")
 plt.close("all")
