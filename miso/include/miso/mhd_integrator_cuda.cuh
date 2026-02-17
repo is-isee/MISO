@@ -326,7 +326,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
   Real tau_divb;
 
   Integrator(Config &config, Grid<Real, backend::CUDA> &grid,
-             ExecContext<backend::CUDA> &exec_ctx)
+             ExecContext<Real, backend::CUDA> &exec_ctx)
       : cu_shape(exec_ctx.cu_shape), grid(grid), qq_argm(grid), qq_rslt(grid),
         halo_exchanger(grid, exec_ctx), artdiff(config, grid, exec_ctx.cu_shape),
         pr(grid.i_total, grid.j_total, grid.k_total),

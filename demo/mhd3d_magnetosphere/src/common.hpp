@@ -3,6 +3,8 @@
 
 using namespace miso;
 
+using Real = float;
+
 #ifdef USE_CUDA
 using Backend = backend::CUDA;
 #else

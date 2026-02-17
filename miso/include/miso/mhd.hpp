@@ -15,13 +15,12 @@ namespace mhd {
 template <typename Real, typename Backend> struct MHD {
   Grid<Real, Backend> grid;
   Fields<Real, Backend> qq;
-  ExecContext<Backend> &exec_ctx;
+  ExecContext<Real, Backend> &exec_ctx;
   Integrator<Real, Backend> integrator;
   Checkpoint<Real> checkpoint;
 
-  template <typename ExecContextType>
-  MHD(Config &config, Grid<Real, backend::Host> &grid_h,
-      ExecContextType &exec_ctx)
+  explicit MHD(Config &config, Grid<Real, backend::Host> &grid_h,
+               ExecContext<Real, Backend> &exec_ctx)
       : grid(grid_h), qq(grid_h), exec_ctx(exec_ctx),
         integrator(config, grid, exec_ctx), checkpoint(config, grid_h) {}
 

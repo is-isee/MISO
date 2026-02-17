@@ -41,7 +41,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
 
   /// @brief Constructor
   Integrator(Config &config, Grid<Real, backend::Host> &grid,
-             ExecContext<backend::Host> &exec_ctx)
+             ExecContext<Real, backend::Host> &exec_ctx)
       : grid(grid), qq_argm(grid), qq_rslt(grid), halo_exchanger(grid, exec_ctx),
         artdiff(config, grid), pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),

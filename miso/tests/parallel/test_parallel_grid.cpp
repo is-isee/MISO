@@ -18,7 +18,7 @@ TEST_CASE("Test MPI" * doctest::test_suite("mpi")) {
     const auto &config_path = config_dir + "config_mpi_" + direction + ".yaml";
     Config config(config_path);
     mpi::Shape mpi_shape(config);
-    Grid<Real, backend::Host> grid(config, mpi_shape);
+    Grid<float, backend::Host> grid(config, mpi_shape);
     REQUIRE(grid.i_size ==
             config["grid"]["i_size"].as<int>() / mpi_shape.x_procs);
     REQUIRE(grid.j_size ==

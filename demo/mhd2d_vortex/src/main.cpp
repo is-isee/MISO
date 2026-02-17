@@ -2,6 +2,8 @@
 
 using namespace miso;
 
+using Real = float;
+
 #ifdef USE_CUDA
 using Backend = backend::CUDA;
 #else
@@ -40,7 +42,7 @@ struct InitialCondition {
 struct Model : public mhd::ModelBase<Model, Real, Backend> {
   eos::IdealEOS<Real> eos;
   InitialCondition ic;
-  mhd::EmptyBoundaryCondition bc;
+  mhd::EmptyBoundaryCondition<Real> bc;
   mhd::EmptySourceTerm<Real> src;
 
   Model(Config &config) : ModelBase(config), eos(config), ic(eos), bc(), src() {}

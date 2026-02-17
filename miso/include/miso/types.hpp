@@ -2,8 +2,6 @@
 
 namespace miso {
 
-using Real = float;
-
 enum class Sign { Pos, Neg };
 
 enum class Direction { X, Y, Z };

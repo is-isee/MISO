@@ -45,7 +45,7 @@ public:
   Time<Real> time;
   Grid<Real, backend::Host> grid;
 
-  ExecContext<Backend> exec_ctx;
+  ExecContext<Real, Backend> exec_ctx;
   MHD<Real, Backend> mhd;
 
   explicit ModelBase(Config &cfg)
@@ -122,7 +122,7 @@ protected:
 /// @brief Empty boundary condition class (e.g., periodic in all directions).
 /// @details Periodic boundary condition is applied by MPI communication.
 /// Be sure to set "periodic" in domain field of config.yaml.
-struct EmptyBoundaryCondition {
+template <typename Real> struct EmptyBoundaryCondition {
   void apply(mhd::FieldsView<Real>, GridView<const Real>) const {}
 };
 
