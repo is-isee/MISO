@@ -339,6 +339,28 @@ template <typename Real> struct Grid<Real, backend::Host> {
   /// @brief Copy constructor.
   explicit Grid(const Grid<Real, backend::Host> &) = default;
 
+#ifdef __CUDACC__
+  /// @brief Copy constructor of simulation grid from CUDA backend.
+  explicit Grid(const Grid<Real, backend::CUDA> &grid_d)
+      : i_size(grid_d.i_size), j_size(grid_d.j_size), k_size(grid_d.k_size),
+        i_total(grid_d.i_total), j_total(grid_d.j_total), k_total(grid_d.k_total),
+        is(grid_d.is), js(grid_d.js), ks(grid_d.ks), i_margin(grid_d.i_margin),
+        j_margin(grid_d.j_margin), k_margin(grid_d.k_margin), x_min(grid_d.x_min),
+        x_max(grid_d.x_max), y_min(grid_d.y_min), y_max(grid_d.y_max),
+        z_min(grid_d.z_min), z_max(grid_d.z_max), min_dxyz(grid_d.min_dxyz) {
+    x.resize(i_total);
+    y.resize(j_total);
+    z.resize(k_total);
+    dx.resize(i_total);
+    dy.resize(j_total);
+    dz.resize(k_total);
+    dxi.resize(i_total);
+    dyi.resize(j_total);
+    dzi.resize(k_total);
+    copy_from(grid_d);
+  }
+#endif  // __CUDACC__
+
   /// @brief Copy assignment operator.
   Grid<Real, backend::Host> &
   operator=(const Grid<Real, backend::Host> &) = default;

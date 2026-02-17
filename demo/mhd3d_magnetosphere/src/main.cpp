@@ -4,6 +4,8 @@
 #include "sources.hpp"
 #include "timestep.hpp"
 
+using EOS = eos::IdealEOS<Real>;
+
 struct Model {
   Config &config;
   mpi::Shape mpi_shape;
@@ -11,18 +13,18 @@ struct Model {
   Grid<Real, backend::Host> grid;
 
   mhd::ExecContext<Backend> exec_ctx;
-  eos::IdealEOS<Real> eos;
+  EOS eos;
   mhd::MHD<Real, Backend> mhd;
-  InitialCondition ic;
-  BoundaryCondition bc;
+  InitialCondition<EOS> ic;
+  BoundaryCondition<EOS> bc;
   ExternalSources<Real> src;
   TimeStep timestep;
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
         exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx),
-        ic(config), bc(config, mhd.grid, mpi_shape), src(config, mhd.grid),
-        timestep(config, mhd.grid) {}
+        ic(config, eos), bc(config, mpi_shape, mhd.grid, eos),
+        src(config, mhd.grid), timestep(config, mhd.grid) {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
@@ -72,7 +74,7 @@ struct Model {
       const auto dt = timestep.cfl(mhd.qq, mhd.grid, eos);
 
       // Update MHD variables
-      mhd.update(dt, bc, src);
+      mhd.update(dt, eos, bc, src);
       time.update(dt);
 
       save_if_needed();

@@ -28,8 +28,9 @@ template <typename Real, typename Backend> struct MHD {
   template <typename InitialCondition, typename BoundaryCondition>
   void apply_initial_condition(const InitialCondition &ic,
                                const BoundaryCondition &bc) {
+    Grid<Real, backend::Host> grid_h(grid);
     Fields<Real, backend::Host> qq_h(grid.i_total, grid.j_total, grid.k_total);
-    ic.apply(qq_h.view());
+    ic.apply(qq_h.view(), grid_h.const_view());
     qq.copy_from(qq_h);
     integrator.apply_boundary_condition(bc, qq);
   }

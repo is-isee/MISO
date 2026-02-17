@@ -1,7 +1,8 @@
 #include "common.hpp"
 
-struct BoundaryCondition {
+template <typename EOS> struct BoundaryCondition {
   mpi::Shape &mpi_shape;
+  eos::IdealEOS<Real> &eos;
   mhd::Fields<Real, Backend> qq_init;
 
   Real ro_sw;
@@ -15,9 +16,10 @@ struct BoundaryCondition {
   Real ro_floor;
   Real pr_floor;
 
-  explicit BoundaryCondition(Config &config, Grid<Real, Backend> &grid,
-                             mpi::Shape &mpi_shape)
-      : mpi_shape(mpi_shape), qq_init(grid.i_total, grid.j_total, grid.k_total) {
+  explicit BoundaryCondition(Config &config, mpi::Shape &mpi_shape,
+                             Grid<Real, Backend> &grid, EOS &eos)
+      : mpi_shape(mpi_shape), eos(eos),
+        qq_init(grid.i_total, grid.j_total, grid.k_total) {
     ro_sw = config["solar_wind"]["mass_density"].as<Real>();
     pr_sw = config["solar_wind"]["gas_pressure"].as<Real>();
     vx_sw = config["solar_wind"]["x_velocity_field"].as<Real>();
@@ -31,9 +33,7 @@ struct BoundaryCondition {
   }
 
   // The signature must not be changed as it is called by miso integrator.
-  template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
-             const EOS &eos) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
     namespace bc = miso::boundary_condition;
     Backend btag{};
 

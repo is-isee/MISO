@@ -20,15 +20,12 @@ using Backend = backend::Host;
 #endif
 
 struct InitialCondition {
-  Grid<Real, backend::Host> &grid;
   eos::IdealEOS<Real> &eos;
 
-  explicit InitialCondition(Grid<Real, backend::Host> &grid_,
-                            eos::IdealEOS<Real> &eos_)
-      : grid(grid_), eos(eos_) {}
+  explicit InitialCondition(eos::IdealEOS<Real> &eos_) : eos(eos_) {}
 
   // The signature must not be changed as it is called inside miso::mhd::MHD.
-  void apply(mhd::FieldsView<Real> qq) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
     const Real pr = 1.0 / eos.gm;
     const Real b0 = util::sqrt(4.0 * pi<Real>) / eos.gm;
     const Real v0 = 1.0;
@@ -75,7 +72,7 @@ struct Model {
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
         eos(config), exec_ctx(mpi_shape, grid), mhd(config, grid, exec_ctx),
-        ic(grid, eos), bc(), src() {}
+        ic(eos), bc(), src() {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
