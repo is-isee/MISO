@@ -5,7 +5,7 @@
 set -eu
 
 # Number of processes
-NUM_PROCS=8
+NUM_PROCS=2
 
 # Define directory of this script
 THIS_DIR=$(cd "$(dirname "$0")" && pwd)
