@@ -25,8 +25,6 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
 };
 
 int main(int argc, char *argv[]) {
-  using namespace miso;
-
   // Initialize MPI and CUDA environments
   Env env(argc, argv);
 
