@@ -1,69 +1,116 @@
-#include <cmath>
-#include <cstdlib>
-#include <filesystem>
-#include <iostream>
 #include <random>
-#include <string>
-#include <vector>
 
-#include "config.hpp"
-#include "model.hpp"
-#include "mpi_manager.hpp"
-#include "time_integrator_cpu.hpp"
-#include "types.hpp"
-#include "utility.hpp"
+#include <miso/boundary_condition.hpp>
+#include <miso/mhd_model_base.hpp>
 
-template <typename Real> void initial_condition(Model<Real> &model);
+using namespace miso;
 
-int main() {
-  std::string config_dir = CONFIG_DIR;
+using Real = float;
 
-  MPIManager mpi;
-  Config config(config_dir + "config.yaml", mpi);
-  mpi.setup_mpi(config.yaml_obj);
-  Model<Real> model(config);
-  model.save_metadata();
+#ifdef USE_CUDA
+using Backend = backend::CUDA;
+#else
+using Backend = backend::Host;
+#endif
 
-  initial_condition<Real>(model);
+struct InitialCondition {
+  eos::IdealEOS<Real> &eos;
+  Real v_amp;
+  Real pr;
+  Real ro_upper;
+  Real ro_lower;
 
-  TimeIntegrator<Real> time_integrator(model);
-  time_integrator.run();
+  explicit InitialCondition(Config &config, eos::IdealEOS<Real> &eos)
+      : eos(eos), v_amp(config["kelvin_helmholtz"]["v_amp"].as<Real>()),
+        pr(config["kelvin_helmholtz"]["pr"].as<Real>()),
+        ro_upper(config["kelvin_helmholtz"]["ro_upper"].as<Real>()),
+        ro_lower(config["kelvin_helmholtz"]["ro_lower"].as<Real>()) {}
 
-  return 0;
-}
+  // The signature must not be changed as it is called inside miso::mhd::MHD.
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
+    std::mt19937 engine(mpi::rank());
+    std::uniform_real_distribution<Real> dist(-1.0, 1.0);
 
-template <typename Real> void initial_condition(Model<Real> &model) {
-  MHDCore<Real> &qq = model.mhd.qq;
-  const auto &grid = model.grid_local;
-  const auto &eos = model.eos;
+    for (int i = 0; i < grid.i_total; ++i) {
+      for (int j = 0; j < grid.j_total; ++j) {
+        for (int k = 0; k < grid.k_total; ++k) {
+          if (grid.y[j] > 0.0) {
+            qq.ro(i, j, k) = ro_upper;
+            qq.vx(i, j, k) = 0.5;
+          } else {
+            qq.ro(i, j, k) = ro_lower;
+            qq.vx(i, j, k) = -0.5;
+          }
+          qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
+          qq.vx(i, j, k) = qq.vx(i, j, k) + v_amp * dist(engine);
+          qq.vy(i, j, k) = v_amp * dist(engine);
+          qq.vz(i, j, k) = 0.0;
 
-  Real v_amp = 1.e-3;
-
-  std::mt19937 engine(model.mpi.myrank);
-  std::uniform_real_distribution<Real> dist(-1.0, 1.0);
-
-  for (int i = 0; i < grid.i_total; ++i) {
-    for (int j = 0; j < grid.j_total; ++j) {
-      for (int k = 0; k < grid.k_total; ++k) {
-
-        // initial condition
-        if (grid.y[j] > 0.0) {
-          qq.ro(i, j, k) = 1.0;
-          qq.vx(i, j, k) = 0.5;
-        } else {
-          qq.ro(i, j, k) = 2.0;
-          qq.vx(i, j, k) = -0.5;
+          qq.bx(i, j, k) = 0.0;
+          qq.by(i, j, k) = 0.0;
+          qq.bz(i, j, k) = 0.0;
+          qq.ph(i, j, k) = 0.0;
         }
-        Real pr = 2.5;
-        qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
-        qq.vx(i, j, k) = qq.vx(i, j, k) + v_amp * dist(engine);
-        qq.vy(i, j, k) = v_amp * dist(engine);
-        qq.vz(i, j, k) = 0.0;
-
-        qq.bx(i, j, k) = 0.0;
-        qq.by(i, j, k) = 0.0;
-        qq.bz(i, j, k) = 0.0;
       }
     }
   }
+};
+
+struct BoundaryCondition {
+  mpi::Shape &mpi_shape;
+
+  BoundaryCondition(mpi::Shape &mpi_shape) : mpi_shape(mpi_shape) {}
+
+  // The signature must not be changed as it is called by miso integrator.
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
+    namespace bc = miso::boundary_condition;
+    Backend btag{};
+
+    if (bc::is_physical_boundary(Direction::Y, Side::INNER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::Y, Side::INNER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::Y, Side::INNER);
+    }
+
+    if (bc::is_physical_boundary(Direction::Y, Side::OUTER, mpi_shape)) {
+      bc::symmetric(btag, qq.ro, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.vx, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.vz, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.bx, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.by, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.bz, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.ei, grid, Sign::Pos, Direction::Y, Side::OUTER);
+      bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::Y, Side::OUTER);
+    }
+  }
+};
+
+struct Model : public mhd::ModelBase<Model, Real, Backend> {
+  eos::IdealEOS<Real> eos;
+  InitialCondition ic;
+  BoundaryCondition bc;
+  mhd::EmptySourceTerm<Real> src;
+
+  Model(Config &config)
+      : ModelBase(config), eos(config), ic(config, eos), bc(mpi_shape), src() {}
+};
+
+int main(int argc, char **argv) {
+  // Initialize MPI and CUDA environments
+  Env env(argc, argv);
+
+  // Read configuration file
+  auto config_path = parse_config_filepath(argc, argv);
+  Config config(config_path.value_or("./config.yaml"));
+
+  // Run simulation
+  Model model(config);
+  model.run();
 }
