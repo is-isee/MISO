@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
 
   // Read configuration file
   auto config_path = parse_config_filepath(argc, argv);
-  Config config(config_path.value_or("./config.yaml"));
+  Config config(config_path.value_or("./config/config_x.yaml"));
 
   // Run simulation
   Model model(config);
