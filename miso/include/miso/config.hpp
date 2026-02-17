@@ -14,7 +14,7 @@
 namespace miso {
 
 /// @brief Parse the path of configuration file from command line arguments
-inline std::optional<std::string> parse_config_filepath(int argc, char *argv[]) {
+inline std::optional<std::string> parse_config_filepath(int argc, char **argv) {
   for (int i = 1; i < argc; ++i) {
     std::string_view arg(argv[i]);
 

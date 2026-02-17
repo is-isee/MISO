@@ -48,7 +48,7 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
   Model(Config &config) : ModelBase(config), eos(config), ic(eos), bc(), src() {}
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
   // Initialize MPI and CUDA environments
   Env env(argc, argv);
 

@@ -24,7 +24,7 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
         timestep(config, mhd.grid) {}
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
   // Initialize MPI and CUDA environments
   Env env(argc, argv);
 

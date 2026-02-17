@@ -11,11 +11,11 @@ struct InitialCondition {
   Real pr_earth;
 
   explicit InitialCondition(Config &config, eos::IdealEOS<Real> &eos) : eos(eos) {
-    ro_sw = config.yaml_obj["solar_wind"]["mass_density"].as<Real>();
-    pr_sw = config.yaml_obj["solar_wind"]["gas_pressure"].as<Real>();
-    vx_sw = config.yaml_obj["solar_wind"]["x_velocity_field"].as<Real>();
-    bz_imf = config.yaml_obj["solar_wind"]["z_magnetic_field"].as<Real>();
-    pr_earth = config.yaml_obj["magnetosphere"]["gas_pressure"].as<Real>();
+    ro_sw = config["solar_wind"]["mass_density"].as<Real>();
+    pr_sw = config["solar_wind"]["gas_pressure"].as<Real>();
+    vx_sw = config["solar_wind"]["x_velocity_field"].as<Real>();
+    bz_imf = config["solar_wind"]["z_magnetic_field"].as<Real>();
+    pr_earth = config["magnetosphere"]["gas_pressure"].as<Real>();
   }
 
   // The signature must not be changed as it is called inside miso::mhd::MHD.
