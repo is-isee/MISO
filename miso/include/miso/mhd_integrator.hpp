@@ -8,7 +8,7 @@
 namespace miso {
 namespace mhd {
 
-template <typename Real, typename EOS, typename Backend> struct Integrator;
+template <typename Real, typename Backend> struct Integrator;
 
 /// @brief Dummy source class (without source terms)
 /// @details Volumetric heat / force terms are expected.

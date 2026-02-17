@@ -15,9 +15,8 @@ using miso::limiter::flux_core;
 
 /// @brief Artificial viscosity class for mhd simulations
 /// @tparam T Type of the data (Real)
-template <typename Real, typename EOS> struct ArtificialViscosity {
+template <typename Real> struct ArtificialViscosity {
   Grid<Real, backend::Host> &grid;
-  EOS &eos;
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
   Array3D<Real, backend::Host> cc;
@@ -34,8 +33,8 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
 
   /// @brief Constructor for ArtificialViscosity
   /// @param model
-  ArtificialViscosity(Config &config, Grid<Real, backend::Host> &grid, EOS &eos)
-      : grid(grid), eos(eos), cc(grid.i_total, grid.j_total, grid.k_total) {
+  ArtificialViscosity(Config &config, Grid<Real, backend::Host> &grid)
+      : grid(grid), cc(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].as<Real>();
     cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].as<Real>();
@@ -46,7 +45,8 @@ template <typename Real, typename EOS> struct ArtificialViscosity {
   }
 
   /// @brief Evaluate the characteristic velocity
-  void characteristic_velocity_eval(const Fields<Real> &qq) {
+  template <typename EOS>
+  void characteristic_velocity_eval(const Fields<Real> &qq, const EOS &eos) {
     for (int i = 0; i < grid.i_total; ++i) {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {

@@ -9,14 +9,13 @@
 #include "mpi_util.hpp"
 #include "time.hpp"
 #include "types.hpp"
-#include "utility.hpp"
 
 namespace miso {
 
 template <class Derived, class Backend> class ModelBase {
 public:
   using Real = miso::Real;
-  using EOS = eos::IdealEOS<Real>;
+  using EOS = eos::IdealEOS<Real>;  // Default EOS
   using MHD = mhd::MHD<Real, EOS, Backend>;
 
   Config &config;
@@ -28,7 +27,6 @@ public:
   EOS eos;
   MHD mhd;
 
-  // デフォルト実装で使うものだけ保持
   mhd::NoSource<Real> default_src;
 
   explicit ModelBase(Config &cfg)
@@ -36,18 +34,26 @@ public:
         exec_ctx(mpi_shape, grid), eos(cfg), mhd(cfg, grid, exec_ctx, eos),
         default_src() {}
 
-  // ----- デフォルトフック（派生が同名メンバ関数を持てば隠蔽される） -----
+  /// @brief Default source term (no source; override if needed)
   auto &source() { return default_src; }
+
+  /// @brief Default CFL condition (override if needed)
   Real compute_dt() { return mhd.cfl(); }
-  void after_initial_condition() {}
 
-  void save_grid_metadata() { grid.save(config); }  // 最小例はこれでよい
+  /// @brief Default update method (override if needed)
+  void update() {
+    // Ensure to call methods in the derived class (e.g., applying_initial_condition)
+    auto &d = derived();
 
-  // ---- 共通I/O ----
+    const auto dt = d.compute_dt();
+    d.mhd.update(dt, d.bc, d.source());
+    d.time.update(dt);
+  }
+
   void save_metadata() {
     MPI_Barrier(mpi::comm());
     config.save();
-    derived().save_grid_metadata();  // ←派生で上書き可
+    grid.save(config);
     exec_ctx.mpi_shape.save();
   }
 
@@ -55,6 +61,7 @@ public:
     time.save();
     mhd.save(time);
   }
+
   void load_state() {
     time.load();
     mhd.load(time);
@@ -69,12 +76,13 @@ public:
   }
 
   void run() {
+    // Ensure to call methods in the derived class (e.g., applying_initial_condition)
     auto &d = derived();
 
-    // ic/bc は「メンバがある前提」にしたいなら static_assert を足す
+    static_assert(std::is_member_function_pointer_v<
+                      decltype(&Derived::apply_initial_condition)>,
+                  "Derived class must have apply_initial_condition method");
     d.mhd.apply_initial_condition(d.ic, d.bc);
-
-    d.after_initial_condition();
 
     if (config["base"]["continue"].as<bool>() &&
         fs::exists(time.time_save_dir + "n_output.txt")) {
@@ -85,9 +93,7 @@ public:
     save_if_needed();
 
     while (time.time < time.tend) {
-      const auto dt = d.compute_dt();      // ←派生で差し替え可
-      d.mhd.update(dt, d.bc, d.source());  // ←source() を差し替え可
-      d.time.update(dt);
+      d.update();
       save_if_needed();
     }
   }

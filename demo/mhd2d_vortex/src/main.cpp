@@ -48,9 +48,7 @@ struct InitialCondition {
 
 struct BoundaryCondition {
   // The signature must not be changed as it is called inside miso::mhd::MHD.
-  template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
-             const EOS &eos) const {
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
     // Periodic boundary condition is applied by MPI communication.
     // Be sure to set "periodic" in domain field of config.yaml.
   }
@@ -64,15 +62,15 @@ struct Model {
 
   mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
-  mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
+  mhd::MHD<Real, Backend> mhd;
   InitialCondition ic;
   BoundaryCondition bc;
   mhd::NoSource<Real> src;
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
-        exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx, eos),
-        ic(), bc(), src() {}
+        exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx), ic(),
+        bc(), src() {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
@@ -107,7 +105,7 @@ struct Model {
   // Main time integration loop
   void run() {
     // Apply initial condition (load if continue is true)
-    mhd.apply_initial_condition(ic, bc);
+    mhd.apply_initial_condition(eos, ic, bc);
     if (config["base"]["continue"].as<bool>() &&
         fs::exists(time.time_save_dir + "n_output.txt")) {
       load_state();
@@ -118,10 +116,10 @@ struct Model {
 
     while (time.time < time.tend) {
       // Determine time step size
-      const auto dt = mhd.cfl();
+      const auto dt = mhd.cfl(eos);
 
       // Update MHD variables
-      mhd.update(dt, bc, src);
+      mhd.update(dt, eos, bc, src);
       time.update(dt);
 
       save_if_needed();
