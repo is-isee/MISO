@@ -63,12 +63,12 @@ class Grid:
             self.y_edge[1:-1] = 0.5 * (self.y[1:] + self.y[:-1])
             self.z_edge[1:-1] = 0.5 * (self.z[1:] + self.z[:-1])
 
-            self.x_edge[0] = self.xmin
-            self.x_edge[-1] = self.xmax
-            self.y_edge[0] = self.ymin
-            self.y_edge[-1] = self.ymax
-            self.z_edge[0] = self.zmin
-            self.z_edge[-1] = self.zmax
+            self.x_edge[0] = self.x_min
+            self.x_edge[-1] = self.x_max
+            self.y_edge[0] = self.y_min
+            self.y_edge[-1] = self.y_max
+            self.z_edge[0] = self.z_min
+            self.z_edge[-1] = self.z_max
 
     def set_ijk_params(self, conf: Conf):
         """

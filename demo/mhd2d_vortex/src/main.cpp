@@ -30,10 +30,10 @@ struct InitialCondition {
     const Real pr = 1.0 / eos.gm;
     const Real b0 = util::sqrt(4.0 * pi<Real>) / eos.gm;
     const Real v0 = 1.0;
-    Range3D range{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
 
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
+    for (int k = 0; k < grid.k_total; ++k) {
+      for (int j = 0; j < grid.j_total; ++j) {
+        for (int i = 0; i < grid.i_total; ++i) {
           qq.ro(i, j, k) = 1.0;
           qq.ei(i, j, k) = eos.roprtoei(qq.ro(i, j, k), pr);
           qq.vx(i, j, k) = -v0 * util::sin(2.0 * pi<Real> * grid.y[j]);
@@ -42,7 +42,10 @@ struct InitialCondition {
           qq.bx(i, j, k) = -b0 * util::sin(2.0 * pi<Real> * grid.y[j]);
           qq.by(i, j, k) = +b0 * util::sin(4.0 * pi<Real> * grid.x[i]);
           qq.bz(i, j, k) = 0.0;
-        });
+          qq.ph(i, j, k) = 0.0;
+        }
+      }
+    }
   }
 };
 
@@ -65,15 +68,15 @@ struct Model {
 
   mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
+  mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
   InitialCondition ic;
   BoundaryCondition bc;
   mhd::NoSource<Real> src;
-  mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid_global(config),
         grid(grid_global, mpi_shape), exec_ctx(mpi_shape, grid), eos(config),
-        mhd(config, grid, exec_ctx, eos) {}
+        mhd(config, grid, exec_ctx, eos), ic(), bc(), src() {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
@@ -93,41 +96,38 @@ struct Model {
   }
 
   void save_if_needed() {
-    if (time.time >= time.dt_output * time.n_output) {
-      save_state();
+    if (time.time < time.dt_output * time.n_output)
+      return;
 
-      if (mpi::is_root()) {
-        std::cout << std::fixed << std::setprecision(2)
-                  << "time = " << std::setw(6) << time.time
-                  << ";  n_step = " << std::setw(8) << time.n_step
-                  << ";  n_output = " << std::setw(8) << time.n_output
-                  << std::endl;
-      }
-
-      time.n_output++;
+    save_state();
+    if (mpi::is_root()) {
+      std::cout << std::fixed << std::setprecision(2) << "time = " << std::setw(6)
+                << time.time << ";  n_step = " << std::setw(8) << time.n_step
+                << ";  n_output = " << std::setw(8) << time.n_output << std::endl;
     }
+    time.n_output++;
   }
 
-  /// @brief Main time integration loop
+  // Main time integration loop
   void run() {
+    // Apply initial condition (load if continue is true)
+    mhd.apply_initial_condition(ic, bc);
     if (config["base"]["continue"].as<bool>() &&
         fs::exists(time.time_save_dir + "n_output.txt")) {
       load_state();
     }
 
     save_metadata();
-    mhd.apply_initial_condition(ic, bc);
-
-    MPI_Barrier(mpi::comm());
-
     save_if_needed();
-    while (time.time < time.tend) {
-      // basic MHD time integration
-      const auto dt = mhd.cfl();
-      mhd.update(dt, bc, src);
 
-      // Time is updated after all procedures
+    while (time.time < time.tend) {
+      // Determine time step size
+      const auto dt = mhd.cfl();
+
+      // Update MHD variables
+      mhd.update(dt, bc, src);
       time.update(dt);
+
       save_if_needed();
     }
   }
@@ -135,10 +135,15 @@ struct Model {
 
 int main(int argc, char *argv[]) {
   using namespace miso;
-  std::string config_dir = CONFIG_DIR;
 
+  // Initialize MPI and CUDA environments
   Env ctx(argc, argv);
-  Config config(config_dir + "config.yaml");
+
+  // Read configuration file
+  auto config_path = parse_config_filepath(argc, argv);
+  Config config(config_path.value_or("./config.yaml"));
+
+  // Run simulation
   Model model(config);
   model.run();
 }

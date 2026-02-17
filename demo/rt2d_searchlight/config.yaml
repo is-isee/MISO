@@ -13,12 +13,12 @@ grid:
   j_size: 64
   k_size: 1
   margin: 2
-  xmin: -0.5
-  xmax:  0.5
-  ymin: -0.5
-  ymax:  0.5
-  zmin: -0.5
-  zmax:  0.5
+  x_min: -0.5
+  x_max:  0.5
+  y_min: -0.5
+  y_max:  0.5
+  z_min: -0.5
+  z_max:  0.5
 
 mpi:
   mpi_save_dir: mpi/

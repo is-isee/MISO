@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <fstream>
+#include <optional>
 #include <string>
 #include <type_traits>
 
@@ -12,6 +13,25 @@
 #include <miso/utility.hpp>
 
 namespace miso {
+
+/// @brief Parse the path of configuration file from command line arguments
+inline std::optional<std::string> parse_config_filepath(int argc, char *argv[]) {
+  for (int i = 1; i < argc; ++i) {
+    std::string_view arg(argv[i]);
+
+    if (arg == "--config") {
+      if (i + 1 >= argc)
+        throw std::runtime_error("--config requires filepath");
+      return std::string(argv[i + 1]);
+    }
+
+    constexpr std::string_view key = "--config=";
+    if (arg.size() >= key.size() && arg.compare(0, key.size(), key) == 0) {
+      return std::string(arg.substr(key.size()));
+    }
+  }
+  return std::nullopt;
+}
 
 /// @brief Configuration class for MHD simulations
 struct Config {

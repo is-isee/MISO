@@ -284,7 +284,7 @@ __global__ void pack_x_send(BuffersView<Real> buff,
 
   const int i_src = (face == Face::Pos) ? (grid.i_total - 2 * grid.i_margin + i)
                                         : (grid.i_margin + i);
-  const size_t src_idx = grid.idx(i_src, j, k);
+  const size_t src_idx = (i_src * grid.j_total + j) * grid.k_total + k;
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_fields;
 
   const Real *__restrict__ var[n_fields] = {
@@ -315,7 +315,7 @@ __global__ void pack_y_send(BuffersView<Real> buff,
 
   const int j_src = (face == Face::Pos) ? (grid.j_total - 2 * grid.j_margin + j)
                                         : (grid.j_margin + j);
-  const size_t src_idx = grid.idx(i, j_src, k);
+  const size_t src_idx = (i * grid.j_total + j_src) * grid.k_total + k;
   const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_fields;
 
   const Real *__restrict__ var[n_fields] = {
@@ -346,7 +346,7 @@ __global__ void pack_z_send(BuffersView<Real> buff,
 
   const int k_src = (face == Face::Pos) ? (grid.k_total - 2 * grid.k_margin + k)
                                         : (grid.k_margin + k);
-  const size_t src_idx = grid.idx(i, j, k_src);
+  const size_t src_idx = (i * grid.j_total + j) * grid.k_total + k_src;
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_fields;
 
   const Real *__restrict__ var[n_fields] = {
@@ -376,7 +376,7 @@ __global__ void unpack_x_recv(FieldsView<Real> qq_trgt,
       (face == Face::Pos) ? buff.recv_x_pos : buff.recv_x_neg;
   const int i_tgt = (face == Face::Pos) ? grid.i_total - grid.i_margin + i : i;
 
-  const size_t tgt_idx = grid.idx(i_tgt, j, k);
+  const size_t tgt_idx = (i_tgt * grid.j_total + j) * grid.k_total + k;
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_fields;
 
   Real *__restrict__ var[n_fields] = {
@@ -405,7 +405,7 @@ __global__ void unpack_y_recv(FieldsView<Real> qq_trgt,
       (face == Face::Pos) ? buff.recv_y_pos : buff.recv_y_neg;
   const int j_tgt = (face == Face::Pos) ? grid.j_total - grid.j_margin + j : j;
 
-  const size_t tgt_idx = grid.idx(i, j_tgt, k);
+  const size_t tgt_idx = (i * grid.j_total + j_tgt) * grid.k_total + k;
   const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_fields;
 
   Real *__restrict__ var[n_fields] = {
@@ -434,7 +434,7 @@ __global__ void unpack_z_recv(FieldsView<Real> qq_trgt,
       (face == Face::Pos) ? buff.recv_z_pos : buff.recv_z_neg;
   const int k_tgt = (face == Face::Pos) ? grid.k_total - grid.k_margin + k : k;
 
-  const size_t tgt_idx = grid.idx(i, j, k_tgt);
+  const size_t tgt_idx = (i * grid.j_total + j) * grid.k_total + k_tgt;
   const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_fields;
 
   Real *__restrict__ var[n_fields] = {

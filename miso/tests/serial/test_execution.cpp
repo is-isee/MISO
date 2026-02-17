@@ -38,3 +38,24 @@ TEST_CASE("Test for_each 3D CPU" * doctest::test_suite("execution")) {
     }
   }
 }
+
+TEST_CASE("Test reduce 1D CPU" * doctest::test_suite("execution")) {
+  int n = 100;
+  Range1D range{0, n};
+
+  const auto f = MISO_LAMBDA(int i) { return i; };
+  const auto op = MISO_LAMBDA(int a, int b) { return a + b; };
+  int sum = reduce(backend::Host{}, range, 0, f, op);
+
+  CHECK(sum == (n * (n - 1)) / 2);
+}
+
+TEST_CASE("Test reduce 3D CPU" * doctest::test_suite("execution")) {
+  Range3D range{{0, 10}, {0, 10}, {0, 10}};
+
+  const auto f = MISO_LAMBDA(int, int, int) { return 1; };
+  const auto op = MISO_LAMBDA(int a, int b) { return a + b; };
+  int count = reduce(backend::Host{}, range, 0, f, op);
+
+  CHECK(count == 1000);
+}

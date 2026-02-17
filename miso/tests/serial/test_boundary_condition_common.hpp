@@ -12,16 +12,17 @@
 
 inline void run_boundary_condition_tests() {
   using namespace miso;
+  namespace bc = miso::boundary_condition;
   int i_size = 10, j_size = 11, k_size = 12;
   int margin = 2;
-  Real xmin = 0.0, xmax = 1.0, ymin = 0.0, ymax = 2.0, zmin = 0.0, zmax = 3.0;
-  Grid<Real, backend::Host> grid(i_size, j_size, k_size, margin, xmin, xmax, ymin,
-                                 ymax, zmin, zmax);
+  Real x_min = 0.0, x_max = 1.0, y_min = 0.0, y_max = 2.0, z_min = 0.0, z_max = 3.0;
+  Grid<Real, backend::Host> grid(i_size, j_size, k_size, margin, x_min, x_max, y_min,
+                                 y_max, z_min, z_max);
 
   // Test the range_set function
   int i0_, i1_, j0_, j1_, k0_, k1_;
 
-  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, Direction::X, grid);
+  bc::range_set(i0_, i1_, j0_, j1_, k0_, k1_, Direction::X, grid);
   REQUIRE(i0_ == 0);
   REQUIRE(i1_ == grid.i_margin);
   REQUIRE(j0_ == 0);
@@ -29,7 +30,7 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k0_ == 0);
   REQUIRE(k1_ == grid.k_total);
 
-  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, Direction::Y, grid);
+  bc::range_set(i0_, i1_, j0_, j1_, k0_, k1_, Direction::Y, grid);
   REQUIRE(i0_ == 0);
   REQUIRE(i1_ == grid.i_total);
   REQUIRE(j0_ == 0);
@@ -37,7 +38,7 @@ inline void run_boundary_condition_tests() {
   REQUIRE(k0_ == 0);
   REQUIRE(k1_ == grid.k_total);
 
-  bnd::range_set<Real>(i0_, i1_, j0_, j1_, k0_, k1_, Direction::Z, grid);
+  bc::range_set(i0_, i1_, j0_, j1_, k0_, k1_, Direction::Z, grid);
   REQUIRE(i0_ == 0);
   REQUIRE(i1_ == grid.i_total);
   REQUIRE(j0_ == 0);
@@ -84,7 +85,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::X, Side::INNER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::X, Side::INNER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -99,7 +100,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::X, Side::INNER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::X, Side::INNER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -114,7 +115,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::X, Side::OUTER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::X, Side::OUTER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -129,7 +130,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::X, Side::OUTER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::X, Side::OUTER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -162,7 +163,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Y, Side::INNER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Y, Side::INNER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -177,7 +178,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Y, Side::INNER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Y, Side::INNER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -192,7 +193,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Y, Side::OUTER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Y, Side::OUTER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -207,7 +208,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Y, Side::OUTER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Y, Side::OUTER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -240,7 +241,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Z, Side::INNER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Z, Side::INNER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -255,7 +256,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Z, Side::INNER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Z, Side::INNER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -270,7 +271,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Z, Side::OUTER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Pos, Direction::Z, Side::OUTER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -285,7 +286,7 @@ inline void run_boundary_condition_tests() {
 #ifdef __CUDACC__
   ro_d.copy_from(ro);
 #endif  // __CUDACC__
-  bnd::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Z, Side::OUTER);
+  bc::symmetric<Real>(btag, ro_v, grid_v, Sign::Neg, Direction::Z, Side::OUTER);
 #ifdef __CUDACC__
   ro.copy_from(ro_d);
 #endif  // __CUDACC__
@@ -304,20 +305,20 @@ inline void run_boundary_condition_tests() {
   int i_ghst, i_trgt;
 
   i = 0;
-  bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, Side::INNER);
+  bc::symmetric_index(i, i_total, i_margin, i_ghst, i_trgt, Side::INNER);
   REQUIRE(i_ghst == 0);
   REQUIRE(i_trgt == 3);
 
-  bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, Side::OUTER);
+  bc::symmetric_index(i, i_total, i_margin, i_ghst, i_trgt, Side::OUTER);
   REQUIRE(i_ghst == 8);
   REQUIRE(i_trgt == 7);
 
   i = 1;
-  bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, Side::INNER);
+  bc::symmetric_index(i, i_total, i_margin, i_ghst, i_trgt, Side::INNER);
   REQUIRE(i_ghst == 1);
   REQUIRE(i_trgt == 2);
 
-  bnd::symmetric_index<Real>(i, i_total, i_margin, i_ghst, i_trgt, Side::OUTER);
+  bc::symmetric_index(i, i_total, i_margin, i_ghst, i_trgt, Side::OUTER);
   REQUIRE(i_ghst == 9);
   REQUIRE(i_trgt == 6);
 }

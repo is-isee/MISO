@@ -1,31 +1,30 @@
-#pragma once
+#include "common.hpp"
 
-#include "constants.hpp"
-#include "model.hpp"
-#include <force.hpp>
+struct InitialCondition {
+  Real ro_sw;
+  Real pr_sw;
+  Real vx_sw;
+  Real bz_imf;
+  Real pr_earth;
 
-template <typename Real> struct InitialCondition {
-  Config &config;
-  Grid<Real> &grid;
-  EOS<Real> &eos;
+  explicit InitialCondition(Config &config) {
+    ro_sw = config.yaml_obj["solar_wind"]["mass_density"].as<Real>();
+    pr_sw = config.yaml_obj["solar_wind"]["gas_pressure"].as<Real>();
+    vx_sw = config.yaml_obj["solar_wind"]["x_velocity_field"].as<Real>();
+    bz_imf = config.yaml_obj["solar_wind"]["z_magnetic_field"].as<Real>();
+    pr_earth = config.yaml_obj["magnetosphere"]["gas_pressure"].as<Real>();
+  }
 
-  InitialCondition(Model<Real> &model)
-      : config(model.config), grid(model.grid_local), eos(model.eos) {}
-  void apply(MHDCore<Real> &qq) {
-
-    for (int i = 0; i < grid.i_total; ++i) {
+  // The signature must not be changed as it is called inside miso::mhd::MHD.
+  template <typename EOS>
+  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
+             const EOS &eos) const {
+    for (int k = 0; k < grid.k_total; ++k) {
       for (int j = 0; j < grid.j_total; ++j) {
-        for (int k = 0; k < grid.k_total; ++k) {
-
-          // clang-format off
-          Real ro_sw = config.yaml_obj["solar_wind"]["ro_sw"].template as<Real>();
-          Real pr_sw = config.yaml_obj["solar_wind"]["pr_sw"].template as<Real>();
-          Real vx_sw = config.yaml_obj["solar_wind"]["vx_sw"].template as<Real>();
-          Real bz_imf = config.yaml_obj["solar_wind"]["bz_imf"].template as<Real>();
-          // clang-format on
+        for (int i = 0; i < grid.i_total; ++i) {
           // distance from the earth center
-          Real rr = std::sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] +
-                              grid.z[k] * grid.z[k]);
+          Real rr = util::sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] +
+                               grid.z[k] * grid.z[k]);
 
           // density
           Real ro_tmp = util::pow3(1 / rr);
@@ -46,10 +45,7 @@ template <typename Real> struct InitialCondition {
 
           // pressure
           Real pr;
-          Real pr_earth =
-              config.yaml_obj["geo_boundary"]["pr_earth"].template as<Real>();
           Real pr_tmp = pr_earth * util::pow2(1 / rr);
-
           if (pr_tmp > pr_sw) {
             pr = pr_tmp;
           } else {
@@ -62,6 +58,13 @@ template <typename Real> struct InitialCondition {
           qq.vz(i, j, k) = 0.0;
 
           qq.ph(i, j, k) = 0.0;
+
+          if (grid.x[i] < -44.0) {
+            qq.ro(i, j, k) = ro_sw;
+            qq.ei(i, j, k) = pr_sw / (eos.gm - 1.0) / qq.ro(i, j, k);
+            qq.vx(i, j, k) = vx_sw;
+            qq.bz(i, j, k) = bz_imf;
+          }
         }
       }
     }

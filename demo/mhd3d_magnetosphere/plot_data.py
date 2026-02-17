@@ -14,7 +14,7 @@ fig_dir = Path(this_dir / "figs")
 fig_dir.mkdir(exist_ok=True)
 
 plt.close("all")
-fig = plt.figure("geomagnetosphere_3d", figsize=(8, 4))
+fig = plt.figure("mhd3d_magnetosphere", figsize=(8, 4))
 
 for n in range(d.n_output + 1):
     d.load(n)
@@ -43,8 +43,8 @@ for n in range(d.n_output + 1):
         cmap=cmap,
     )
 
-    circle1 = patches.Circle((0, 0), d.conf.geo_boundary.radius, ec="k", fc="gray")
-    circle2 = patches.Circle((0, 0), d.conf.geo_boundary.radius, ec="k", fc="gray")
+    circle1 = patches.Circle((0, 0), d.conf.magnetosphere.radius, ec="k", fc="gray")
+    circle2 = patches.Circle((0, 0), d.conf.magnetosphere.radius, ec="k", fc="gray")
 
     ax1.add_patch(circle1)
     ax2.add_patch(circle2)

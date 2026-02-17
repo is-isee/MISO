@@ -23,22 +23,22 @@ TEST_CASE("Test Grid GPU" * doctest::test_suite("grid")) {
   int j_size = 4;
   int k_size = 5;
   int margin = 1;
-  double xmin = 0.0;
-  double xmax = 1.0;
-  double ymin = 2.0;
-  double ymax = 3.0;
-  double zmin = 4.0;
-  double zmax = 5.0;
+  double x_min = 0.0;
+  double x_max = 1.0;
+  double y_min = 2.0;
+  double y_max = 3.0;
+  double z_min = 4.0;
+  double z_max = 5.0;
 
-  miso::Grid<double, backend::Host> grid(i_size, j_size, k_size, margin, xmin,
-                                         xmax, ymin, ymax, zmin, zmax);
+  miso::Grid<double, backend::Host> grid(i_size, j_size, k_size, margin, x_min,
+                                         x_max, y_min, y_max, z_min, z_max);
   miso::Grid<double, backend::CUDA> grid_d(grid);
 
-  grid_d.copy_from_host(grid);
+  grid_d.copy_from(grid);
 
   test_grid_kernel<<<dim3(1, 1, 1), dim3(i_size, j_size, k_size)>>>(
       grid_d.view());
-  grid_d.copy_to_host(grid);
+  grid.copy_from(grid_d);
 
   for (int i = 0; i < i_size; ++i) {
     REQUIRE(grid.x[i] == 1.0);

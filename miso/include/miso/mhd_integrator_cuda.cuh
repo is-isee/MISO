@@ -5,87 +5,13 @@
 #include <miso/cuda_compat.hpp>
 #include <miso/cuda_util.cuh>
 #include <miso/env.hpp>
+#include <miso/execution.hpp>
 #include <miso/mhd_artificial_viscosity_cuda.cuh>
 #include <miso/mhd_fields.hpp>
 #include <miso/mhd_halo_exchange.hpp>
 
 namespace miso {
 namespace mhd {
-
-template <typename Real> struct TimeStepHelper {
-  Real *min_values_device = nullptr;
-  Real *min_values_host = nullptr;
-  size_t shared_mem_size = 0;
-  int n_blocks;
-
-  TimeStepHelper(cuda::KernelShape3D &cu_shape)
-      : n_blocks(cu_shape.grid_dim.x * cu_shape.grid_dim.y *
-                 cu_shape.grid_dim.z) {
-    min_values_host = new Real[n_blocks];
-    shared_mem_size = sizeof(Real) * cu_shape.block_dim.x * cu_shape.block_dim.y *
-                      cu_shape.block_dim.z;
-    MISO_CUDA_CHECK(cudaMalloc(&min_values_device, sizeof(Real) * n_blocks));
-  }
-
-  ~TimeStepHelper() {
-    delete[] min_values_host;
-    MISO_CUDA_CHECK(cudaFree(min_values_device));
-  }
-
-  void copy_to_host() const {
-    MISO_CUDA_CHECK(cudaMemcpy(min_values_host, min_values_device,
-                               sizeof(Real) * n_blocks, cudaMemcpyDeviceToHost));
-  }
-};
-
-template <typename Real>
-__global__ void cfl_kernel(FieldsView<const Real> qq, GridView<const Real> grid,
-                           Real *dt_mins, Real cfl_number, Real eos_gm) {
-  extern __shared__ Real dt_min_shared_in_block[];
-
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-  int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  Real dt = 1.e10;
-  if (i >= grid.i_margin && i < grid.i_total - grid.i_margin &&
-      j >= grid.j_margin && j < grid.j_total - grid.j_margin &&
-      k >= grid.k_margin && k < grid.k_total - grid.k_margin) {
-    // clang-format off
-    Real cs = util::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
-    Real vv = util::sqrt( + qq.vx(i, j, k) * qq.vx(i, j, k)
-                         + qq.vy(i, j, k) * qq.vy(i, j, k)
-                         + qq.vz(i, j, k) * qq.vz(i, j, k));
-    Real ca = util::sqrt((+ qq.bx(i, j, k) * qq.bx(i, j, k)
-                         + qq.by(i, j, k) * qq.by(i, j, k)
-                         + qq.bz(i, j, k) * qq.bz(i, j, k)) /
-                        qq.ro(i, j, k) * pii4<Real>);
-    Real total_vel = (cs + vv + ca);
-    // clang-format on
-    dt = cfl_number * util::min3(grid.dx[i], grid.dy[j], grid.dz[k]) / total_vel;
-  }
-
-  int thread_id = threadIdx.z * blockDim.y * blockDim.x +
-                  threadIdx.y * blockDim.x + threadIdx.x;
-  dt_min_shared_in_block[thread_id] = dt;
-  __syncthreads();
-
-  for (int s = blockDim.x * blockDim.y * blockDim.z / 2; s > 0; s >>= 1) {
-    if (thread_id < s) {
-      dt_min_shared_in_block[thread_id] =
-          util::fmin_safe(dt_min_shared_in_block[thread_id],
-                          dt_min_shared_in_block[thread_id + s]);
-    }
-    __syncthreads();
-  }
-
-  // ブロックのスレッド0が結果を書き出し
-  if (thread_id == 0) {
-    int block_id =
-        blockIdx.z * gridDim.y * gridDim.x + blockIdx.y * gridDim.x + blockIdx.x;
-    dt_mins[block_id] = dt_min_shared_in_block[0];
-  }
-}
 
 template <typename Real>
 __global__ void pr_bb_ht_vb_kernel(FieldsView<const Real> qq_argm,
@@ -107,7 +33,7 @@ __global__ void pr_bb_ht_vb_kernel(FieldsView<const Real> qq_argm,
                 qq_argm.by(i, j, k) * qq_argm.by(i, j, k) +
                 qq_argm.bz(i, j, k) * qq_argm.bz(i, j, k);
 
-  // // enthalpy + 2*magnetic energy + kinetic energy
+  // enthalpy + 2*magnetic energy + kinetic energy
   // clang-format off
   ht(i, j, k) =
       +qq_argm.ro(i, j, k) * qq_argm.ei(i, j, k) +
@@ -145,14 +71,12 @@ update_ro_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
     return;
 
   // equation of continuity
-  qq_rslt.ro(i, j, k) =
-      qq_orgn.ro(i, j, k) +
-      dt * (-space_centered_4th(qq_argm.ro, qq_argm.vx, grid.dxi[i], i, j, k,
-                                grid.is, 0, 0) -
-            space_centered_4th(qq_argm.ro, qq_argm.vy, grid.dyi[j], i, j, k, 0,
-                               grid.js, 0) -
-            space_centered_4th(qq_argm.ro, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0,
-                               grid.ks));
+  // clang-format off
+  qq_rslt.ro(i, j, k) = qq_orgn.ro(i, j, k) + dt * (
+      - space_centered_4th(qq_argm.ro, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0)
+      - space_centered_4th(qq_argm.ro, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0)
+      - space_centered_4th(qq_argm.ro, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks));
+  // clang-format on
 }
 
 template <typename Real, typename Source>
@@ -384,7 +308,7 @@ struct Integrator<Real, EOS, backend::CUDA> {
   impl_cuda::ArtificialViscosity<Real, EOS> artdiff;
 
   /// @brief Workspace for timestep calculation
-  TimeStepHelper<Real> time_step_helper;
+  ReduceHelper<Real> cfl_helper;
 
   /// @brief gas pressure
   Array3D<Real, backend::CUDA> pr;
@@ -409,7 +333,6 @@ struct Integrator<Real, EOS, backend::CUDA> {
       : cu_shape(exec_ctx.cu_shape), grid(grid), eos(eos), qq_argm(grid),
         qq_rslt(grid), halo_exchanger(grid, exec_ctx),
         artdiff(config, grid, eos, exec_ctx.cu_shape),
-        time_step_helper(exec_ctx.cu_shape),
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
@@ -525,25 +448,33 @@ struct Integrator<Real, EOS, backend::CUDA> {
   }
 
   /// @brief Calculate time spacing based on CFL condition
-  Real cfl(const Fields<Real, backend::CUDA> &qq) const {
-    cfl_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim,
-                       time_step_helper.shared_mem_size>>>(
-        qq.const_view(), grid.const_view(), time_step_helper.min_values_device,
-        cfl_number, eos.gm);
-    MISO_CUDA_CHECK(cudaGetLastError());
-    MISO_CUDA_CHECK(cudaDeviceSynchronize());
+  Real cfl(const Fields<Real, backend::CUDA> &qq) {
+    auto qq_v = qq.const_view();
+    auto grid_v = grid.const_view();
 
-    time_step_helper.copy_to_host();
-    auto dt = *std::min_element(time_step_helper.min_values_host,
-                                time_step_helper.min_values_host +
-                                    time_step_helper.n_blocks);
-    auto dt_max = *std::max_element(time_step_helper.min_values_host,
-                                    time_step_helper.min_values_host +
-                                        time_step_helper.n_blocks);
-    Real dt_global;
-    MPI_Allreduce(&dt, &dt_global, 1, mpi::data_type<Real>(), MPI_MIN,
-                  mpi::comm());
-    return dt_global;
+    Range3D range{{grid.i_margin, grid.i_total - grid.i_margin},
+                  {grid.j_margin, grid.j_total - grid.j_margin},
+                  {grid.k_margin, grid.k_total - grid.k_margin}};
+    const auto f = MISO_LAMBDA(int i, int j, int k) {
+      Real cs = util::sqrt(eos.gm * (eos.gm - 1.0) * qq_v.ei(i, j, k));
+      Real vv = util::sqrt(qq_v.vx(i, j, k) * qq_v.vx(i, j, k) +
+                           qq_v.vy(i, j, k) * qq_v.vy(i, j, k) +
+                           qq_v.vz(i, j, k) * qq_v.vz(i, j, k));
+      Real ca = util::sqrt((qq_v.bx(i, j, k) * qq_v.bx(i, j, k) +
+                            qq_v.by(i, j, k) * qq_v.by(i, j, k) +
+                            qq_v.bz(i, j, k) * qq_v.bz(i, j, k)) /
+                           qq_v.ro(i, j, k) * pii4<Real>);
+      Real total_vel = (cs + vv + ca);
+      Real dxyz = util::min3(grid_v.dx[i], grid_v.dy[j], grid_v.dz[k]);
+      return cfl_number * dxyz / total_vel;
+    };
+    const auto op = MISO_LAMBDA(Real a, Real b) { return util::min2(a, b); };
+    const Real dt_max = 1.e10;
+    const auto dt = reduce(backend::CUDA{}, range, dt_max, f, op, cfl_helper);
+
+    Real dt_g;
+    MPI_Allreduce(&dt, &dt_g, 1, mpi::data_type<Real>(), MPI_MIN, mpi::comm());
+    return dt_g;
   }
 
   /// @brief Set parameters for divergence B cleaning

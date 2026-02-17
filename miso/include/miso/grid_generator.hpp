@@ -52,17 +52,17 @@ template <typename Real> struct GridGenerator {
   int k_stt;
 
   /// @brief minimum value in x direction
-  Real xmin;
+  Real x_min;
   /// @brief maximum value in x direction
-  Real xmax;
+  Real x_max;
   /// @brief minimum value in y direction
-  Real ymin;
+  Real y_min;
   /// @brief maximum value in y direction
-  Real ymax;
+  Real y_max;
   /// @brief minimum value in z direction
-  Real zmin;
+  Real z_min;
   /// @brief maximum value in z direction
-  Real zmax;
+  Real z_max;
 
   /// @brief coordinate in x direction
   std::vector<Real> x;
@@ -97,9 +97,9 @@ template <typename Real> struct GridGenerator {
     assert(j_size > 0);
     assert(k_size > 0);
     assert(margin >= 0);
-    assert(xmax > xmin);
-    assert(ymax > ymin);
-    assert(zmax > zmin);
+    assert(x_max > x_min);
+    assert(y_max > y_min);
+    assert(z_max > z_min);
 
     is = i_size > 1 ? 1 : 0;
     js = j_size > 1 ? 1 : 0;
@@ -119,12 +119,12 @@ template <typename Real> struct GridGenerator {
 
     auto set_coordinate = [](std::vector<Real> &x, std::vector<Real> &dx,
                              std::vector<Real> &dxi, int i_size, int i_total,
-                             int i_margin, Real xmin, Real xmax) {
+                             int i_margin, Real x_min, Real x_max) {
       x.resize(i_total);
       dx.resize(i_total);
       dxi.resize(i_total);
 
-      Real dx0 = (xmax - xmin) / i_size;
+      Real dx0 = (x_max - x_min) / i_size;
       for (int i = 0; i < i_total; ++i) {
         // dx at i + 1/2
         dx[i] = dx0;
@@ -135,7 +135,7 @@ template <typename Real> struct GridGenerator {
         }
       }
 
-      x[i_margin] = xmin + 0.5 * dx[i_margin];
+      x[i_margin] = x_min + 0.5 * dx[i_margin];
       for (int i = i_margin + 1; i < i_total; ++i) {
         x[i] = x[i - 1] + dx[i - 1];
       }
@@ -143,9 +143,9 @@ template <typename Real> struct GridGenerator {
         x[i] = x[i + 1] - dx[i];
       }
     };
-    set_coordinate(x, dx, dxi, i_size, i_total, i_margin, xmin, xmax);
-    set_coordinate(y, dy, dyi, j_size, j_total, j_margin, ymin, ymax);
-    set_coordinate(z, dz, dzi, k_size, k_total, k_margin, zmin, zmax);
+    set_coordinate(x, dx, dxi, i_size, i_total, i_margin, x_min, x_max);
+    set_coordinate(y, dy, dyi, j_size, j_total, j_margin, y_min, y_max);
+    set_coordinate(z, dz, dzi, k_size, k_total, k_margin, z_min, z_max);
 
     Real min_dx = 1.e30, min_dy = 1.e30, min_dz = 1.e30;
     /// TODO: additional communication is required for MPI version
@@ -162,11 +162,11 @@ template <typename Real> struct GridGenerator {
   }
 
   // global settings
-  Grid(int i_size_, int j_size_, int k_size_, int margin_, Real xmin_, Real xmax_,
-       Real ymin_, Real ymax_, Real zmin_, Real zmax_)
+  Grid(int i_size_, int j_size_, int k_size_, int margin_, Real x_min_,
+       Real x_max_, Real y_min_, Real y_max_, Real z_min_, Real z_max_)
       : i_size(i_size_), j_size(j_size_), k_size(k_size_), margin(margin_),
-        xmin(xmin_), xmax(xmax_), ymin(ymin_), ymax(ymax_), zmin(zmin_),
-        zmax(zmax_) {
+        x_min(x_min_), x_max(x_max_), y_min(y_min_), y_max(y_max_), z_min(z_min_),
+        z_max(z_max_) {
     global_initialize();
   }
 
@@ -176,12 +176,12 @@ template <typename Real> struct GridGenerator {
         j_size(config["grid"]["j_size"].as<int>()),
         k_size(config["grid"]["k_size"].as<int>()),
         margin(config["grid"]["margin"].as<int>()),
-        xmin(config["grid"]["xmin"].as<Real>()),
-        xmax(config["grid"]["xmax"].as<Real>()),
-        ymin(config["grid"]["ymin"].as<Real>()),
-        ymax(config["grid"]["ymax"].as<Real>()),
-        zmin(config["grid"]["zmin"].as<Real>()),
-        zmax(config["grid"]["zmax"].as<Real>()) {
+        x_min(config["grid"]["x_min"].as<Real>()),
+        x_max(config["grid"]["x_max"].as<Real>()),
+        y_min(config["grid"]["y_min"].as<Real>()),
+        y_max(config["grid"]["y_max"].as<Real>()),
+        z_min(config["grid"]["z_min"].as<Real>()),
+        z_max(config["grid"]["z_max"].as<Real>()) {
     global_initialize();
   }
 

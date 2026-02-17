@@ -16,44 +16,41 @@ grid:
   j_size: 128
   k_size: 128
   margin: 2
-  xmin: -44.8
-  xmax:  44.8
-  ymin: -44.8
-  ymax:  44.8
-  zmin: -44.8
-  zmax:  44.8
+  x_min: -44.8
+  x_max:  44.8
+  y_min: -44.8
+  y_max:  44.8
+  z_min: -44.8
+  z_max:  44.8
 
 mpi:
   mpi_save_dir: mpi/
-  n_procs_digits: 8
   x_procs: 2
   y_procs: 1
   z_procs: 1
 
-mhd:
-  mhd_save_dir: mhd/
-
-eos:
-  gm: 1.6666666666666667
-
-time_integrator:
-  cfl_number: 0.3
-
-artificial_viscosity:
-  ep: 1.2
-  fh: 1.0
-  # for characteristic velocity
-  cs_fac: 1.0
-  ca_fac: 0.8
-  vv_fac: 1.0
-
-boundary_condition:
+domain:
   periodic:
     x: false
     y: false
     z: false
 
-solar_wind: # solar wind parameter at x = xmin boundary
+mhd:
+  mhd_save_dir: mhd/
+  n_output_digits: 8
+  cfl_number: 0.3
+  artificial_viscosity:
+    ep: 1.2
+    fh: 1.0
+    # for characteristic velocity
+    cs_fac: 1.0
+    ca_fac: 0.8
+    vv_fac: 1.0
+
+eos:
+  gm: 1.6666666666666667
+
+solar_wind: # solar wind parameter at x = x_min boundary
   mass_density: 5.e-4
   gas_pressure: 3.56e-8
   x_velocity_field: 0.05

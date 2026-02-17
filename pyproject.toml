@@ -13,9 +13,8 @@ dynamic = ["version"]
 dependencies = ["numpy>=2", "pyyaml>=6", "python-box>=7"]
 
 [project.optional-dependencies]
-vis = ["matplotlib>=3", "pyvista>=0.46"]
+viz = ["matplotlib>=3", "pyvista>=0.46"]
 dev = ["pytest>=7", "ruff>=0.10", "mypy>=1"]
-docs = ["sphinx", "sphinx-rtd-theme", "sphinx-automodapi", "sphinx-multiversion", "breathe", "exhale", "sphinx-copybutton", "sphinxcontrib-bibtex", "myst-parser"]
 
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
