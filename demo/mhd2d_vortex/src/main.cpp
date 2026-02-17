@@ -1,15 +1,4 @@
-#include <string>
-
-#include <miso/config.hpp>
-#include <miso/env.hpp>
-#include <miso/eos.hpp>
-#include <miso/execution.hpp>
-#include <miso/grid.hpp>
-#include <miso/mhd.hpp>
-#include <miso/mpi_util.hpp>
-#include <miso/time.hpp>
-#include <miso/types.hpp>
-#include <miso/utility.hpp>
+#include <miso/mhd_model_base.hpp>
 
 using namespace miso;
 
@@ -48,88 +37,20 @@ struct InitialCondition {
   }
 };
 
-struct BoundaryCondition {
-  // The signature must not be changed as it is called inside miso::mhd::MHD.
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {
-    // Periodic boundary condition is applied by MPI communication.
-    // Be sure to set "periodic" in domain field of config.yaml.
-  }
-};
-
-struct Model {
-  Config &config;
-  mpi::Shape mpi_shape;
-  Time<Real> time;
-  Grid<Real, backend::Host> grid;
-
+struct Model : public mhd::ModelBase<Model, Real, Backend> {
   eos::IdealEOS<Real> eos;
-  mhd::ExecContext<Backend> exec_ctx;
-  mhd::MHD<Real, Backend> mhd;
   InitialCondition ic;
-  BoundaryCondition bc;
-  mhd::NoSource<Real> src;
+  mhd::EmptyBoundaryCondition bc;
+  mhd::EmptySourceTerm<Real> src;
 
-  Model(Config &config)
-      : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
-        eos(config), exec_ctx(mpi_shape, grid), mhd(config, grid, exec_ctx),
-        ic(eos), bc(), src() {}
-
-  void save_metadata() {
-    MPI_Barrier(mpi::comm());
-    config.save();
-    grid.save(config);
-    exec_ctx.mpi_shape.save();
-  }
-
-  void save_state() {
-    time.save();
-    mhd.save(time);
-  }
-
-  void load_state() {
-    time.load();
-    mhd.load(time);
-  }
-
-  void save_if_needed() {
-    if (time.time < time.dt_output * time.n_output)
-      return;
-
-    save_state();
-    time.log();
-    time.n_output++;
-  }
-
-  // Main time integration loop
-  void run() {
-    // Apply initial condition (load if continue is true)
-    mhd.apply_initial_condition(ic, bc);
-    if (config["base"]["continue"].as<bool>() &&
-        fs::exists(time.time_save_dir + "n_output.txt")) {
-      load_state();
-    }
-
-    save_metadata();
-    save_if_needed();
-
-    while (time.time < time.tend) {
-      // Determine time step size
-      const auto dt = mhd.cfl(eos);
-
-      // Update MHD variables
-      mhd.update(dt, eos, bc, src);
-      time.update(dt);
-
-      save_if_needed();
-    }
-  }
+  Model(Config &config) : ModelBase(config), eos(config), ic(eos), bc(), src() {}
 };
 
 int main(int argc, char *argv[]) {
   using namespace miso;
 
   // Initialize MPI and CUDA environments
-  Env ctx(argc, argv);
+  Env env(argc, argv);
 
   // Read configuration file
   auto config_path = parse_config_filepath(argc, argv);

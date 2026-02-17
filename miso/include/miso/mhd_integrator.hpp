@@ -10,34 +10,6 @@ namespace mhd {
 
 template <typename Real, typename Backend> struct Integrator;
 
-/// @brief Dummy source class (without source terms)
-/// @details Volumetric heat / force terms are expected.
-template <typename Real> struct NoSource {
-  /// External force: x-direction
-  __host__ __device__ inline Real vx(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: y-direction
-  __host__ __device__ inline Real vy(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: z-direction
-  __host__ __device__ inline Real vz(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External heating
-  __host__ __device__ inline Real ei(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-};
-
 /// @brief Calculate 4th order space-centered derivative for qq
 template <typename Real>
 __host__ __device__ inline Real

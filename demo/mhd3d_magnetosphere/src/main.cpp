@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   using namespace miso;
 
   // Initialize MPI and CUDA environments
-  Env ctx(argc, argv);
+  Env env(argc, argv);
 
   // Read configuration file
   auto config_path = parse_config_filepath(argc, argv);
