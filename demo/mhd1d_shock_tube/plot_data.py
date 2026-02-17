@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 import pymiso
 
@@ -15,10 +16,8 @@ dy.load(dy.n_output)
 dz = pymiso.Data(data_dir=this_dir / "data_z")
 dz.load(dz.n_output)
 
-print("### x-y mean difference in density ###")
-print((dx.ro - dy.ro).mean())
-print("### x-z mean difference in density ###")
-print((dx.ro - dz.ro).mean())
+print(f"x-y mean difference in density: {np.abs(dx.ro - dy.ro).mean()}")
+print(f"x-z mean difference in density: {np.abs(dx.ro - dz.ro).mean()}")
 
 fig = plt.figure(figsize=(14, 8))
 ax1 = fig.add_subplot(231)
