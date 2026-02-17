@@ -1,6 +1,7 @@
+#pragma once
 #include "common.hpp"
 
-template <typename EOS> struct InitialCondition {
+struct InitialCondition {
   eos::IdealEOS<Real> &eos;
 
   Real ro_sw;

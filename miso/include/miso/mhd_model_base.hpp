@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "config.hpp"
 #include "env.hpp"
 #include "eos.hpp"
@@ -12,6 +14,23 @@
 
 namespace miso {
 namespace mhd {
+
+// SFINAE to check if the derived class has required member variables.
+template <class T, class = void> struct has_eos : std::false_type {};
+template <class T>
+struct has_eos<T, std::void_t<decltype(&T::eos)>> : std::true_type {};
+
+template <class T, class = void> struct has_ic : std::false_type {};
+template <class T>
+struct has_ic<T, std::void_t<decltype(&T::ic)>> : std::true_type {};
+
+template <class T, class = void> struct has_bc : std::false_type {};
+template <class T>
+struct has_bc<T, std::void_t<decltype(&T::bc)>> : std::true_type {};
+
+template <class T, class = void> struct has_src : std::false_type {};
+template <class T>
+struct has_src<T, std::void_t<decltype(&T::src)>> : std::true_type {};
 
 /// @brief Base class of MHD models using CRTP.
 /// @details The derived class must implement the following members:
@@ -33,8 +52,14 @@ public:
       : config(cfg), mpi_shape(cfg), time(cfg), grid(cfg, mpi_shape),
         exec_ctx(mpi_shape, grid), mhd(cfg, grid, exec_ctx) {}
 
-  /// @brief Default CFL condition (override if needed)
-  Real compute_dt() { return mhd.cfl(derived().eos); }
+  /// @brief Default implementation of one timestep update.
+  /// @details The derived class may provide its own `update()` method.
+  void update() {
+    auto &d = derived();
+    const auto dt = mhd.cfl(derived().eos);
+    mhd.update(dt, d.eos, d.bc, d.src);
+    time.update(dt);
+  }
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
@@ -66,18 +91,14 @@ public:
     auto &d = derived();
 
     // Assert that d has eos, ic, bc, and src as member variables.
-    static_assert(std::is_member_object_pointer_v<decltype(&Derived::eos)>,
-                  "Derived class must have a member variable named 'eos' for "
-                  "equation of state.");
-    static_assert(std::is_member_object_pointer_v<decltype(&Derived::ic)>,
-                  "Derived class must have a member variable named 'ic' for "
-                  "initial condition.");
-    static_assert(std::is_member_object_pointer_v<decltype(&Derived::bc)>,
-                  "Derived class must have a member variable named 'bc' for "
-                  "boundary condition.");
-    static_assert(std::is_member_object_pointer_v<decltype(&Derived::src)>,
-                  "Derived class must have a member variable named 'src' for "
-                  "source term.");
+    static_assert(has_eos<Derived>::value,
+                  "Derived must have member variable 'eos'.");
+    static_assert(has_ic<Derived>::value,
+                  "Derived must have member variable 'ic'.");
+    static_assert(has_bc<Derived>::value,
+                  "Derived must have member variable 'bc'.");
+    static_assert(has_src<Derived>::value,
+                  "Derived must have member variable 'src'.");
 
     mhd.apply_initial_condition(d.ic, d.bc);
     if (config["base"]["continue"].as<bool>() &&
@@ -89,9 +110,7 @@ public:
     save_if_needed();
 
     while (time.time < time.tend) {
-      const auto dt = d.compute_dt();
-      mhd.update(dt, d.eos, d.bc, d.src);
-      time.update(dt);
+      d.update();
       save_if_needed();
     }
   }

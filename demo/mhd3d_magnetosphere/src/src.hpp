@@ -1,11 +1,12 @@
+#pragma once
 #include "common.hpp"
 
-template <typename Real> struct ExternalSources {
+struct SourceTerm {
   GridView<const Real> grid;
   Real g_grav;
 
-  explicit ExternalSources(Config &config, Grid<Real, Backend> &grid_)
-      : grid(grid_.const_view()) {
+  explicit SourceTerm(Config &config, Grid<Real, Backend> &grid)
+      : grid(grid.const_view()) {
     g_grav = config["magnetosphere"]["gravitational_acceleration"].as<Real>();
   }
 

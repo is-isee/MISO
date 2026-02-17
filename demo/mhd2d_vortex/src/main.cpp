@@ -11,7 +11,7 @@ using Backend = backend::Host;
 struct InitialCondition {
   eos::IdealEOS<Real> &eos;
 
-  explicit InitialCondition(eos::IdealEOS<Real> &eos_) : eos(eos_) {}
+  explicit InitialCondition(eos::IdealEOS<Real> &eos) : eos(eos) {}
 
   // The signature must not be changed as it is called inside miso::mhd::MHD.
   void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid) const {

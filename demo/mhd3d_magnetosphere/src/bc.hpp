@@ -1,6 +1,9 @@
+#pragma once
+#include <miso/boundary_condition.hpp>
+
 #include "common.hpp"
 
-template <typename EOS> struct BoundaryCondition {
+struct BoundaryCondition {
   mpi::Shape &mpi_shape;
   eos::IdealEOS<Real> &eos;
   mhd::Fields<Real, Backend> qq_init;
@@ -17,7 +20,7 @@ template <typename EOS> struct BoundaryCondition {
   Real pr_floor;
 
   explicit BoundaryCondition(Config &config, mpi::Shape &mpi_shape,
-                             Grid<Real, Backend> &grid, EOS &eos)
+                             Grid<Real, Backend> &grid, eos::IdealEOS<Real> &eos)
       : mpi_shape(mpi_shape), eos(eos),
         qq_init(grid.i_total, grid.j_total, grid.k_total) {
     ro_sw = config["solar_wind"]["mass_density"].as<Real>();

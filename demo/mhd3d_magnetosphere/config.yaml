@@ -26,8 +26,8 @@ grid:
 mpi:
   mpi_save_dir: mpi/
   x_procs: 2
-  y_procs: 1
-  z_procs: 1
+  y_procs: 2
+  z_procs: 2
 
 domain:
   periodic:
