@@ -20,10 +20,15 @@ using Backend = backend::Host;
 #endif
 
 struct InitialCondition {
+  Grid<Real, backend::Host> &grid;
+  eos::IdealEOS<Real> &eos;
+
+  explicit InitialCondition(Grid<Real, backend::Host> &grid_,
+                            eos::IdealEOS<Real> &eos_)
+      : grid(grid_), eos(eos_) {}
+
   // The signature must not be changed as it is called inside miso::mhd::MHD.
-  template <typename EOS>
-  void apply(mhd::FieldsView<Real> qq, GridView<const Real> grid,
-             const EOS &eos) const {
+  void apply(mhd::FieldsView<Real> qq) const {
     const Real pr = 1.0 / eos.gm;
     const Real b0 = util::sqrt(4.0 * pi<Real>) / eos.gm;
     const Real v0 = 1.0;
@@ -60,8 +65,8 @@ struct Model {
   Time<Real> time;
   Grid<Real, backend::Host> grid;
 
-  mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
+  mhd::ExecContext<Backend> exec_ctx;
   mhd::MHD<Real, Backend> mhd;
   InitialCondition ic;
   BoundaryCondition bc;
@@ -69,8 +74,8 @@ struct Model {
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
-        exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx), ic(),
-        bc(), src() {}
+        eos(config), exec_ctx(mpi_shape, grid), mhd(config, grid, exec_ctx),
+        ic(grid, eos), bc(), src() {}
 
   void save_metadata() {
     MPI_Barrier(mpi::comm());
@@ -94,18 +99,14 @@ struct Model {
       return;
 
     save_state();
-    if (mpi::is_root()) {
-      std::cout << std::fixed << std::setprecision(2) << "time = " << std::setw(6)
-                << time.time << ";  n_step = " << std::setw(8) << time.n_step
-                << ";  n_output = " << std::setw(8) << time.n_output << std::endl;
-    }
+    time.log();
     time.n_output++;
   }
 
   // Main time integration loop
   void run() {
     // Apply initial condition (load if continue is true)
-    mhd.apply_initial_condition(eos, ic, bc);
+    mhd.apply_initial_condition(ic, bc);
     if (config["base"]["continue"].as<bool>() &&
         fs::exists(time.time_save_dir + "n_output.txt")) {
       load_state();

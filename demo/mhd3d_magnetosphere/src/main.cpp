@@ -12,7 +12,7 @@ struct Model {
 
   mhd::ExecContext<Backend> exec_ctx;
   eos::IdealEOS<Real> eos;
-  mhd::MHD<Real, eos::IdealEOS<Real>, Backend> mhd;
+  mhd::MHD<Real, Backend> mhd;
   InitialCondition ic;
   BoundaryCondition bc;
   ExternalSources<Real> src;
@@ -20,7 +20,7 @@ struct Model {
 
   Model(Config &config)
       : config(config), mpi_shape(config), time(config), grid(config, mpi_shape),
-        exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx, eos),
+        exec_ctx(mpi_shape, grid), eos(config), mhd(config, grid, exec_ctx),
         ic(config), bc(config, mhd.grid, mpi_shape), src(config, mhd.grid),
         timestep(config, mhd.grid) {}
 

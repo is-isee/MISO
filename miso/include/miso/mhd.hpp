@@ -13,7 +13,6 @@ namespace miso {
 namespace mhd {
 
 template <typename Real, typename Backend> struct MHD {
-  Grid<Real, backend::Host> &grid_host;  // for initial condition
   Grid<Real, Backend> grid;
   Fields<Real, Backend> qq;
   ExecContext<Backend> &exec_ctx;
@@ -23,14 +22,14 @@ template <typename Real, typename Backend> struct MHD {
   template <typename ExecContextType>
   MHD(Config &config, Grid<Real, backend::Host> &grid_h,
       ExecContextType &exec_ctx)
-      : grid_host(grid_h), grid(grid_h), qq(grid_h), exec_ctx(exec_ctx),
+      : grid(grid_h), qq(grid_h), exec_ctx(exec_ctx),
         integrator(config, grid, exec_ctx), checkpoint(config, grid_h) {}
 
-  template <typename EOS, typename InitialCondition, typename BoundaryCondition>
-  void apply_initial_condition(const EOS &eos, const InitialCondition &ic,
+  template <typename InitialCondition, typename BoundaryCondition>
+  void apply_initial_condition(const InitialCondition &ic,
                                const BoundaryCondition &bc) {
-    Fields<Real, backend::Host> qq_h(grid_host);
-    ic.apply(qq_h.view(), grid_host.const_view(), eos);
+    Fields<Real, backend::Host> qq_h(grid.i_total, grid.j_total, grid.k_total);
+    ic.apply(qq_h.view());
     qq.copy_from(qq_h);
     integrator.apply_boundary_condition(bc, qq);
   }
