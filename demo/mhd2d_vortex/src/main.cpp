@@ -25,7 +25,7 @@ struct InitialCondition {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int i = 0; i < grid.i_total; ++i) {
           qq.ro(i, j, k) = 1.0;
-          qq.ei(i, j, k) = eos.roprtoei(qq.ro(i, j, k), pr);
+          qq.ei(i, j, k) = pr / (eos.gm - 1.0) / qq.ro(i, j, k);
           qq.vx(i, j, k) = -v0 * util::sin(2.0 * pi<Real> * grid.y[j]);
           qq.vy(i, j, k) = +v0 * util::sin(2.0 * pi<Real> * grid.x[i]);
           qq.vz(i, j, k) = 0.0;

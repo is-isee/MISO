@@ -65,6 +65,15 @@ inline std::string zfill(int num, int width) {
   return oss.str();
 }
 
+/// @brief Clamp a value between lower and upper bounds.
+/// @param v value to be clamped
+/// @param lo lower bound (inclusive)
+/// @param hi upper bound (inclusive)
+/// @return clamped value (max(lo, min(v, hi)))
+template <class T> __host__ __device__ inline T clamp(T v, T lo, T hi) noexcept {
+  return v < lo ? lo : (v > hi ? hi : v);
+}
+
 /// @brief Calculate the square of a value
 /// @tparam T type of the value
 /// @param x target value

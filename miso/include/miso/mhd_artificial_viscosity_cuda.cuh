@@ -16,11 +16,9 @@ using miso::limiter::dqq_eval;
 using miso::limiter::flux_core;
 
 template <typename Real>
-__global__ void characteristic_velocity_eval_kernel(Array3DView<Real> cc_d,
-                                                    FieldsView<const Real> qq,
-                                                    GridView<Real> grid,
-                                                    Real eos_gm, Real cs_fac,
-                                                    Real ca_fac, Real vv_fac) {
+__global__ void characteristic_velocity_eval_kernel(
+    Array3DView<Real> cc_d, FieldsView<const Real> qq, Array3DView<const Real> cs,
+    GridView<const Real> grid, Real cs_fac, Real ca_fac, Real vv_fac) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -28,7 +26,6 @@ __global__ void characteristic_velocity_eval_kernel(Array3DView<Real> cc_d,
 
   if (i <= grid.i_total - 1 && j <= grid.j_total - 1 && k <= grid.k_total - 1) {
     // clang-format off
-    Real cs = util::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
     Real vv = util::sqrt(qq.vx(i, j, k) * qq.vx(i, j, k) +
                         qq.vy(i, j, k) * qq.vy(i, j, k) +
                         qq.vz(i, j, k) * qq.vz(i, j, k));
@@ -37,7 +34,7 @@ __global__ void characteristic_velocity_eval_kernel(Array3DView<Real> cc_d,
                          qq.bz(i, j, k) * qq.bz(i, j, k)) /
                          qq.ro(i, j, k) * pii4<Real>);
     // clang-format on
-    cc_d(i, j, k) = cs * cs_fac + vv * vv_fac + ca * ca_fac;
+    cc_d(i, j, k) = cs(i, j, k) * cs_fac + vv * vv_fac + ca * ca_fac;
   }
 }
 
@@ -461,6 +458,8 @@ template <typename Real> struct ArtificialViscosity {
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
   Array3D<Real, backend::CUDA> cc;
+  /// @brief Speed of sound
+  Array3D<Real, backend::CUDA> cs;
   /// @brief Parameters for generalized minmod limiter
   Real ep;
   /// @brief Parameters for amplitude of artificial viscosity flux
@@ -476,7 +475,8 @@ template <typename Real> struct ArtificialViscosity {
   ArtificialViscosity(Config &config, Grid<Real, backend::CUDA> &grid,
                       cuda::KernelShape3D &cu_shape)
       : grid(grid), cu_shape(cu_shape),
-        cc(grid.i_total, grid.j_total, grid.k_total) {
+        cc(grid.i_total, grid.j_total, grid.k_total),
+        cs(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].as<Real>();
     cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].as<Real>();
@@ -490,9 +490,11 @@ template <typename Real> struct ArtificialViscosity {
   template <typename EOS>
   void characteristic_velocity_eval(const Fields<Real, backend::CUDA> &qq,
                                     const EOS &eos) {
+    eos.sound_speed(backend::CUDA{}, qq.const_view(), cs.view());
     artificial_viscosity::characteristic_velocity_eval_kernel<Real>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            cc.view(), qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
+            cc.view(), qq.const_view(), cs.const_view(), grid.const_view(),
+            cs_fac, ca_fac, vv_fac);
   }
 
   void update(Fields<Real, backend::CUDA> &qq,

@@ -20,6 +20,8 @@ template <typename Real> struct ArtificialViscosity {
 
   /// @brief Characteristic velocity cs_fac*cs + ca_fac*ca + vv_fac*vv
   Array3D<Real, backend::Host> cc;
+  /// @brief Speed of sound
+  Array3D<Real, backend::Host> cs;
   /// @brief Parameters for generalized minmod limiter
   Real ep;
   /// @brief Parameters for amplitude of artificial viscosity flux
@@ -33,7 +35,8 @@ template <typename Real> struct ArtificialViscosity {
 
   /// @brief Constructor for ArtificialViscosity
   ArtificialViscosity(Config &config, Grid<Real, backend::Host> &grid)
-      : grid(grid), cc(grid.i_total, grid.j_total, grid.k_total) {
+      : grid(grid), cc(grid.i_total, grid.j_total, grid.k_total),
+        cs(grid.i_total, grid.j_total, grid.k_total) {
     ep = config["mhd"]["artificial_viscosity"]["ep"].as<Real>();
     fh = config["mhd"]["artificial_viscosity"]["fh"].as<Real>();
     cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].as<Real>();
@@ -46,19 +49,19 @@ template <typename Real> struct ArtificialViscosity {
   /// @brief Evaluate the characteristic velocity
   template <typename EOS>
   void characteristic_velocity_eval(const Fields<Real> &qq, const EOS &eos) {
+    eos.sound_speed(backend::Host{}, qq.const_view(), cs.view());
     for (int i = 0; i < grid.i_total; ++i) {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(eos.gm * (eos.gm - 1.0) * qq.ei(i, j, k));
-          Real vv = std::sqrt(+qq.vx(i, j, k) * qq.vx(i, j, k) +
-                              qq.vy(i, j, k) * qq.vy(i, j, k) +
-                              qq.vz(i, j, k) * qq.vz(i, j, k));
-          Real ca = std::sqrt((+qq.bx(i, j, k) * qq.bx(i, j, k) +
-                               qq.by(i, j, k) * qq.by(i, j, k) +
-                               qq.bz(i, j, k) * qq.bz(i, j, k)) /
-                              qq.ro(i, j, k) * pii4<Real>);
-          cc(i, j, k) = cs * cs_fac + vv * vv_fac + ca * ca_fac;
+          Real vv = util::sqrt(qq.vx(i, j, k) * qq.vx(i, j, k) +
+                               qq.vy(i, j, k) * qq.vy(i, j, k) +
+                               qq.vz(i, j, k) * qq.vz(i, j, k));
+          Real ca = util::sqrt((qq.bx(i, j, k) * qq.bx(i, j, k) +
+                                qq.by(i, j, k) * qq.by(i, j, k) +
+                                qq.bz(i, j, k) * qq.bz(i, j, k)) /
+                               qq.ro(i, j, k) * pii4<Real>);
+          cc(i, j, k) = cs(i, j, k) * cs_fac + vv * vv_fac + ca * ca_fac;
         }
       }
     }

@@ -29,6 +29,8 @@ template <typename Real> struct Integrator<Real, backend::Host> {
   Array3D<Real, backend::Host> ht;
   /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
   Array3D<Real, backend::Host> vb;
+  /// @brief speed of sound
+  Array3D<Real, backend::Host> cs;
 
   /// @brief CFL number
   Real cfl_number;
@@ -46,7 +48,8 @@ template <typename Real> struct Integrator<Real, backend::Host> {
         artdiff(config, grid), pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
-        vb(grid.i_total, grid.j_total, grid.k_total) {
+        vb(grid.i_total, grid.j_total, grid.k_total),
+        cs(grid.i_total, grid.j_total, grid.k_total) {
     cfl_number = config["mhd"]["cfl_number"].as<Real>();
   }
 
@@ -55,12 +58,13 @@ template <typename Real> struct Integrator<Real, backend::Host> {
   void update_sc4(const Real dt, const EOS &eos, const Source &src,
                   const Fields<Real> &qq_orgn, const Fields<Real> &qq_argm,
                   Fields<Real> &qq_rslt) {
+    // gas pressure
+    eos.gas_pressure(backend::Host{}, qq_argm.const_view(), pr.view());
+
     for (int i = 0; i < grid.i_total; ++i) {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
           // clang-format off
-          // gas pressure
-          pr(i, j, k) = qq_argm.ro(i,j,k)*qq_argm.ei(i,j,k)*(eos.gm - 1.0);
           // squared magnetic strength
           bb(i, j, k) = qq_argm.bx(i,j,k)*qq_argm.bx(i,j,k)
                       + qq_argm.by(i,j,k)*qq_argm.by(i,j,k)
@@ -199,7 +203,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               -space_centered_4th(c_by, dyi, i, j, k, 0, grid.js, 0)
               -space_centered_4th(c_bz, dzi, i, j, k, 0, 0, grid.ks)
               )
-          )*std::exp(-dt/tau_divb);
+          )*util::exp(-dt/tau_divb);
 
           // Et: total energy per unit volume
           // ei: is the internal energy per unit mass
@@ -297,28 +301,28 @@ template <typename Real> struct Integrator<Real, backend::Host> {
 
   /// @brief Calculate time spacing based on CFL condition
   template <typename EOS>
-  Real cfl(const Fields<Real, backend::Host> &qq, const EOS &eos) const {
+  Real cfl(const Fields<Real, backend::Host> &qq, const EOS &eos) {
     Real dt = 1.e10;
+    eos.sound_speed(backend::Host{}, qq.const_view(), cs.view());
     for (int i = grid.i_margin; i < grid.i_total - grid.i_margin; ++i) {
       for (int j = grid.j_margin; j < grid.j_total - grid.j_margin; ++j) {
         for (int k = grid.k_margin; k < grid.k_total - grid.k_margin; ++k) {
           // clang-format off
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(eos.gm*(eos.gm-1.0)*qq.ei(i,j,k));
-          Real vv = std::sqrt(
+          Real vv = util::sqrt(
             + qq.vx(i,j,k)*qq.vx(i,j,k)
             + qq.vy(i,j,k)*qq.vy(i,j,k)
             + qq.vz(i,j,k)*qq.vz(i,j,k)
           );
-          Real ca = std::sqrt( (
+          Real ca = util::sqrt((
             + qq.bx(i,j,k)*qq.bx(i,j,k)
             + qq.by(i,j,k)*qq.by(i,j,k)
             + qq.bz(i,j,k)*qq.bz(i,j,k)
           )/qq.ro(i,j,k)*pii4<Real>);
 
-          Real total_vel = cs + vv + ca;
-          dt = std::min(dt, cfl_number
-            * std::min<Real>({grid.dx[i], grid.dy[j], grid.dz[k]})/total_vel);
+          Real total_vel = cs(i, j, k) + vv + ca;
+          dt = util::min2(dt, cfl_number
+            * util::min3<Real>(grid.dx[i], grid.dy[j], grid.dz[k])/total_vel);
           // clang-format on
         }
       }

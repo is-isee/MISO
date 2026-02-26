@@ -14,10 +14,10 @@ namespace miso {
 namespace mhd {
 
 template <typename Real>
-__global__ void pr_bb_ht_vb_kernel(FieldsView<const Real> qq_argm,
-                                   Array3DView<Real> pr, Array3DView<Real> bb,
-                                   Array3DView<Real> ht, Array3DView<Real> vb,
-                                   GridView<const Real> grid, Real eos_gm) {
+__global__ void bb_ht_vb_kernel(FieldsView<const Real> qq_argm,
+                                Array3DView<Real> pr, Array3DView<Real> bb,
+                                Array3DView<Real> ht, Array3DView<Real> vb,
+                                GridView<const Real> grid) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
@@ -26,8 +26,6 @@ __global__ void pr_bb_ht_vb_kernel(FieldsView<const Real> qq_argm,
       k >= grid.k_total)
     return;
 
-  // gas pressure
-  pr(i, j, k) = qq_argm.ro(i, j, k) * qq_argm.ei(i, j, k) * (eos_gm - 1.0);
   // squared magnetic strength
   bb(i, j, k) = qq_argm.bx(i, j, k) * qq_argm.bx(i, j, k) +
                 qq_argm.by(i, j, k) * qq_argm.by(i, j, k) +
@@ -315,6 +313,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
   Array3D<Real, backend::CUDA> ht;
   /// @brief inner product of velocity and magnetic field vx*bx + vy*by + vz*bz
   Array3D<Real, backend::CUDA> vb;
+  Array3D<Real, backend::CUDA> cs;
 
   /// @brief CFL number
   Real cfl_number;
@@ -332,7 +331,8 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
         pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
-        vb(grid.i_total, grid.j_total, grid.k_total) {
+        vb(grid.i_total, grid.j_total, grid.k_total),
+        cs(grid.i_total, grid.j_total, grid.k_total) {
     cfl_number = config["mhd"]["cfl_number"].as<Real>();
   }
 
@@ -344,9 +344,9 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
                   Fields<Real, backend::CUDA> &qq_rslt) {
     const auto &cgrid = grid.const_view();
 
-    pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_argm.view(), pr.view(), bb.view(), ht.view(), vb.view(), cgrid,
-        eos.gm);
+    eos.gas_pressure(backend::CUDA{}, qq_argm.const_view(), pr.view());
+    bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+        qq_argm.view(), pr.view(), bb.view(), ht.view(), vb.view(), cgrid);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ro_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
@@ -450,12 +450,13 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
   Real cfl(const Fields<Real, backend::CUDA> &qq, const EOS &eos) {
     auto qq_v = qq.const_view();
     auto grid_v = grid.const_view();
+    auto cs_v = cs.view();
 
+    eos.sound_speed(backend::CUDA{}, qq_v, cs_v);
     Range3D range{{grid.i_margin, grid.i_total - grid.i_margin},
                   {grid.j_margin, grid.j_total - grid.j_margin},
                   {grid.k_margin, grid.k_total - grid.k_margin}};
     const auto f = MISO_LAMBDA(int i, int j, int k) {
-      Real cs = util::sqrt(eos.gm * (eos.gm - 1.0) * qq_v.ei(i, j, k));
       Real vv = util::sqrt(qq_v.vx(i, j, k) * qq_v.vx(i, j, k) +
                            qq_v.vy(i, j, k) * qq_v.vy(i, j, k) +
                            qq_v.vz(i, j, k) * qq_v.vz(i, j, k));
@@ -463,7 +464,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
                             qq_v.by(i, j, k) * qq_v.by(i, j, k) +
                             qq_v.bz(i, j, k) * qq_v.bz(i, j, k)) /
                            qq_v.ro(i, j, k) * pii4<Real>);
-      Real total_vel = (cs + vv + ca);
+      Real total_vel = cs_v(i, j, k) + vv + ca;
       Real dxyz = util::min3(grid_v.dx[i], grid_v.dy[j], grid_v.dz[k]);
       return cfl_number * dxyz / total_vel;
     };
