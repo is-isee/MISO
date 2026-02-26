@@ -111,7 +111,7 @@ public:
 
   /// @brief Return the array extent in each dimension.
   __host__ __device__ int extent(int dim) const noexcept {
-    assert(dim >= 0 && dim < 3);
+    assert(dim >= 0 && dim < 2);
     return shape_[dim];
   }
 

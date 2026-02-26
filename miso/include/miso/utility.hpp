@@ -65,7 +65,7 @@ inline std::string zfill(int num, int width) {
   return oss.str();
 }
 
-/// @brief Clamp an integer value between lower and upper bounds.
+/// @brief Clamp a value between lower and upper bounds.
 /// @param v value to be clamped
 /// @param lo lower bound (inclusive)
 /// @param hi upper bound (inclusive)

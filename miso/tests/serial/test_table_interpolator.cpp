@@ -5,7 +5,7 @@
 
 using namespace miso;
 
-TEST_CASE("Test Table Interpolator in Host backend" *
+TEST_CASE("Test UniformTableInterpolator1D in Host backend" *
           doctest::test_suite("table_interpolator")) {
   // Table data and interpolator
   constexpr int Nt = 5;

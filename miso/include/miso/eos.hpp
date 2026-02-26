@@ -29,7 +29,7 @@ template <typename Real> struct IdealEOS {
   }
 
   /// @brief Compute adiabatic speed of sound from mass density and specific internal energy
-  __host__ __device__ inline Real roeitocs(Real, Real ei) const noexcept {
+  __host__ __device__ inline Real roeitocs(Real /*ro*/, Real ei) const noexcept {
     return util::sqrt(gm * (gm - 1.0) * ei);
   }
 };
