@@ -13,11 +13,11 @@
 namespace miso {
 namespace mhd {
 
-template <typename Real>
+template <typename Real, typename EOS>
 __global__ void pr_bb_ht_vb_kernel(FieldsView<const Real> qq_argm,
                                    Array3DView<Real> pr, Array3DView<Real> bb,
                                    Array3DView<Real> ht, Array3DView<Real> vb,
-                                   GridView<const Real> grid, Real eos_gm) {
+                                   GridView<const Real> grid, EOS eos) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
   int k = blockIdx.z * blockDim.z + threadIdx.z;
@@ -27,7 +27,7 @@ __global__ void pr_bb_ht_vb_kernel(FieldsView<const Real> qq_argm,
     return;
 
   // gas pressure
-  pr(i, j, k) = qq_argm.ro(i, j, k) * qq_argm.ei(i, j, k) * (eos_gm - 1.0);
+  pr(i, j, k) = eos.roeitopr(qq_argm.ro(i, j, k), qq_argm.ei(i, j, k));
   // squared magnetic strength
   bb(i, j, k) = qq_argm.bx(i, j, k) * qq_argm.bx(i, j, k) +
                 qq_argm.by(i, j, k) * qq_argm.by(i, j, k) +
@@ -344,9 +344,8 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
                   Fields<Real, backend::CUDA> &qq_rslt) {
     const auto &cgrid = grid.const_view();
 
-    pr_bb_ht_vb_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_argm.view(), pr.view(), bb.view(), ht.view(), vb.view(), cgrid,
-        eos.gm);
+    pr_bb_ht_vb_kernel<Real, EOS><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
+        qq_argm.view(), pr.view(), bb.view(), ht.view(), vb.view(), cgrid, eos);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ro_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
@@ -455,7 +454,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
                   {grid.j_margin, grid.j_total - grid.j_margin},
                   {grid.k_margin, grid.k_total - grid.k_margin}};
     const auto f = MISO_LAMBDA(int i, int j, int k) {
-      Real cs = util::sqrt(eos.gm * (eos.gm - 1.0) * qq_v.ei(i, j, k));
+      Real cs = eos.roeitocs(qq_v.ro(i, j, k), qq_v.ei(i, j, k));
       Real vv = util::sqrt(qq_v.vx(i, j, k) * qq_v.vx(i, j, k) +
                            qq_v.vy(i, j, k) * qq_v.vy(i, j, k) +
                            qq_v.vz(i, j, k) * qq_v.vz(i, j, k));

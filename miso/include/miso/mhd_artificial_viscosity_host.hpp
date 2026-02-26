@@ -50,14 +50,14 @@ template <typename Real> struct ArtificialViscosity {
       for (int j = 0; j < grid.j_total; ++j) {
         for (int k = 0; k < grid.k_total; ++k) {
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(eos.gm * (eos.gm - 1.0) * qq.ei(i, j, k));
-          Real vv = std::sqrt(+qq.vx(i, j, k) * qq.vx(i, j, k) +
-                              qq.vy(i, j, k) * qq.vy(i, j, k) +
-                              qq.vz(i, j, k) * qq.vz(i, j, k));
-          Real ca = std::sqrt((+qq.bx(i, j, k) * qq.bx(i, j, k) +
-                               qq.by(i, j, k) * qq.by(i, j, k) +
-                               qq.bz(i, j, k) * qq.bz(i, j, k)) /
-                              qq.ro(i, j, k) * pii4<Real>);
+          Real cs = eos.roeitocs(qq.ro(i, j, k), qq.ei(i, j, k));
+          Real vv = util::sqrt(qq.vx(i, j, k) * qq.vx(i, j, k) +
+                               qq.vy(i, j, k) * qq.vy(i, j, k) +
+                               qq.vz(i, j, k) * qq.vz(i, j, k));
+          Real ca = util::sqrt((qq.bx(i, j, k) * qq.bx(i, j, k) +
+                                qq.by(i, j, k) * qq.by(i, j, k) +
+                                qq.bz(i, j, k) * qq.bz(i, j, k)) /
+                               qq.ro(i, j, k) * pii4<Real>);
           cc(i, j, k) = cs * cs_fac + vv * vv_fac + ca * ca_fac;
         }
       }

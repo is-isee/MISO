@@ -38,7 +38,7 @@ public:
   }
 
   /// @brief Interpolate values at x.
-  T interpolate(T x) const noexcept {
+  T operator()(T x) const noexcept {
     return interpolate_uniform_table1d(table_.data(), x_min_, dxi_, x,
                                        table_.size());
   }
@@ -124,7 +124,7 @@ public:
   }
 
   /// @brief Interpolate values at (x0, x1).
-  T interpolate(T x0, T x1) const noexcept {
+  T operator()(T x0, T x1) const noexcept {
     return interpolate_uniform_table2d(table_.data(), x0_min_, dxi0_, x1_min_,
                                        dxi1_, x0, x1, table_.extent(0),
                                        table_.extent(1));

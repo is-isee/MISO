@@ -15,12 +15,12 @@ namespace artificial_viscosity {
 using miso::limiter::dqq_eval;
 using miso::limiter::flux_core;
 
-template <typename Real>
+template <typename Real, typename EOS>
 __global__ void characteristic_velocity_eval_kernel(Array3DView<Real> cc_d,
                                                     FieldsView<const Real> qq,
                                                     GridView<Real> grid,
-                                                    Real eos_gm, Real cs_fac,
-                                                    Real ca_fac, Real vv_fac) {
+                                                    Real cs_fac, Real ca_fac,
+                                                    Real vv_fac, EOS eos) {
 
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -28,7 +28,7 @@ __global__ void characteristic_velocity_eval_kernel(Array3DView<Real> cc_d,
 
   if (i <= grid.i_total - 1 && j <= grid.j_total - 1 && k <= grid.k_total - 1) {
     // clang-format off
-    Real cs = util::sqrt(eos_gm * (eos_gm - 1.0) * qq.ei(i, j, k));
+    Real cs = eos.roeitocs(qq.ro(i, j, k), qq.ei(i, j, k));
     Real vv = util::sqrt(qq.vx(i, j, k) * qq.vx(i, j, k) +
                         qq.vy(i, j, k) * qq.vy(i, j, k) +
                         qq.vz(i, j, k) * qq.vz(i, j, k));
@@ -490,9 +490,9 @@ template <typename Real> struct ArtificialViscosity {
   template <typename EOS>
   void characteristic_velocity_eval(const Fields<Real, backend::CUDA> &qq,
                                     const EOS &eos) {
-    artificial_viscosity::characteristic_velocity_eval_kernel<Real>
+    artificial_viscosity::characteristic_velocity_eval_kernel<Real, EOS>
         <<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-            cc.view(), qq.view(), grid.view(), eos.gm, cs_fac, ca_fac, vv_fac);
+            cc.view(), qq.view(), grid.view(), cs_fac, ca_fac, vv_fac, eos);
   }
 
   void update(Fields<Real, backend::CUDA> &qq,

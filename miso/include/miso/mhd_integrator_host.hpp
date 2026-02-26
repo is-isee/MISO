@@ -60,7 +60,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
         for (int k = 0; k < grid.k_total; ++k) {
           // clang-format off
           // gas pressure
-          pr(i, j, k) = qq_argm.ro(i,j,k)*qq_argm.ei(i,j,k)*(eos.gm - 1.0);
+          pr(i,j,k) = eos.roeitopr(qq_argm.ro(i,j,k), qq_argm.ei(i,j,k));
           // squared magnetic strength
           bb(i, j, k) = qq_argm.bx(i,j,k)*qq_argm.bx(i,j,k)
                       + qq_argm.by(i,j,k)*qq_argm.by(i,j,k)
@@ -199,7 +199,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               -space_centered_4th(c_by, dyi, i, j, k, 0, grid.js, 0)
               -space_centered_4th(c_bz, dzi, i, j, k, 0, 0, grid.ks)
               )
-          )*std::exp(-dt/tau_divb);
+          )*util::exp(-dt/tau_divb);
 
           // Et: total energy per unit volume
           // ei: is the internal energy per unit mass
@@ -304,21 +304,21 @@ template <typename Real> struct Integrator<Real, backend::Host> {
         for (int k = grid.k_margin; k < grid.k_total - grid.k_margin; ++k) {
           // clang-format off
           // cs: sound speed, vv: fluid velocity, ca: Alfvén speed
-          Real cs = std::sqrt(eos.gm*(eos.gm-1.0)*qq.ei(i,j,k));
-          Real vv = std::sqrt(
+          Real cs = eos.roeitocs(qq.ro(i,j,k), qq.ei(i,j,k));
+          Real vv = util::sqrt(
             + qq.vx(i,j,k)*qq.vx(i,j,k)
             + qq.vy(i,j,k)*qq.vy(i,j,k)
             + qq.vz(i,j,k)*qq.vz(i,j,k)
           );
-          Real ca = std::sqrt( (
+          Real ca = util::sqrt( (
             + qq.bx(i,j,k)*qq.bx(i,j,k)
             + qq.by(i,j,k)*qq.by(i,j,k)
             + qq.bz(i,j,k)*qq.bz(i,j,k)
           )/qq.ro(i,j,k)*pii4<Real>);
 
           Real total_vel = cs + vv + ca;
-          dt = std::min(dt, cfl_number
-            * std::min<Real>({grid.dx[i], grid.dy[j], grid.dz[k]})/total_vel);
+          dt = util::min2(dt, cfl_number
+            * util::min3<Real>(grid.dx[i], grid.dy[j], grid.dz[k])/total_vel);
           // clang-format on
         }
       }
