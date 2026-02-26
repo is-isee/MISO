@@ -1,13 +1,14 @@
 #pragma once
 
 #include "config.hpp"
+#include "execution.hpp"
+#include "mhd.hpp"
 #include "utility.hpp"
 
 namespace miso {
 namespace eos {
 
 /// @brief Ideal gas equation of state
-/// @details This class needs to be trivially copyable for device transfer.
 template <typename Real> struct IdealEOS {
   /// @brief Ratio of specific heats (gamma)
   Real gm;
@@ -18,19 +19,27 @@ template <typename Real> struct IdealEOS {
   /// @brief Construct the EOS from the specific heat ratio (gamma)
   explicit IdealEOS(Real gm) : gm(gm) {}
 
-  /// @brief Compute gas pressure from mass density and specific internal energy
-  __host__ __device__ inline Real roeitopr(Real ro, Real ei) const noexcept {
-    return (gm - 1.0) * ro * ei;
+  /// @brief Compute gas pressure from primitive MHD fields.
+  /// @note The signature must not be changed as it is called inside mhd::MHD.
+  template <typename Backend>
+  void gas_pressure(Backend btag, mhd::FieldsView<const Real> qq,
+                    Array3DView<Real> pr) const {
+    Range1D range{0, qq.size()};
+    for_each(
+        btag, range,
+        MISO_LAMBDA(int i) { pr[i] = (gm - Real(1)) * qq.ro[i] * qq.ei[i]; });
   }
 
-  /// @brief Compute specific internal energy from mass density and gas pressure
-  __host__ __device__ inline Real roprtoei(Real ro, Real pr) const noexcept {
-    return pr / (gm - 1.0) / ro;
-  }
-
-  /// @brief Compute adiabatic speed of sound from mass density and specific internal energy
-  __host__ __device__ inline Real roeitocs(Real /*ro*/, Real ei) const noexcept {
-    return util::sqrt(gm * (gm - 1.0) * ei);
+  /// @brief Compute speed of sound from primitive MHD fields.
+  /// @note The signature must not be changed as it is called inside mhd::MHD.
+  template <typename Backend>
+  void sound_speed(Backend btag, mhd::FieldsView<const Real> qq,
+                   Array3DView<Real> cs) const {
+    Range1D range{0, qq.size()};
+    for_each(
+        btag, range, MISO_LAMBDA(int i) {
+          cs[i] = util::sqrt(gm * (gm - Real(1)) * qq.ei[i]);
+        });
   }
 };
 
