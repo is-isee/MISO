@@ -71,7 +71,7 @@ TEST_CASE("Test UniformTableInterpolator2D in Host backend" *
   Array2D<float, backend::Host> table_h(Nt0, Nt1);
   for (int i = 0; i < Nt0; ++i) {
     for (int j = 0; j < Nt1; ++j) {
-      table_h(i, j) = static_cast<float>(i * j);
+      table_h(i, j) = static_cast<float>(100 * i * i + j * j);
     }
   }
   UniformTableInterpolator2D<float, backend::Host> interpolator(
