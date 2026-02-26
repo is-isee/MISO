@@ -68,7 +68,6 @@ TEST_CASE("Test Table Interpolator in CUDA backend" *
     in_d.copy_from(in_h);
     interpolator.interpolate(in_d.const_view(), out_d.view());
     out_h.copy_from(out_d);
-    std::printf("out_h[0] = %f, out_h[1] = %f\n", out_h[0], out_h[1]);
     REQUIRE(std::abs(out_h[0] - table_h[0]) < 1e-5f);
     REQUIRE(std::abs(out_h[1] - table_h[Nt - 1]) < 1e-5f);
   }
