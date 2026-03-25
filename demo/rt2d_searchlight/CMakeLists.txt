@@ -23,7 +23,7 @@ if(USE_CUDA)
             native
             CACHE STRING "CUDA architectures")
     endif()
-endif()
+endif(USE_CUDA)
 
 # App sources
 set(app_name ${project_name})
@@ -40,11 +40,12 @@ if(USE_CUDA)
     # Force main.cpp to be treated as CUDA source
     set_source_files_properties(${app_main} PROPERTIES LANGUAGE CUDA)
     target_compile_definitions(${app_name} PRIVATE USE_CUDA)
-endif()
+endif(USE_CUDA)
 
 # MISO library (also fetches dependencies)
 include(FetchContent)
 set(miso_src ${CMAKE_CURRENT_SOURCE_DIR}/../../miso)
+# ENABLE_TESTING is passed to MISO by a cache variable (for faster builds)
 set(ENABLE_TESTING
     OFF
     CACHE BOOL "Disable tests in MISO")
@@ -52,7 +53,8 @@ if(USE_CUDA)
     set(MISO_USE_CUDA
         ON
         CACHE BOOL "Enable CUDA support in MISO")
-endif()
+endif(USE_CUDA)
+# Other options (e.g., USE_CUDA) is passed automatically
 FetchContent_Declare(MISO SOURCE_DIR ${miso_src})
 FetchContent_MakeAvailable(MISO)
 target_link_libraries(${app_name} PRIVATE MISO::MISO)

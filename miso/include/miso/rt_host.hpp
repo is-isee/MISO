@@ -87,8 +87,7 @@ void set_incoming_boundary(RT<Real> &rt, const Grid<Real> &grid,
 }
 
 template <typename Real, typename ValueFn>
-void set_incoming_boundary_on_physical_faces(RT<Real> &rt,
-                                             const Grid<Real> &grid,
+void set_incoming_boundary_on_physical_faces(RT<Real> &rt, const Grid<Real> &grid,
                                              const mpi::Shape &mpi_shape,
                                              Direction direction, Side side,
                                              ValueFn &&value_fn) {

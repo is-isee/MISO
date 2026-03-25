@@ -10,8 +10,8 @@ using namespace miso;
 
 using Real = float;
 
-template <typename Real> void setup(rt::RT<Real> &solver, const Grid<Real> &grid,
-                                    const Config &config) {
+template <typename Real>
+void setup(rt::RT<Real> &solver, const Grid<Real> &grid, const Config &config) {
   const Real abs_coeff = config["searchlight"]["abs_coeff"].as<Real>();
   const Real src_func = config["searchlight"]["src_func"].as<Real>();
 
