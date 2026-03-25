@@ -9,18 +9,96 @@
 #include <cstdio>
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "array3d.hpp"
 #include "array4d.hpp"
+#include "boundary_condition.hpp"
 #include "env.hpp"
 #include "grid.hpp"
 #include "mpi_util.hpp"
-#include "rt_angular_quadrature.hpp"
+#include "rt_quadrature.hpp"
 #include "utility.hpp"
 
 namespace miso {
 namespace rt {
+
+template <typename Real> struct RT;
+
+template <typename Real>
+inline Real ray_cosine(const AngularQuadrature<Real> &ang_quad, int i_ray,
+                       Direction direction) {
+  switch (direction) {
+  case Direction::X:
+    return ang_quad.mu_x[i_ray];
+  case Direction::Y:
+    return ang_quad.mu_y[i_ray];
+  case Direction::Z:
+    return ang_quad.mu_z[i_ray];
+  }
+  return Real(0);
+}
+
+template <typename Real>
+inline bool is_incoming_ray(const AngularQuadrature<Real> &ang_quad, int i_ray,
+                            Direction direction, Side side) {
+  const Real mu = ray_cosine(ang_quad, i_ray, direction);
+  return (side == Side::INNER) ? (mu > Real(0)) : (mu < Real(0));
+}
+
+template <typename Real, typename ValueFn>
+void set_incoming_boundary(RT<Real> &rt, const Grid<Real> &grid,
+                           Direction direction, Side side, ValueFn &&value_fn) {
+  int i_begin = rt.ib0;
+  int i_end = rt.ib1;
+  int j_begin = rt.jb0;
+  int j_end = rt.jb1;
+  int k_begin = rt.kb0;
+  int k_end = rt.kb1;
+
+  switch (direction) {
+  case Direction::X:
+    i_begin = (side == Side::INNER) ? rt.ib0 : rt.ib1;
+    i_end = i_begin;
+    break;
+  case Direction::Y:
+    j_begin = (side == Side::INNER) ? rt.jb0 : rt.jb1;
+    j_end = j_begin;
+    break;
+  case Direction::Z:
+    k_begin = (side == Side::INNER) ? rt.kb0 : rt.kb1;
+    k_end = k_begin;
+    break;
+  }
+
+  for (int i_ray = 0; i_ray < rt.ang_quad.num_rays; ++i_ray) {
+    if (!is_incoming_ray(rt.ang_quad, i_ray, direction, side)) {
+      continue;
+    }
+    for (int i = i_begin; i <= i_end; ++i) {
+      for (int j = j_begin; j <= j_end; ++j) {
+        for (int k = k_begin; k <= k_end; ++k) {
+          rt.rint(i_ray, i, j, k) = value_fn(i, j, k);
+        }
+      }
+    }
+  }
+}
+
+template <typename Real, typename ValueFn>
+void set_incoming_boundary_on_physical_faces(RT<Real> &rt,
+                                             const Grid<Real> &grid,
+                                             const mpi::Shape &mpi_shape,
+                                             Direction direction, Side side,
+                                             ValueFn &&value_fn) {
+  namespace bc = miso::boundary_condition;
+  if (!bc::is_physical_boundary(direction, side, mpi_shape)) {
+    return;
+  }
+  set_incoming_boundary(rt, grid, direction, side,
+                        std::forward<ValueFn>(value_fn));
+}
 
 ///
 /// @brief Radiation transfer solver
@@ -71,9 +149,9 @@ template <typename Real> struct RT {
         send_buff_y_neg(num_rays, grid.i_total, grid.k_total),
         send_buff_z_pos(num_rays, grid.i_total, grid.j_total),
         send_buff_z_neg(num_rays, grid.i_total, grid.j_total),
-        ib0(grid.margin - grid.is), ib1(ib0 + grid.i_size),
-        jb0(grid.margin - grid.js), jb1(jb0 + grid.j_size),
-        kb0(grid.margin - grid.ks), kb1(kb0 + grid.k_size) {
+        ib0(grid.i_margin - grid.is), ib1(ib0 + grid.i_size - 1),
+        jb0(grid.j_margin - grid.js), jb1(jb0 + grid.j_size - 1),
+        kb0(grid.k_margin - grid.ks), kb1(kb0 + grid.k_size - 1) {
     util::clear_array(rint);
     util::clear_array(rint_old);
     util::clear_array(src_func);
@@ -564,8 +642,6 @@ template <typename Real> struct RT {
       Real global_max_diff = 0.0;
       MPI_Allreduce(&max_diff, &global_max_diff, 1, mpi::data_type<Real>(),
                     MPI_MAX, mpi_shape.cart_comm);
-      std::printf("%f %f\n", static_cast<double>(max_diff),
-                  static_cast<double>(global_max_diff));
       if (global_max_diff < tolerance)
         return;
     }

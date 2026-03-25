@@ -12,4 +12,5 @@ APP_LIST=(
   "mhd1d_shock_tube"
   "mhd2d_vortex"
   "mhd3d_magnetosphere"
+  "rt2d_searchlight"
 )
