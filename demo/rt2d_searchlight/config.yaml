@@ -2,6 +2,15 @@ base:
   save_dir: data/
   continue: false
 
+physics:
+  rt: true
+
+time:
+  time_save_dir: time/
+  n_output_digits: 8
+  tend: 1.0
+  dt_output: 1.0
+
 grid:
   i_size: 64
   j_size: 64

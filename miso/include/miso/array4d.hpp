@@ -82,28 +82,33 @@ private:
 
 public:
   Array4D(int nx0, int nx1, int nx2, int nx3) : shape_{nx0, nx1, nx2, nx3} {
-    assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0 && shape_[3] > 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
     const std::size_t array_size =
         ((static_cast<size_t>(shape_[0]) * static_cast<size_t>(shape_[1])) *
          static_cast<size_t>(shape_[2])) *
         static_cast<size_t>(shape_[3]);
     assert(array_size <= static_cast<size_t>(std::numeric_limits<int>::max()));
-    data_ = new T[array_size];
+    if (array_size > 0) {
+      data_ = new T[array_size];
+    }
   }
 
   ~Array4D() { delete[] data_; }
 
   /// @brief Return a lightweight view of the array.
   Array4DView<T> view() noexcept {
-    assert(data_);
-    assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0 && shape_[3] > 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
     return Array4DView<T>(data_, shape_[0], shape_[1], shape_[2], shape_[3]);
   }
 
   /// @brief Return a constant lightweight view of the array.
   Array4DView<const T> view() const noexcept {
-    assert(data_);
-    assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0 && shape_[3] > 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
     return Array4DView<const T>(data_, shape_[0], shape_[1], shape_[2],
                                 shape_[3]);
   }
@@ -150,8 +155,11 @@ public:
 
   /// @brief Copy data from another Array4D in host memory.
   void copy_from(const Array4D<T, backend::Host> &other) {
-    assert(other.data() && data());
     assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
     std::copy(other.data(), other.data() + other.size(), data());
   }
 
@@ -205,13 +213,16 @@ private:
 
 public:
   Array4D(int nx0, int nx1, int nx2, int nx3) : shape_{nx0, nx1, nx2, nx3} {
-    assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0 && shape_[3] > 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
     const std::size_t array_size =
         ((static_cast<size_t>(shape_[0]) * static_cast<size_t>(shape_[1])) *
          static_cast<size_t>(shape_[2])) *
         static_cast<size_t>(shape_[3]);
     assert(array_size <= static_cast<size_t>(std::numeric_limits<int>::max()));
-    MISO_CUDA_CHECK(cudaMalloc(&data_, sizeof(T) * array_size));
+    if (array_size > 0) {
+      MISO_CUDA_CHECK(cudaMalloc(&data_, sizeof(T) * array_size));
+    }
   }
 
   ~Array4D() {
@@ -222,15 +233,17 @@ public:
 
   /// @brief Return a lightweight view of the array.
   Array4DView<T> view() noexcept {
-    assert(data_);
-    assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0 && shape_[3] > 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
     return Array4DView<T>(data_, shape_[0], shape_[1], shape_[2], shape_[3]);
   }
 
   /// @brief Return a constant lightweight view of the array.
   Array4DView<const T> view() const noexcept {
-    assert(data_);
-    assert(shape_[0] > 0 && shape_[1] > 0 && shape_[2] > 0 && shape_[3] > 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
     return Array4DView<const T>(data_, shape_[0], shape_[1], shape_[2],
                                 shape_[3]);
   }
@@ -260,16 +273,22 @@ public:
 
   /// @brief Copy data from another Array4D in host memory.
   void copy_from(const Array4D<T, backend::Host> &other) {
-    assert(other.data() && data());
     assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
     MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * size(),
                                cudaMemcpyHostToDevice));
   }
 
   /// @brief Copy data from another Array4D in CUDA memory.
   void copy_from(const Array4D<T, backend::CUDA> &other) {
-    assert(other.data() && data());
     assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
     MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * size(),
                                cudaMemcpyDeviceToDevice));
   }
@@ -277,8 +296,11 @@ public:
   /// @brief Copy data from another Array4D in host memory (async).
   /// @details The caller is responsible for synchronizing the stream.
   void copy_from(const Array4D<T, backend::Host> &other, cudaStream_t stream) {
-    assert(other.data() && data());
     assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
     MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),
                                     cudaMemcpyHostToDevice, stream));
   }
@@ -286,8 +308,11 @@ public:
   /// @brief Copy data from another Array4D in CUDA memory (async).
   /// @details The caller is responsible for synchronizing the stream.
   void copy_from(const Array4D<T, backend::CUDA> &other, cudaStream_t stream) {
-    assert(other.data() && data());
     assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
     MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),
                                     cudaMemcpyDeviceToDevice, stream));
   }

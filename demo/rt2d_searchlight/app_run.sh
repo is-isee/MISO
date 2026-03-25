@@ -4,9 +4,6 @@
 # Exit on error / undefined variable
 set -eu
 
-# Number of processes
-NUM_PROCS=2
-
 # Define directory of this script
 THIS_DIR=$(cd "$(dirname "$0")" && pwd)
 
@@ -28,6 +25,22 @@ if [[ ! -f "${CONFIG_PATH}" ]]; then
     echo "Error: Config file not found at ${CONFIG_PATH}"
     exit 1
 fi
+
+# Match the checked-in MPI topology from config.yaml.
+NUM_PROCS=$(awk '
+    $1 == "x_procs:" { x = $2 }
+    $1 == "y_procs:" { y = $2 }
+    $1 == "z_procs:" { z = $2 }
+    END {
+        if (x == "" || y == "" || z == "") {
+            exit 1
+        }
+        print x * y * z
+    }
+' "${CONFIG_PATH}") || {
+    echo "Error: Failed to read x_procs/y_procs/z_procs from ${CONFIG_PATH}"
+    exit 1
+}
 
 # Run command
 set -x

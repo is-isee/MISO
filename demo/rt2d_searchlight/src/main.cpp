@@ -5,6 +5,7 @@
 #include <miso/grid.hpp>
 #include <miso/mpi_util.hpp>
 #include <miso/rt.hpp>
+#include <miso/time.hpp>
 
 using namespace miso;
 
@@ -67,6 +68,8 @@ int main(int argc, char **argv) {
   config.save();
   grid.save(config);
   mpi_shape.save();
+  Time<Real> time(config);
+  time.save();
 
   const std::string rt_save_dir =
       config.save_dir + config["rt"]["save_dir"].as<std::string>();
