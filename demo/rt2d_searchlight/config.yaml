@@ -42,6 +42,7 @@ rt:
   save_dir: rt/
 
 searchlight:
+  boundary_face: "x_inner"
   abs_coeff: 1.0
   src_func: 0.5
   incoming_intensity: 1.0

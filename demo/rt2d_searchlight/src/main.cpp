@@ -1,5 +1,7 @@
 #include <string>
+#include <utility>
 
+#include <miso/boundary_condition.hpp>
 #include <miso/config.hpp>
 #include <miso/env.hpp>
 #include <miso/grid.hpp>
@@ -30,21 +32,58 @@ void setup(rt::RT<Real> &solver, const Grid<Real> &grid, const Config &config) {
 }
 
 struct SearchlightBoundaryCondition {
+  Direction direction;
+  Side side;
   Real incoming_intensity;
   Real radius;
 
+  static std::pair<Direction, Side> parse_boundary_face(const Config &config) {
+    namespace bc = miso::boundary_condition;
+    std::string face;
+
+    if (config["searchlight"]["boundary_face"]) {
+      face = config["searchlight"]["boundary_face"].as<std::string>();
+    } else if (config["searchlight"]["side"]) {
+      face = config["searchlight"]["side"].as<std::string>();
+    } else {
+      face = "x_inner";
+    }
+
+    const auto pos = face.find('_');
+    if (pos == std::string::npos) {
+      throw std::invalid_argument(
+          "searchlight.boundary_face must be one of "
+          "x_inner/x_outer/y_inner/y_outer/z_inner/z_outer");
+    }
+
+    const std::string direction_str = face.substr(0, pos);
+    const std::string side_str = face.substr(pos + 1);
+    return {bc::string_to_direction(direction_str), bc::string_to_side(side_str)};
+  }
+
   explicit SearchlightBoundaryCondition(const Config &config)
-      : incoming_intensity(
+      : direction(parse_boundary_face(config).first),
+        side(parse_boundary_face(config).second),
+        incoming_intensity(
             config["searchlight"]["incoming_intensity"].as<Real>()),
         radius(config["searchlight"]["radius"].as<Real>()) {}
 
   void operator()(rt::RT<Real> &solver, const Grid<Real> &grid,
                   const mpi::Shape &mpi_shape) const {
     rt::set_incoming_boundary_on_physical_faces(
-        solver, grid, mpi_shape, Direction::X, Side::INNER,
-        [&](int, int j, int k) {
-          const Real rr =
-              util::sqrt(util::pow2(grid.y[j]) + util::pow2(grid.z[k]));
+        solver, grid, mpi_shape, direction, side, [&](int i, int j, int k) {
+          Real rr = 0;
+          switch (direction) {
+          case Direction::X:
+            rr = util::sqrt(util::pow2(grid.y[j]) + util::pow2(grid.z[k]));
+            break;
+          case Direction::Y:
+            rr = util::sqrt(util::pow2(grid.x[i]) + util::pow2(grid.z[k]));
+            break;
+          case Direction::Z:
+            rr = util::sqrt(util::pow2(grid.x[i]) + util::pow2(grid.y[j]));
+            break;
+          }
           return (rr <= radius) ? incoming_intensity : Real(0);
         });
   }
