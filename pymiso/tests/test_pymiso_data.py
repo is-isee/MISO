@@ -1,10 +1,10 @@
-from pathlib import Path
 import struct
+from pathlib import Path
 
 import numpy as np
 
 import pymiso
-from pymiso import Conf, Data, Grid, MPI, Time
+from pymiso import MPI, Conf, Data, Grid, Time
 
 
 def _write_config(base_dir: Path, body: str) -> None:
