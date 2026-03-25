@@ -185,13 +185,13 @@ class Data:
             ijk_local = self._local_slice()
 
             with open(filename, "rb") as f:
-                num_rays = int(np.fromfile(f, dtype=self.conf.endian + "i4", count=1)[0])
+                num_rays = int(
+                    np.fromfile(f, dtype=self.conf.endian + "i4", count=1)[0]
+                )
 
                 if rank == 0:
                     self.num_rays = num_rays
-                    elem_probe = np.fromfile(
-                        f, dtype=self.conf.endian + "f4", count=1
-                    )
+                    elem_probe = np.fromfile(f, dtype=self.conf.endian + "f4", count=1)
                     if elem_probe.size == 0:
                         raise ValueError("RT file is missing angular weights")
                     f.seek(-elem_probe.dtype.itemsize, 1)
@@ -202,7 +202,9 @@ class Data:
                     self.mu_z = np.empty(self.num_rays, dtype=elem_base)
                     self.src_func = np.zeros(shape_global, dtype=elem_base)
                     self.abs_coeff = np.zeros(shape_global, dtype=elem_base)
-                    self.rint = np.zeros((self.num_rays, *shape_global), dtype=elem_base)
+                    self.rint = np.zeros(
+                        (self.num_rays, *shape_global), dtype=elem_base
+                    )
                 else:
                     if num_rays != self.num_rays:
                         raise ValueError(
@@ -237,11 +239,15 @@ class Data:
                         and np.array_equal(self.mu_y, mu_y)
                         and np.array_equal(self.mu_z, mu_z)
                     ):
-                        raise ValueError("Inconsistent RT angular quadrature across ranks")
+                        raise ValueError(
+                            "Inconsistent RT angular quadrature across ranks"
+                        )
 
                 self.src_func[ijk_global] = src_func[ijk_local]
                 self.abs_coeff[ijk_global] = abs_coeff[ijk_local]
-                self.rint[(slice(None),) + ijk_global] = rint[(slice(None),) + ijk_local]
+                self.rint[(slice(None),) + ijk_global] = rint[
+                    (slice(None),) + ijk_local
+                ]
 
         self.src_func = np.squeeze(self.src_func)
         self.abs_coeff = np.squeeze(self.abs_coeff)
