@@ -2,6 +2,8 @@
 Utilities for handling MISO simulation data.
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 __all__ = ["Conf", "Data", "Grid", "MPI", "Time"]
 
 from .conf import Conf
@@ -11,6 +13,6 @@ from .mpi import MPI
 from .time import Time
 
 try:
-    from ._version import version as __version__
-except ImportError:
+    __version__ = version("pymiso")
+except PackageNotFoundError:
     __version__ = "unknown"
