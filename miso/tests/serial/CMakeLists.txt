@@ -7,6 +7,10 @@ function(miso_add_tests pattern suffix)
         set(target_name ${test_name}_${suffix})
 
         add_executable(${target_name} ${test_src})
+
+        target_include_directories(${target_name} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
+        )
         target_link_libraries(${target_name} PRIVATE MISO::MISO
                                                      doctest::doctest)
 
