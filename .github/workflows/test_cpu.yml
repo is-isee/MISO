@@ -30,9 +30,9 @@ jobs:
       - name: Run unit tests
         working-directory: build
         run: |
+          pwd
           OMPI_MCA_btl_vader_single_copy_mechanism=none \
           OMPI_MCA_rmaps_base_oversubscribe=yes \
-          pwd\
           ctest -V -j
       - name: Build demo
         working-directory: demo/mhd2d_vortex
