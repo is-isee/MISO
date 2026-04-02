@@ -10,6 +10,7 @@ function(miso_add_tests pattern suffix)
 
         target_include_directories(${target_name} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../demo/hd1d_shock_tube/src
         )
         target_link_libraries(${target_name} PRIVATE MISO::MISO
                                                      doctest::doctest)
