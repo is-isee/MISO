@@ -3,7 +3,7 @@
 #include <doctest/doctest.h>
 #include <hd1d_boundary_condition.hpp>
 #include <hd1d_initial_condition.hpp>
-#include <istream>
+
 #include <sod_solution.hpp>
 
 #include <miso/boundary_condition.hpp>
@@ -18,7 +18,7 @@ using Backend = backend::CUDA;
 using Backend = backend::Host;
 #endif
 
-// This test use demo/hd1d_shock_tube and validate the numerical solution by comparing with the exact solution of Sod's shock tube problem.
+// This test uses demo/hd1d_shock_tube and validates the numerical solution by comparing with the exact solution of Sod's shock tube problem.
 // The test runs the simulation for three different configurations (shock tube in x, y, and z directions) and checks the consistency of the results among them as well as their agreement with the exact solution.
 
 struct Model : public mhd::ModelBase<Model, Real, Backend> {
@@ -45,8 +45,6 @@ TEST_CASE("Test HD 1D Shock Tube" * doctest::test_suite("hd1d_shock_tube")) {
   Config config_z("../../../../demo/hd1d_shock_tube/config/config_z.yaml");
   Model model_z(config_z);
   model_z.run();
-
-  std::cout << model_x.ic.prl << std::endl;
 
   Real csr = std::sqrt(model_x.eos.gm * model_x.ic.prr / model_x.ic.ror);
   Real csl = std::sqrt(model_x.eos.gm * model_x.ic.prl / model_x.ic.rol);
