@@ -1,6 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <cmath>
 #include <doctest/doctest.h>
+#include <filesystem>
 #include <hd1d_boundary_condition.hpp>
 #include <hd1d_initial_condition.hpp>
 
@@ -34,15 +35,21 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
 TEST_CASE("Test HD 1D Shock Tube" * doctest::test_suite("hd1d_shock_tube")) {
   Env env;
 
-  Config config_x("../../../../demo/hd1d_shock_tube/config/config_x.yaml");
+  std::filesystem::path config_dir =
+      std::filesystem::path(HD1D_SHOCK_TUBE_CONFIG_DIR);
+  std::filesystem::path config_x_path = config_dir / "config_x.yaml";
+  std::filesystem::path config_y_path = config_dir / "config_y.yaml";
+  std::filesystem::path config_z_path = config_dir / "config_z.yaml";
+
+  Config config_x(config_x_path.string());
   Model model_x(config_x);
   model_x.run();
 
-  Config config_y("../../../../demo/hd1d_shock_tube/config/config_y.yaml");
+  Config config_y(config_y_path.string());
   Model model_y(config_y);
   model_y.run();
 
-  Config config_z("../../../../demo/hd1d_shock_tube/config/config_z.yaml");
+  Config config_z(config_z_path.string());
   Model model_z(config_z);
   model_z.run();
 
