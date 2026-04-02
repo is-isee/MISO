@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <cstddef>
+#include <vector>
 
 // This file provides the exact solution of Sod's shock tube problem, which is used for testing the correctness of the numerical solution in test_hd1d_shock_tube.cpp.
 
