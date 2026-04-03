@@ -18,7 +18,7 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
   // defined in hd1d_initial_condition.hpp
   InitialCondition<Real> ic;
   // defined in hd1d_boundary_condition.hpp
-  BoundaryCondition<Real> bc;
+  BoundaryCondition<Real, Backend> bc;
   mhd::EmptySourceTerm<Real> src;
 
   Model(Config &config)

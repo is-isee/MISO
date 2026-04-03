@@ -25,7 +25,7 @@ using Backend = backend::Host;
 struct Model : public mhd::ModelBase<Model, Real, Backend> {
   eos::IdealEOS<Real> eos;
   InitialCondition<Real> ic;
-  BoundaryCondition<Real> bc;
+  BoundaryCondition<Real, Backend> bc;
   mhd::EmptySourceTerm<Real> src;
 
   Model(Config &config)

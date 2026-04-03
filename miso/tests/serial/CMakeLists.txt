@@ -10,15 +10,18 @@ function(miso_add_tests pattern suffix)
 
         target_include_directories(${target_name} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../../demo/hd1d_shock_tube/src
         )
         target_link_libraries(${target_name} PRIVATE MISO::MISO
                                                      doctest::doctest)
 
-        target_compile_definitions(${target_name} PRIVATE
+        if(test_name STREQUAL "test_hd1d_shock_tube")
+            target_include_directories(${target_name} PRIVATE
+                ${CMAKE_SOURCE_DIR}/../demo/hd1d_shock_tube/src
+            )
+            target_compile_definitions(${target_name} PRIVATE
                 HD1D_SHOCK_TUBE_CONFIG_DIR="${CMAKE_SOURCE_DIR}/../demo/hd1d_shock_tube/config"
-        )
-
+            )
+        endif()
         add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
     endforeach(test_src)
 endfunction(miso_add_tests)

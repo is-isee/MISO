@@ -3,13 +3,8 @@
 #include <miso/mhd_model_base.hpp>
 
 using namespace miso;
-#ifdef USE_CUDA
-using Backend = backend::CUDA;
-#else
-using Backend = backend::Host;
-#endif
 
-template <typename Real> struct BoundaryCondition {
+template <typename Real, class Backend> struct BoundaryCondition {
   mpi::Shape &mpi_shape;
 
   BoundaryCondition(mpi::Shape &mpi_shape) : mpi_shape(mpi_shape) {}
