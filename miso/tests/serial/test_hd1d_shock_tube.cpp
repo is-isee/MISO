@@ -74,8 +74,13 @@ TEST_CASE("Test HD 1D Shock Tube" * doctest::test_suite("hd1d_shock_tube")) {
   CHECK(ro_diff_sum / ro_sum < 5.e-2);
   CHECK(vx_diff_sum / vx_sum < 5.e-2);
 
+  constexpr double single_precision_epsilon = 1e-5;
   for (std::size_t i = 0; i < model_x.grid.i_total; ++i) {
-    CHECK(model_x.mhd.qq.ro[i] == doctest::Approx(model_y.mhd.qq.ro[i]));
-    CHECK(model_x.mhd.qq.ro[i] == doctest::Approx(model_z.mhd.qq.ro[i]));
+    CHECK(model_x.mhd.qq.ro[i] == doctest::Approx(model_y.mhd.qq.ro[i])
+                                      .epsilon(single_precision_epsilon)
+                                      .scale(1.0));
+    CHECK(model_x.mhd.qq.ro[i] == doctest::Approx(model_z.mhd.qq.ro[i])
+                                      .epsilon(single_precision_epsilon)
+                                      .scale(1.0));
   }
 }

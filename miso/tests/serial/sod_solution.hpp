@@ -38,7 +38,7 @@ private:
 public:
   std::vector<Real> x, ro, vx, pr;
 
-  SodSolution(std::vector<Real> x_)
+  SodSolution(const std::vector<Real> &x_)
       : x(x_), ro(x_.size()), vx(x_.size()), pr(x_.size()) {}
 
   void calc_sod_solution(Real time, Real gm, Real xm, Real csl, Real csr,

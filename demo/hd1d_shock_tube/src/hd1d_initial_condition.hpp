@@ -1,5 +1,4 @@
 #pragma once
-#include <miso/boundary_condition.hpp>
 #include <miso/mhd_model_base.hpp>
 #include <stdexcept>
 
