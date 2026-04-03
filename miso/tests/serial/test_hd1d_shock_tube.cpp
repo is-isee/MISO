@@ -13,11 +13,7 @@
 using namespace miso;
 using Real = float;
 
-#ifdef USE_CUDA
-using Backend = backend::CUDA;
-#else
 using Backend = backend::Host;
-#endif
 
 // This test uses demo/hd1d_shock_tube and validates the numerical solution by comparing with the exact solution of Sod's shock tube problem.
 // The test runs the simulation for three different configurations (shock tube in x, y, and z directions) and checks the consistency of the results among them as well as their agreement with the exact solution.
