@@ -56,9 +56,12 @@ struct Shape {
   std::string mpi_save_dir;
 
   Shape(const Config &config) {
-    mpi_save_dir =
-        config.save_dir + config["mpi"]["mpi_save_dir"].as<std::string>();
-    util::create_directories(mpi_save_dir);
+
+    if (config.yaml_obj["base"]["io_enabled"].as<bool>()) {
+      mpi_save_dir =
+          config.save_dir + config["mpi"]["mpi_save_dir"].as<std::string>();
+      util::create_directories(mpi_save_dir);
+    }
 
     x_procs = config["mpi"]["x_procs"].as<int>();
     y_procs = config["mpi"]["y_procs"].as<int>();

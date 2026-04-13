@@ -1,4 +1,5 @@
 base:
+  io_enabled: false
   save_dir: ../data_y/
   continue: false
 

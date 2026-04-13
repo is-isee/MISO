@@ -76,11 +76,18 @@ struct Config {
       yaml_obj = YAML::Load(yaml_str);
     }
 
+    if (!yaml_obj["base"]["io_enabled"]) {
+      yaml_obj["base"]["io_enabled"] = true;
+    }
+
     fs::path config_path = fs::absolute(load_filepath);
     fs::path config_dir = config_path.parent_path();
-    save_dir =
-        (config_dir / yaml_obj["base"]["save_dir"].as<std::string>()).string();
-    util::create_directories(save_dir);
+
+    if (yaml_obj["base"]["io_enabled"].as<bool>()) {
+      save_dir =
+          (config_dir / yaml_obj["base"]["save_dir"].as<std::string>()).string();
+      util::create_directories(save_dir);
+    }
   }
 
   /// @brief Accessor for YAML configuration object
