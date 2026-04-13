@@ -384,6 +384,10 @@ template <typename Real> struct Grid<Real, backend::Host> {
   /// @param config
   void save(const Config &config) const {
     if (mpi::is_root()) {
+      if (!config.yaml_obj["base"]["io_enabled"].as<bool>()) {
+        return;
+      }
+
       // Generate global grid for saving
       /// TODO: This should be implemented by MPI_gather.
       const int margin = config["grid"]["margin"].as<int>();

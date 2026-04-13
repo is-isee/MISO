@@ -62,9 +62,6 @@ public:
   }
 
   void save_metadata() {
-    if (!config.yaml_obj["base"]["io_enabled"].as<bool>()) {
-      return;
-    }
     MPI_Barrier(mpi::comm());
     config.save();
     grid.save(config);
@@ -72,25 +69,16 @@ public:
   }
 
   void save_state() {
-    if (!config.yaml_obj["base"]["io_enabled"].as<bool>()) {
-      return;
-    }
     time.save();
     mhd.save(time);
   }
 
   void load_state() {
-    if (!config.yaml_obj["base"]["io_enabled"].as<bool>()) {
-      return;
-    }
     time.load();
     mhd.load(time);
   }
 
   void save_if_needed() {
-    if (!config.yaml_obj["base"]["io_enabled"].as<bool>()) {
-      return;
-    }
     if (time.time >= time.dt_output * time.n_output) {
       save_state();
       time.log();
