@@ -51,9 +51,9 @@ template <typename Real> struct Time {
 
     initialize();
 
+    time_save_dir =
+        config.save_dir + config["time"]["time_save_dir"].as<std::string>();
     if (io_enabled) {
-      time_save_dir =
-          config.save_dir + config["time"]["time_save_dir"].as<std::string>();
       util::create_directories(time_save_dir);
     }
   }
