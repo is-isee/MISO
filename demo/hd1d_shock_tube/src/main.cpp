@@ -1,5 +1,5 @@
-#include <hd1d_boundary_condition.hpp>
-#include <hd1d_initial_condition.hpp>
+#include <boundary_condition.hpp>
+#include <initial_condition.hpp>
 #include <miso/boundary_condition.hpp>
 #include <miso/mhd_model_base.hpp>
 

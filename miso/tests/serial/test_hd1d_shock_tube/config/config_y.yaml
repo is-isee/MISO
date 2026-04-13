@@ -1,0 +1,56 @@
+base:
+  save_dir: ../data_y/
+  continue: false
+
+time:
+  time_save_dir: time/
+  n_output_digits: 8
+  tend: 0.2
+  dt_output: 0.01
+
+grid:
+  i_size: 1
+  j_size: 128
+  k_size: 1
+  margin: 2
+  x_min: 0.0
+  x_max: 1.0
+  y_min: 0.0
+  y_max: 1.0
+  z_min: 0.0
+  z_max: 1.0
+
+mpi:
+  mpi_save_dir: mpi/
+  x_procs: 1
+  y_procs: 1
+  z_procs: 1
+
+domain:
+  periodic:
+    x: false
+    y: false
+    z: false
+
+mhd:
+  mhd_save_dir: mhd/
+  n_output_digits: 8
+  cfl_number: 0.5
+  artificial_viscosity:
+    ep: 1.0
+    fh: 1.0
+    # for characteristic velocity
+    cs_fac: 1.0
+    ca_fac: 1.0
+    vv_fac: 1.0
+
+eos:
+  gm: 1.4
+
+shock_tube:
+  rol: 1.0
+  prl: 1.0
+  vvl: 0.0
+  ror: 0.125
+  prr: 0.1
+  vvr: 0.0

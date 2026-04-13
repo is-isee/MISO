@@ -2,10 +2,10 @@
 #include <cmath>
 #include <doctest/doctest.h>
 #include <filesystem>
-#include <hd1d_boundary_condition.hpp>
-#include <hd1d_initial_condition.hpp>
+#include <test_hd1d_shock_tube/boundary_condition.hpp>
+#include <test_hd1d_shock_tube/initial_condition.hpp>
 
-#include <sod_solution.hpp>
+#include <test_hd1d_shock_tube/sod_solution.hpp>
 
 #include <miso/boundary_condition.hpp>
 #include <miso/mhd_model_base.hpp>
@@ -31,8 +31,11 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
 TEST_CASE("Test HD 1D Shock Tube" * doctest::test_suite("hd1d_shock_tube")) {
   Env env;
 
+  std::cout << std::filesystem::current_path() << std::endl;
+
   std::filesystem::path config_dir =
       std::filesystem::path(HD1D_SHOCK_TUBE_CONFIG_DIR);
+  // std::filesystem::path(HD1D_SHOCK_TUBE_CONFIG_DIR);
   std::filesystem::path config_x_path = config_dir / "config_x.yaml";
   std::filesystem::path config_y_path = config_dir / "config_y.yaml";
   std::filesystem::path config_z_path = config_dir / "config_z.yaml";
