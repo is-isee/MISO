@@ -31,8 +31,6 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
 TEST_CASE("Test HD 1D Shock Tube" * doctest::test_suite("hd1d_shock_tube")) {
   Env env;
 
-  std::cout << std::filesystem::current_path() << std::endl;
-
   std::filesystem::path config_dir =
       std::filesystem::path(HD1D_SHOCK_TUBE_CONFIG_DIR);
   // std::filesystem::path(HD1D_SHOCK_TUBE_CONFIG_DIR);
