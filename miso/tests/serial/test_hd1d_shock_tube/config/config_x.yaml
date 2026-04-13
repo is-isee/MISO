@@ -1,11 +1,13 @@
-base:
-  io_enabled: false
-  save_dir: ../data_x/
+io:
+  enabled: false
   continue: false
+  save_dir: ../data_x/
+  time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  n_output_digits: 8
 
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 0.2
   dt_output: 0.01
 
@@ -22,7 +24,6 @@ grid:
   z_max: 1.0
 
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
@@ -34,7 +35,6 @@ domain:
     z: false
 
 mhd:
-  mhd_save_dir: mhd/
   n_output_digits: 8
   cfl_number: 0.5
   artificial_viscosity:
