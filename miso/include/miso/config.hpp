@@ -98,7 +98,7 @@ struct Config {
   /// @brief  Save the configuration to a YAML file
   void save() const {
     if (mpi::is_root()) {
-      if (yaml_obj["base"]["io_enabled"].as<bool>()) {
+      if (!yaml_obj["base"]["io_enabled"].as<bool>()) {
         return;
       }
       std::string save_filepath = save_dir + "/config.yaml";
