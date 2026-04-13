@@ -33,7 +33,6 @@ TEST_CASE("Test HD 1D Shock Tube" * doctest::test_suite("hd1d_shock_tube")) {
 
   std::filesystem::path config_dir =
       std::filesystem::path(HD1D_SHOCK_TUBE_CONFIG_DIR);
-  // std::filesystem::path(HD1D_SHOCK_TUBE_CONFIG_DIR);
   std::filesystem::path config_x_path = config_dir / "config_x.yaml";
   std::filesystem::path config_y_path = config_dir / "config_y.yaml";
   std::filesystem::path config_z_path = config_dir / "config_z.yaml";
