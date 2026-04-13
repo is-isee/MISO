@@ -32,6 +32,33 @@ inline std::optional<std::string> parse_config_filepath(int argc, char **argv) {
   return std::nullopt;
 }
 
+/// @brief set default value for yaml node
+/// @tparam T type of the value
+/// @param root root yaml node
+/// @param path path to the target node
+/// @param value default value to set if the target node is not set
+template <typename T>
+void set_default_yaml_node(YAML::Node &root, const std::vector<std::string> &path,
+                           const T &value) {
+  if (path.size() == 1) {
+    if (!root[path[0]]) {
+      root[path[0]] = value;
+    }
+    return;
+  } else if (path.size() == 2) {
+    if (!root[path[0]][path[1]]) {
+      root[path[0]][path[1]] = value;
+    }
+  } else if (path.size() == 3) {
+    if (!root[path[0]][path[1]][path[2]]) {
+      root[path[0]][path[1]][path[2]] = value;
+    }
+  } else {
+    throw std::runtime_error(
+        "set_default_yaml_node: path size must be 1, 2, or 3");
+  }
+}
+
 /// @brief Configuration class for MHD simulations
 struct Config {
   /// @brief file path for YAML configuration file
@@ -76,9 +103,26 @@ struct Config {
       yaml_obj = YAML::Load(yaml_str);
     }
 
-    if (!yaml_obj["io"]["enabled"]) {
-      yaml_obj["io"]["enabled"] = true;
-    }
+    // set default values started
+    set_default_yaml_node<bool>(yaml_obj, {"io", "enabled"}, true);
+    set_default_yaml_node<std::string>(yaml_obj, {"io", "save_dir"}, "data/");
+    set_default_yaml_node<std::string>(yaml_obj, {"io", "time_save_dir"},
+                                       "time/");
+    set_default_yaml_node<std::string>(yaml_obj, {"io", "mpi_save_dir"}, "mpi/");
+    set_default_yaml_node<std::string>(yaml_obj, {"io", "mhd_save_dir"}, "mhd/");
+    set_default_yaml_node<int>(yaml_obj, {"io", "n_output_digits"}, 8);
+    set_default_yaml_node<double>(yaml_obj, {"mhd", "cfl_number"}, 0.5);
+    set_default_yaml_node<double>(yaml_obj, {"mhd", "artificial_viscosity", "ep"},
+                                  1.0);
+    set_default_yaml_node<double>(yaml_obj, {"mhd", "artificial_viscosity", "fh"},
+                                  1.0);
+    set_default_yaml_node<double>(yaml_obj,
+                                  {"mhd", "artificial_viscosity", "cs_fac"}, 1.0);
+    set_default_yaml_node<double>(yaml_obj,
+                                  {"mhd", "artificial_viscosity", "ca_fac"}, 1.0);
+    set_default_yaml_node<double>(yaml_obj,
+                                  {"mhd", "artificial_viscosity", "vv_fac"}, 1.0);
+    // set default values finished
 
     fs::path config_path = fs::absolute(load_filepath);
     fs::path config_dir = config_path.parent_path();

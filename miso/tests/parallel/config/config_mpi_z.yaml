@@ -1,9 +1,5 @@
 io:
-  save_dir: data/
-  time_save_dir: time/
-  mhd_save_dir: mhd/
-  mpi_save_dir: mpi/
-  n_procs_digits: 8
+  continue: false
 
 time:
   tend: 0.2
@@ -26,9 +22,6 @@ mhd:
 eos:
   gm: 1.4
 
-time_integrator:
-  cfl_number: 0.5
-
 mpi:
   x_procs: 1
   y_procs: 1
@@ -39,7 +32,3 @@ domain:
     x: false
     y: false
     z: false
-
-artificial_viscosity:
-  ep: 1.0
-  fh: 1.0

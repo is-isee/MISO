@@ -32,7 +32,7 @@ class Conf:
         for group, values in config.items():
             setattr(self, group, values)
 
-        self.time_data_dir = self.data_dir / self.time.time_save_dir
-        self.mhd_data_dir = self.data_dir / self.mhd.mhd_save_dir
-        self.mpi_data_dir = self.data_dir / self.mpi.mpi_save_dir
+        self.time_data_dir = self.data_dir / self.io.time_save_dir
+        self.mhd_data_dir = self.data_dir / self.io.mhd_save_dir
+        self.mpi_data_dir = self.data_dir / self.io.mpi_save_dir
         self.endian = "<" if self.data_type.Endian == "little" else ">"
