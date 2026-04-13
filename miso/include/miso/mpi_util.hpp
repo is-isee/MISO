@@ -55,10 +55,16 @@ struct Shape {
   int x_procs_neg, y_procs_neg, z_procs_neg;
   std::string mpi_save_dir;
 
+  bool io_enabled;
+
   Shape(const Config &config) {
+
     mpi_save_dir =
         config.save_dir + config["mpi"]["mpi_save_dir"].as<std::string>();
-    util::create_directories(mpi_save_dir);
+    io_enabled = config.yaml_obj["base"]["io_enabled"].as<bool>();
+    if (io_enabled) {
+      util::create_directories(mpi_save_dir);
+    }
 
     x_procs = config["mpi"]["x_procs"].as<int>();
     y_procs = config["mpi"]["y_procs"].as<int>();
@@ -103,6 +109,9 @@ struct Shape {
   }
 
   void save() const {
+    if (!io_enabled) {
+      return;
+    }
     int all_coords[ndims * n_procs];
     MPI_Gather(coord, ndims, MPI_INT, all_coords, ndims, MPI_INT, 0, cart_comm);
 
