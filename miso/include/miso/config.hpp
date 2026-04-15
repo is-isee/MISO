@@ -12,6 +12,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "config_defaults.hpp"
 #include "env.hpp"
 #include "utility.hpp"
 
@@ -36,34 +37,28 @@ inline std::optional<std::string> parse_config_filepath(int argc, char **argv) {
   return std::nullopt;
 }
 
-/// @brief set default value for yaml node
-/// @tparam T type of the value
-/// @param root root yaml node
-/// @param path path to the target node
-/// @param value default value to set if the target node is not set
-template <typename T>
-void set_default_yaml_node(YAML::Node &root, const std::vector<std::string> &path,
-                           const T &value) {
-  if (path.size() == 1) {
-    if (!root[path[0]]) {
-      root[path[0]] = value;
-    }
+inline void merge_yaml(YAML::Node &target, const YAML::Node &defaults) {
+  if (!defaults.IsMap()) {
     return;
-  } else if (path.size() == 2) {
-    if (!root[path[0]][path[1]]) {
-      root[path[0]][path[1]] = value;
+  }
+
+  if (!target || !target.IsMap()) {
+    target = YAML::Node(YAML::NodeType::Map);
+  }
+
+  for (const auto &it : defaults) {
+    const std::string key = it.first.as<std::string>();
+    const YAML::Node &default_value = it.second;
+
+    if (default_value.IsMap()) {
+      YAML::Node child = target[key];
+      merge_yaml(child, default_value);
+      target[key] = child;
+    } else {
+      if (!target[key]) {
+        target[key] = default_value;
+      }
     }
-    return;
-  } else if (path.size() == 3) {
-    if (!root[path[0]][path[1]][path[2]]) {
-      root[path[0]][path[1]][path[2]] = value;
-    }
-    return;
-  } else if (path.empty()) {
-    throw std::invalid_argument("set_default_yaml_node: path cannot be empty");
-  } else {
-    throw std::invalid_argument(
-        "set_default_yaml_node: path size must be 1, 2, or 3");
   }
 }
 
@@ -109,7 +104,10 @@ struct Config {
       yaml_obj = YAML::Load(yaml_str);
     }
 
-    set_default();
+    // read default config from config_defaults.hpp
+    YAML::Node yaml_default_obj = YAML::Load(config_default_yaml);
+
+    merge_yaml(yaml_obj, yaml_default_obj);
 
     fs::path config_path = fs::absolute(load_filepath);
     fs::path config_dir = config_path.parent_path();
@@ -141,30 +139,6 @@ struct Config {
       out << yaml_obj;
       ofs << out.c_str();
     }
-  }
-
-private:
-  void set_default() {
-    // set default values started
-    set_default_yaml_node<bool>(yaml_obj, {"io", "enabled"}, true);
-    set_default_yaml_node<std::string>(yaml_obj, {"io", "save_dir"}, "data/");
-    set_default_yaml_node<std::string>(yaml_obj, {"io", "time_save_dir"},
-                                       "time/");
-    set_default_yaml_node<std::string>(yaml_obj, {"io", "mpi_save_dir"}, "mpi/");
-    set_default_yaml_node<std::string>(yaml_obj, {"io", "mhd_save_dir"}, "mhd/");
-    set_default_yaml_node<int>(yaml_obj, {"io", "n_output_digits"}, 8);
-    set_default_yaml_node<double>(yaml_obj, {"mhd", "cfl_number"}, 0.5);
-    set_default_yaml_node<double>(yaml_obj, {"mhd", "artificial_viscosity", "ep"},
-                                  1.0);
-    set_default_yaml_node<double>(yaml_obj, {"mhd", "artificial_viscosity", "fh"},
-                                  1.0);
-    set_default_yaml_node<double>(yaml_obj,
-                                  {"mhd", "artificial_viscosity", "cs_fac"}, 1.0);
-    set_default_yaml_node<double>(yaml_obj,
-                                  {"mhd", "artificial_viscosity", "ca_fac"}, 1.0);
-    set_default_yaml_node<double>(yaml_obj,
-                                  {"mhd", "artificial_viscosity", "vv_fac"}, 1.0);
-    // set default values finished
   }
 };
 
