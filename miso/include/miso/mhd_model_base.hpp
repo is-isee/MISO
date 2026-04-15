@@ -102,7 +102,7 @@ public:
 
     mhd.apply_initial_condition(d.ic, d.bc);
     if (config["io"]["continue"].as<bool>() &&
-        fs::exists(time.time_save_dir + "n_output.txt")) {
+        fs::exists(fs::path(time.time_save_dir) / "n_output.txt")) {
       load_state();
     }
 
