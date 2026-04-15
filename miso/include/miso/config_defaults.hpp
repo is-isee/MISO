@@ -20,7 +20,7 @@ mhd:
     # CFL number for time-stepping
     cfl_number: 0.5
     artificial_viscosity:
-        # ep and fh represent epsilon and h in Rempel, 2014, ApJ, 789, 132, in Rempel, 2014, epsilon =2
+        # ep and fh represent epsilon and h in Rempel, 2014, ApJ, 789, 132. In Rempel, 2014, epsilon = 2 is implicitly used in eq. (8).
         ep: 1.0
         fh: 1.0
         # factors for controlling the strength of artificial viscosity for different characteristic velocities
