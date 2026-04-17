@@ -1,13 +1,7 @@
-base:
-  save_dir: data/
-  # if save_dir exists
-  # continue: true -> continue simulation
-  # continue: false -> start from scratch
+io:
   continue: true
 
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 15000.0
   dt_output: 100.0
 
@@ -24,7 +18,6 @@ grid:
   z_max:  44.8
 
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 2
   y_procs: 1
   z_procs: 1
@@ -36,8 +29,6 @@ domain:
     z: false
 
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
   cfl_number: 0.3
   artificial_viscosity:
     ep: 1.2

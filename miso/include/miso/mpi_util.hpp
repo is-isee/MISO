@@ -60,8 +60,8 @@ struct Shape {
   Shape(const Config &config) {
 
     mpi_save_dir =
-        config.save_dir + config["mpi"]["mpi_save_dir"].as<std::string>();
-    io_enabled = config.yaml_obj["base"]["io_enabled"].as<bool>();
+        config.save_dir + config["io"]["mpi_save_dir"].as<std::string>();
+    io_enabled = config.yaml_obj["io"]["enabled"].as<bool>();
     if (io_enabled) {
       util::create_directories(mpi_save_dir);
     }

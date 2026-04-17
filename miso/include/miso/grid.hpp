@@ -384,7 +384,7 @@ template <typename Real> struct Grid<Real, backend::Host> {
   /// @param config
   void save(const Config &config) const {
     if (mpi::is_root()) {
-      if (!config.yaml_obj["base"]["io_enabled"].as<bool>()) {
+      if (!config.yaml_obj["io"]["enabled"].as<bool>()) {
         return;
       }
 

@@ -1,11 +1,9 @@
-base:
-  save_dir: data/
+io:
+  continue: false
 
 time:
-  time_save_dir: time/
   tend: 0.2
   dt_output: 0.01
-  n_output_digits: 8
 
 grid:
   i_size: 4
@@ -20,17 +18,11 @@ grid:
   z_max: 1.0
 
 mhd:
-  mhd_save_dir: mhd/
 
 eos:
   gm: 1.4
 
-time_integrator:
-  cfl_number: 0.5
-
 mpi:
-  mpi_save_dir: mpi/
-  n_procs_digits: 8
   x_procs: 2
   y_procs: 1
   z_procs: 1
@@ -40,7 +32,3 @@ domain:
     x: false
     y: false
     z: false
-
-artificial_viscosity:
-  ep: 1.0
-  fh: 1.0

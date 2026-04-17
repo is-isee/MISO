@@ -19,10 +19,10 @@ template <typename Real> struct Checkpoint {
   bool io_enabled;
 
   Checkpoint(Config &config, Grid<Real, backend::Host> &grid)
-      : qq(grid), io_enabled(config.yaml_obj["base"]["io_enabled"].as<bool>()) {
-    n_output_digits = config["mhd"]["n_output_digits"].as<int>();
+      : qq(grid), io_enabled(config.yaml_obj["io"]["enabled"].as<bool>()) {
+    n_output_digits = config["io"]["n_output_digits"].as<int>();
     mhd_save_dir =
-        config.save_dir + config["mhd"]["mhd_save_dir"].as<std::string>();
+        config.save_dir + config["io"]["mhd_save_dir"].as<std::string>();
   }
 
   std::string get_filename(const Time<Real> &time) const {
