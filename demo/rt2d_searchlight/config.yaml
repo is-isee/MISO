@@ -6,8 +6,6 @@ physics:
   rt: true
 
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 1.0
   dt_output: 1.0
 
@@ -24,7 +22,6 @@ grid:
   z_max: 0.5
 
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
@@ -39,7 +36,6 @@ rt:
   num_rays: 24
   tolerance: 1.0e-5
   max_iters: 100
-  save_dir: rt/
 
 searchlight:
   boundary_face: "x_inner"

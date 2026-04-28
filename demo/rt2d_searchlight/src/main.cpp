@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   time.save();
 
   const std::string rt_save_dir =
-      config.save_dir + config["rt"]["save_dir"].as<std::string>();
+      config.save_dir + config["io"]["rt_save_dir"].as<std::string>();
   util::create_directories(rt_save_dir);
   const std::string filepath =
       rt_save_dir + "rank_" + util::zfill(mpi::rank(), 6) + ".bin";
