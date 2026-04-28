@@ -51,9 +51,9 @@ class Grid:
             data = np.fromfile(f, dtype=dtype, count=1)[0]
 
             # geometry is defined at cell center
-            self.x = data["x"][self.margin : -self.margin]
-            self.y = data["y"][self.margin : -self.margin]
-            self.z = data["z"][self.margin : -self.margin]
+            self.x = data["x"][self.i_margin : self.i_total - self.i_margin]
+            self.y = data["y"][self.j_margin : self.j_total - self.j_margin]
+            self.z = data["z"][self.k_margin : self.k_total - self.k_margin]
 
             # geometry at cell edge
             self.x_edge = np.empty(self.i_size + 1, dtype=self.x.dtype)

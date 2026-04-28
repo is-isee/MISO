@@ -19,7 +19,6 @@ dev = ["pytest>=7", "ruff>=0.10", "mypy>=1"]
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
 local_scheme = "dirty-tag"
-write_to = 'pymiso/_version.py'
 
 [tool.ruff]
 line-length = 88
@@ -39,6 +38,12 @@ ignore = [
 python_version = "3.10"
 strict = true
 
+[tool.pytest.ini_options]
+testpaths = ["pymiso/tests"]
+
+[tool.setuptools.package-dir]
+"" = "pymiso/src"
+
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["pymiso/src"]
 include = ["pymiso*"]

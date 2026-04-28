@@ -1,78 +1,343 @@
 #pragma once
-#include <vector>
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <limits>
+
+#include "backend.hpp"
+#include "cuda_compat.hpp"
+#ifdef __CUDACC__
+#include "cuda_util.cuh"
+#endif  // __CUDACC__
 
 namespace miso {
 
-/// @brief  4D array class
-/// @tparam T Type of the array elements
-template <typename T> class Array4D {
+/// @brief 4D Array in general execution/memory space.
+template <typename T, typename Backend = backend::Host> class Array4D;
+
+/// @brief Lightweight non-owning view of 4D array data.
+template <typename T> class Array4DView {
 private:
-  int i_total, j_total, k_total, l_total;
-  std::vector<T> array;
+  T *data_ = nullptr;
+  int shape_[4] = {-1, -1, -1, -1};
+
+  // Always constructed from Array4D
+  // to ensure that the array size is within the numeric limits of int.
+  template <typename, typename> friend class Array4D;
+  Array4DView(T *data, int nx0, int nx1, int nx2, int nx3) noexcept
+      : data_(data), shape_{nx0, nx1, nx2, nx3} {}
 
 public:
-  /// @brief Constructor
-  /// @param i_total_ Total size in x direction including margin
-  /// @param j_total_ Total size in y direction including margin
-  /// @param k_total_ Total size in z direction including margin
-  /// @param l_total_ Total size in w direction
-  Array4D(int i_total_, int j_total_, int k_total_, int l_total_)
-      : i_total(i_total_), j_total(j_total_), k_total(k_total_),
-        l_total(l_total_), array(i_total_ * j_total_ * k_total_ * l_total_) {}
+  /// @brief Return pointer to the data.
+  __host__ __device__ T *data() noexcept { return data_; }
 
-  /// @brief overload function for accessing the 4D array elements
-  /// @param i i index
-  /// @param j j index
-  /// @param k k index
-  /// @param l l index
-  /// @return Reference to the element at (i, j, k, l)
-  T &operator()(int i, int j, int k, int l) {
-    return array[i * j_total * k_total * l_total + j * k_total * l_total +
-                 k * l_total + l];
+  /// @brief Return const pointer to the data.
+  __host__ __device__ const T *data() const noexcept { return data_; }
+
+  /// @brief Return the array extent in each dimension.
+  __host__ __device__ int extent(int dim) const noexcept {
+    assert(dim >= 0 && dim < 4);
+    return shape_[dim];
   }
 
-  /// @brief overload function for accessing the 4D array elements (const version)
-  /// @param i i index
-  /// @param j j index
-  /// @param k k index
-  /// @param l l index
-  /// @return
-  const T &operator()(int i, int j, int k, int l) const {
-    return array[i * j_total * k_total * l_total + j * k_total * l_total +
-                 k * l_total + l];
+  // The shape() method is not implemented in Array4DView
+  // as returning shape from a __host__ __device__ interface is awkward.
+  // Use extent() instead.
+
+  /// @brief Return the total size of the array.
+  __host__ __device__ int size() const noexcept {
+    return ((shape_[0] * shape_[1]) * shape_[2]) * shape_[3];
   }
 
-  /// @brief overload function for accessing the 4D array elements
-  T *data() { return array.data(); }
+  /// @brief Return reference to the element at the given indices.
+  __host__ __device__ T &operator()(int i0, int i1, int i2,
+                                    int i3) const noexcept {
+    assert(data_);
+    assert(i0 >= 0 && i0 < shape_[0]);
+    assert(i1 >= 0 && i1 < shape_[1]);
+    assert(i2 >= 0 && i2 < shape_[2]);
+    assert(i3 >= 0 && i3 < shape_[3]);
+    return data_[((i0 * shape_[1] + i1) * shape_[2] + i2) * shape_[3] + i3];
+  }
 
-  /// @brief overload function for accessing the 4D array elements (const version)
-  const T *data() const { return array.data(); }
+  /// @brief Return reference to the element at the given linear index.
+  __host__ __device__ T &operator[](int idx) const noexcept {
+    assert(data_);
+    assert(idx >= 0 && idx < size());
+    return data_[idx];
+  }
 
-  /// @brief Get size in x direction
-  int size_x() const { return i_total; }
+  // Allow copy semantics
+  __host__ __device__ Array4DView(const Array4DView &) noexcept = default;
+  __host__ __device__ Array4DView &
+  operator=(const Array4DView &) noexcept = default;
+};
 
-  /// @brief Get size in y direction
-  int size_y() const { return j_total; }
+/// @brief 4D Array in host memory.
+template <typename T> class Array4D<T, backend::Host> {
+private:
+  T *data_ = nullptr;
+  std::array<int, 4> shape_ = {-1, -1, -1, -1};
 
-  /// @brief Get size in z direction
-  int size_z() const { return k_total; }
+public:
+  Array4D(int nx0, int nx1, int nx2, int nx3) : shape_{nx0, nx1, nx2, nx3} {
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    const std::size_t array_size =
+        ((static_cast<size_t>(shape_[0]) * static_cast<size_t>(shape_[1])) *
+         static_cast<size_t>(shape_[2])) *
+        static_cast<size_t>(shape_[3]);
+    assert(array_size <= static_cast<size_t>(std::numeric_limits<int>::max()));
+    if (array_size > 0) {
+      data_ = new T[array_size];
+    }
+  }
 
-  /// @brief Get size in type direction
-  int size_w() const { return l_total; }
+  ~Array4D() { delete[] data_; }
 
-  /// @brief Get total size of the array
-  int size() const { return i_total * j_total * k_total * l_total; }
+  /// @brief Return a lightweight view of the array.
+  Array4DView<T> view() noexcept {
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
+    return Array4DView<T>(data_, shape_[0], shape_[1], shape_[2], shape_[3]);
+  }
 
-  /// @brief  Copy elements from another Array4D object
-  /// @param other copy source array
-  /// @details The dimensions of the other array must match the current array.
-  void copy_from(const Array4D &other) {
-    assert(i_total == other.i_total);
-    assert(j_total == other.j_total);
-    assert(k_total == other.k_total);
-    assert(l_total == other.l_total);
-    std::copy(other.array.begin(), other.array.end(), array.begin());
+  /// @brief Return a constant lightweight view of the array.
+  Array4DView<const T> view() const noexcept {
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
+    return Array4DView<const T>(data_, shape_[0], shape_[1], shape_[2],
+                                shape_[3]);
+  }
+
+  /// @brief Return a constant lightweight view of the array.
+  Array4DView<const T> const_view() const noexcept { return view(); }
+
+  /// @brief Return pointer to the data.
+  T *data() noexcept { return data_; }
+
+  /// @brief Return const pointer to the data.
+  const T *data() const noexcept { return data_; }
+
+  /// @brief Return the array extent in each dimension.
+  __host__ __device__ int extent(int dim) const noexcept {
+    assert(dim >= 0 && dim < 4);
+    return shape_[dim];
+  }
+
+  /// @brief Return the shape of the array in the given axis.
+  std::array<int, 4> shape() const noexcept { return shape_; }
+
+  /// @brief Return the total size of the array.
+  int size() const noexcept {
+    return ((shape_[0] * shape_[1]) * shape_[2]) * shape_[3];
+  }
+
+  /// @brief Return reference to the element at the given indices.
+  T &operator()(int i0, int i1, int i2, int i3) const noexcept {
+    assert(data_);
+    assert(i0 >= 0 && i0 < shape_[0]);
+    assert(i1 >= 0 && i1 < shape_[1]);
+    assert(i2 >= 0 && i2 < shape_[2]);
+    assert(i3 >= 0 && i3 < shape_[3]);
+    return data_[((i0 * shape_[1] + i1) * shape_[2] + i2) * shape_[3] + i3];
+  }
+
+  /// @brief Return reference to the element at the given linear index.
+  T &operator[](int idx) const noexcept {
+    assert(data_);
+    assert(idx >= 0 && idx < size());
+    return data_[idx];
+  }
+
+  /// @brief Copy data from another Array4D in host memory.
+  void copy_from(const Array4D<T, backend::Host> &other) {
+    assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
+    std::copy(other.data(), other.data() + other.size(), data());
+  }
+
+#ifdef __CUDACC__
+  /// @brief Copy data from another Array4D in CUDA memory.
+  void copy_from(const Array4D<T, backend::CUDA> &other) {
+    assert(other.data() && data());
+    assert(other.shape() == shape());
+    MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * other.size(),
+                               cudaMemcpyDeviceToHost));
+  }
+
+  /// @brief Copy data from another Array4D in CUDA memory (async).
+  /// @details The caller is responsible for synchronizing the stream.
+  void copy_from(const Array4D<T, backend::CUDA> &other, cudaStream_t stream) {
+    assert(other.data() && data());
+    assert(other.shape() == shape());
+    MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(),
+                                    sizeof(T) * other.size(),
+                                    cudaMemcpyDeviceToHost, stream));
+  }
+#endif  // __CUDACC__
+
+  // Prohibit copy semantics
+  Array4D(const Array4D &) = delete;
+  Array4D &operator=(const Array4D &) = delete;
+
+  // Allow move semantics (allow uninitialized state)
+  Array4D(Array4D &&other) noexcept : data_(other.data_), shape_(other.shape_) {
+    other.data_ = nullptr;
+    other.shape_ = std::array<int, 4>{-1, -1, -1, -1};
+  }
+  Array4D &operator=(Array4D &&other) noexcept {
+    if (this != &other) {
+      delete[] data_;
+      data_ = other.data_;
+      shape_ = other.shape_;
+      other.data_ = nullptr;
+      other.shape_ = std::array<int, 4>{-1, -1, -1, -1};
+    }
+    return *this;
   }
 };
+
+#ifdef __CUDACC__
+/// @brief 4D Array in CUDA device memory.
+template <typename T> class Array4D<T, backend::CUDA> {
+private:
+  T *data_ = nullptr;
+  std::array<int, 4> shape_ = {-1, -1, -1, -1};
+
+public:
+  Array4D(int nx0, int nx1, int nx2, int nx3) : shape_{nx0, nx1, nx2, nx3} {
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    const std::size_t array_size =
+        ((static_cast<size_t>(shape_[0]) * static_cast<size_t>(shape_[1])) *
+         static_cast<size_t>(shape_[2])) *
+        static_cast<size_t>(shape_[3]);
+    assert(array_size <= static_cast<size_t>(std::numeric_limits<int>::max()));
+    if (array_size > 0) {
+      MISO_CUDA_CHECK(cudaMalloc(&data_, sizeof(T) * array_size));
+    }
+  }
+
+  ~Array4D() {
+    if (data_)
+      cudaFree(data_);
+    data_ = nullptr;
+  }
+
+  /// @brief Return a lightweight view of the array.
+  Array4DView<T> view() noexcept {
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
+    return Array4DView<T>(data_, shape_[0], shape_[1], shape_[2], shape_[3]);
+  }
+
+  /// @brief Return a constant lightweight view of the array.
+  Array4DView<const T> view() const noexcept {
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
+           shape_[3] >= 0);
+    assert(size() == 0 || data_);
+    return Array4DView<const T>(data_, shape_[0], shape_[1], shape_[2],
+                                shape_[3]);
+  }
+
+  /// @brief Return a constant lightweight view of the array.
+  Array4DView<const T> const_view() const noexcept { return view(); }
+
+  /// @brief Return pointer to the data.
+  T *data() noexcept { return data_; }
+
+  /// @brief Return const pointer to the data.
+  const T *data() const noexcept { return data_; }
+
+  /// @brief Return the array extent in each dimension.
+  __host__ __device__ int extent(int dim) const noexcept {
+    assert(dim >= 0 && dim < 4);
+    return shape_[dim];
+  }
+
+  /// @brief Return the shape of the array in the given axis.
+  std::array<int, 4> shape() const noexcept { return shape_; }
+
+  /// @brief Return the total size of the array.
+  int size() const noexcept {
+    return ((shape_[0] * shape_[1]) * shape_[2]) * shape_[3];
+  }
+
+  /// @brief Copy data from another Array4D in host memory.
+  void copy_from(const Array4D<T, backend::Host> &other) {
+    assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
+    MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * size(),
+                               cudaMemcpyHostToDevice));
+  }
+
+  /// @brief Copy data from another Array4D in CUDA memory.
+  void copy_from(const Array4D<T, backend::CUDA> &other) {
+    assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
+    MISO_CUDA_CHECK(cudaMemcpy(data(), other.data(), sizeof(T) * size(),
+                               cudaMemcpyDeviceToDevice));
+  }
+
+  /// @brief Copy data from another Array4D in host memory (async).
+  /// @details The caller is responsible for synchronizing the stream.
+  void copy_from(const Array4D<T, backend::Host> &other, cudaStream_t stream) {
+    assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
+    MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),
+                                    cudaMemcpyHostToDevice, stream));
+  }
+
+  /// @brief Copy data from another Array4D in CUDA memory (async).
+  /// @details The caller is responsible for synchronizing the stream.
+  void copy_from(const Array4D<T, backend::CUDA> &other, cudaStream_t stream) {
+    assert(other.shape() == shape());
+    if (size() == 0) {
+      return;
+    }
+    assert(other.data() && data());
+    MISO_CUDA_CHECK(cudaMemcpyAsync(data(), other.data(), sizeof(T) * size(),
+                                    cudaMemcpyDeviceToDevice, stream));
+  }
+
+  // Prohibit copy semantics
+  Array4D(const Array4D &) = delete;
+  Array4D &operator=(const Array4D &) = delete;
+
+  // Allow move semantics (allow uninitialized state)
+  Array4D(Array4D &&other) noexcept : data_(other.data_), shape_(other.shape_) {
+    other.data_ = nullptr;
+    other.shape_ = std::array<int, 4>{-1, -1, -1, -1};
+  }
+  Array4D &operator=(Array4D &&other) noexcept {
+    if (this != &other) {
+      if (data_)
+        cudaFree(data_);
+      data_ = other.data_;
+      shape_ = other.shape_;
+      other.data_ = nullptr;
+      other.shape_ = std::array<int, 4>{-1, -1, -1, -1};
+    }
+    return *this;
+  }
+};
+#endif  // __CUDACC__
 
 }  // namespace miso

@@ -29,10 +29,21 @@ class Conf:
         with self.config_file.open(mode="r") as f:
             config = Box(yaml.safe_load(f))
 
+        if "physics" not in config:
+            config.physics = Box({"mhd": True, "rt": False})
+        else:
+            rt_enabled = bool(config.physics.get("rt", False))
+            mhd_enabled = bool(config.physics.get("mhd", not rt_enabled))
+            config.physics = Box({"mhd": mhd_enabled, "rt": rt_enabled})
+
         for group, values in config.items():
             setattr(self, group, values)
 
-        self.time_data_dir = self.data_dir / self.io.time_save_dir
-        self.mhd_data_dir = self.data_dir / self.io.mhd_save_dir
+        if hasattr(self, "time"):
+            self.time_data_dir = self.data_dir / self.io.time_save_dir
+        if hasattr(self, "mhd"):
+            self.mhd_data_dir = self.data_dir / self.io.mhd_save_dir
+        if hasattr(self, "rt"):
+            self.rt_data_dir = self.data_dir / self.io.rt_save_dir
         self.mpi_data_dir = self.data_dir / self.io.mpi_save_dir
         self.endian = "<" if self.data_type.Endian == "little" else ">"

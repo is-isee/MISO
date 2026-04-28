@@ -13,6 +13,8 @@ io:
   mpi_save_dir: mpi/
   # Directory for saving MHD simulation checkpoint files
   mhd_save_dir: mhd/
+  # Directory for saving RT simulation checkpoint files
+  rt_save_dir: rt/
   # Number of digits for output file naming (e.g., 8 means 00000001)
   n_output_digits: 8
 
