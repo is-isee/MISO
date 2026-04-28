@@ -16,7 +16,10 @@ template <typename Real> struct Checkpoint {
   int n_output_digits;
   std::string mhd_save_dir;
 
-  Checkpoint(Config &config, Grid<Real, backend::Host> &grid) : qq(grid) {
+  bool io_enabled;
+
+  Checkpoint(Config &config, Grid<Real, backend::Host> &grid)
+      : qq(grid), io_enabled(config.yaml_obj["base"]["io_enabled"].as<bool>()) {
     n_output_digits = config["mhd"]["n_output_digits"].as<int>();
     mhd_save_dir =
         config.save_dir + config["mhd"]["mhd_save_dir"].as<std::string>();
@@ -30,6 +33,9 @@ template <typename Real> struct Checkpoint {
 
   template <typename Backend>
   void save(const Time<Real> &time, const Fields<Real, Backend> &qq_) {
+    if (!io_enabled) {
+      return;
+    }
     qq.copy_from(qq_);
 
     util::create_directories(mhd_save_dir);
@@ -57,6 +63,9 @@ template <typename Real> struct Checkpoint {
 
   template <typename Backend>
   void load(const Time<Real> &time, Fields<Real, Backend> &qq_) {
+    if (!io_enabled) {
+      return;
+    }
     std::string filename = get_filename(time);
     std::ifstream ifs(filename, std::ios::binary);
     assert(ifs.is_open());

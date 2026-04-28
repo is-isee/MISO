@@ -30,6 +30,8 @@ template <typename Real> struct Time {
   int n_output_digits;
   /// @brief directory for saving time-related files
   std::string time_save_dir;
+  /// @brief flag to enable/disable I/O operations
+  bool io_enabled;
 
   /// @brief Initialize time parameters
   void initialize() {
@@ -42,7 +44,8 @@ template <typename Real> struct Time {
   Time(const Config &config)
       : tend(config["time"]["tend"].as<Real>()),
         dt_output(config["time"]["dt_output"].as<Real>()),
-        n_output_digits(config["time"]["n_output_digits"].as<int>()) {
+        n_output_digits(config["time"]["n_output_digits"].as<int>()),
+        io_enabled(config.yaml_obj["base"]["io_enabled"].as<bool>()) {
     assert(tend > 0);
     assert(dt_output > 0);
 
@@ -50,7 +53,9 @@ template <typename Real> struct Time {
 
     time_save_dir =
         config.save_dir + config["time"]["time_save_dir"].as<std::string>();
-    util::create_directories(time_save_dir);
+    if (io_enabled) {
+      util::create_directories(time_save_dir);
+    }
   }
 
   /// @brief update time parameters
@@ -61,6 +66,9 @@ template <typename Real> struct Time {
 
   /// @brief Save time parameters to file
   void save() const {
+    if (!io_enabled) {
+      return;
+    }
     if (mpi::is_root()) {
       std::ostringstream fname;
       fname << time_save_dir << "/time." << util::zfill(n_output, n_output_digits)
@@ -80,6 +88,9 @@ template <typename Real> struct Time {
   /// @brief Load time parameters from file
   /// @param config
   void load() {
+    if (!io_enabled) {
+      return;
+    }
     if (mpi::is_root()) {
       std::ifstream ifs_step(time_save_dir + "/n_output.txt");
       ifs_step >> n_output;
@@ -104,6 +115,9 @@ template <typename Real> struct Time {
 
   /// @brief Log time parameters to console
   void log() const {
+    if (!io_enabled) {
+      return;
+    }
     if (mpi::is_root()) {
       std::cout << std::fixed << std::setprecision(2) << "time = " << std::setw(6)
                 << time << ";  n_step = " << std::setw(8) << n_step

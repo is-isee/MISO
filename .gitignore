@@ -74,6 +74,7 @@ pymiso/_version.py
 
 # test temporal files
 tests/Testing
+miso/Testing
 
 # Sphinx documentation build
 docs/build/
