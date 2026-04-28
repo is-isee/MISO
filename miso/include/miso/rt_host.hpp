@@ -50,6 +50,7 @@ inline bool is_incoming_ray(const AngularQuadrature<Real> &ang_quad, int i_ray,
 template <typename Real, typename ValueFn>
 void set_incoming_boundary(RT<Real> &rt, const Grid<Real> &grid,
                            Direction direction, Side side, ValueFn &&value_fn) {
+  (void)grid; // grid is intentionally unused in this overload
   int i_begin = rt.ib0;
   int i_end = rt.ib1;
   int j_begin = rt.jb0;
