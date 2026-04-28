@@ -113,7 +113,8 @@ int main(int argc, char **argv) {
   const std::string rt_save_dir =
       config.save_dir + config["io"]["rt_save_dir"].as<std::string>();
   util::create_directories(rt_save_dir);
+  const auto n_output_digits = config["io"]["n_output_digits"].as<int>();
   const std::string filepath =
-      rt_save_dir + "rank_" + util::zfill(mpi::rank(), 6) + ".bin";
+      rt_save_dir + "rank_" + util::zfill(mpi::rank(), n_output_digits) + ".bin";
   solver.save(filepath);
 }

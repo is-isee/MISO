@@ -1,22 +1,12 @@
-"""Compatibility package for the in-repo ``src`` layout.
-
-This keeps ``import pymiso`` working from the repository root while the
-installable package lives under ``pymiso/src/pymiso``.
+""":mod:`pymiso`
+Utilities for handling MISO simulation data.
 """
-
-from pathlib import Path
-from pkgutil import extend_path
 
 from .conf import Conf
 from .data import Data
 from .grid import Grid
 from .mpi import MPI
 from .time import Time
-
-_SRC_PACKAGE_DIR = Path(__file__).resolve().parent / "src" / "pymiso"
-__path__ = extend_path(__path__, __name__)
-if _SRC_PACKAGE_DIR.is_dir():
-    __path__.append(str(_SRC_PACKAGE_DIR))
 
 __all__ = ["Conf", "Data", "Grid", "MPI", "Time"]
 

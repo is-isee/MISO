@@ -180,7 +180,10 @@ class Data:
         self.time.load(n_output)
 
         for rank in range(self.mpi.n_procs):
-            filename = self.conf.rt_data_dir / f"rank_{rank:06d}.bin"
+            filename = (
+                self.conf.rt_data_dir
+                / f"rank_{rank:0{self.conf.io.n_output_digits}d}.bin"
+            )
             ijk_global = self._global_slice(rank)
             ijk_local = self._local_slice()
 
