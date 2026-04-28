@@ -50,6 +50,7 @@ inline bool is_incoming_ray(const AngularQuadrature<Real> &ang_quad, int i_ray,
 template <typename Real, typename ValueFn>
 void set_incoming_boundary(RT<Real> &rt, const Grid<Real> &grid,
                            Direction direction, Side side, ValueFn &&value_fn) {
+  (void)grid; // grid is intentionally unused in this overload
   int i_begin = rt.ib0;
   int i_end = rt.ib1;
   int j_begin = rt.jb0;
@@ -148,9 +149,9 @@ template <typename Real> struct RT {
         send_buff_y_neg(num_rays, grid.i_total, grid.k_total),
         send_buff_z_pos(num_rays, grid.i_total, grid.j_total),
         send_buff_z_neg(num_rays, grid.i_total, grid.j_total),
-        ib0(grid.i_margin - grid.is), ib1(ib0 + grid.i_size - 1),
-        jb0(grid.j_margin - grid.js), jb1(jb0 + grid.j_size - 1),
-        kb0(grid.k_margin - grid.ks), kb1(kb0 + grid.k_size - 1) {
+        ib0(grid.i_margin - grid.is), ib1(ib0 + grid.i_size),
+        jb0(grid.j_margin - grid.js), jb1(jb0 + grid.j_size),
+        kb0(grid.k_margin - grid.ks), kb1(kb0 + grid.k_size) {
     util::clear_array(rint);
     util::clear_array(rint_old);
     util::clear_array(src_func);

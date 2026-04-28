@@ -25,23 +25,25 @@ def slice_on_boundary(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, str, str]:
     full_shape = (d.grid.i_size, d.grid.j_size, d.grid.k_size)
     values_3d = np.reshape(values, full_shape)
-    del side
 
-    j_mid = d.grid.j_size // 2
-    k_mid = d.grid.k_size // 2
-    i_mid = d.grid.i_size // 2
+    # Select inner (index 0) or outer (index -1) boundary along the chosen axis.
+    if side == "inner":
+        idx = 0
+    elif side == "outer":
+        idx = -1
+    else:
+        raise ValueError("side must be 'inner' or 'outer'")
 
     if axis == "x":
-        if d.grid.j_size > 1:
-            return values_3d[:, :, k_mid], d.x, d.y, "x", "y"
-        return values_3d[:, j_mid, :], d.x, d.z, "x", "z"
+        # x-boundary face: plane of varying y and z at fixed x.
+        return values_3d[idx, :, :], d.y, d.z, "y", "z"
     if axis == "y":
-        if d.grid.i_size > 1:
-            return values_3d[:, :, k_mid], d.x, d.y, "x", "y"
-        return values_3d[i_mid, :, :], d.y, d.z, "y", "z"
-    if d.grid.i_size > 1:
-        return values_3d[:, j_mid, :], d.x, d.z, "x", "z"
-    return values_3d[i_mid, :, :], d.y, d.z, "y", "z"
+        # y-boundary face: plane of varying x and z at fixed y.
+        return values_3d[:, idx, :], d.x, d.z, "x", "z"
+    if axis == "z":
+        # z-boundary face: plane of varying x and y at fixed z.
+        return values_3d[:, :, idx], d.x, d.y, "x", "y"
+    raise ValueError("axis must be one of 'x', 'y', or 'z'")
 
 
 this_dir = Path(__file__).resolve().parent
