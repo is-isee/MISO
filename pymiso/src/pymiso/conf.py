@@ -47,4 +47,3 @@ class Conf:
             self.rt_data_dir = self.data_dir / self.io.rt_save_dir
         self.mpi_data_dir = self.data_dir / self.io.mpi_save_dir
         self.endian = "<" if self.data_type.Endian == "little" else ">"
-
