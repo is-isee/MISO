@@ -44,15 +44,15 @@ template <typename Real> struct Time {
   Time(const Config &config)
       : tend(config["time"]["tend"].as<Real>()),
         dt_output(config["time"]["dt_output"].as<Real>()),
-        n_output_digits(config["time"]["n_output_digits"].as<int>()),
-        io_enabled(config.yaml_obj["base"]["io_enabled"].as<bool>()) {
+        n_output_digits(config["io"]["n_output_digits"].as<int>()),
+        io_enabled(config.yaml_obj["io"]["enabled"].as<bool>()) {
     assert(tend > 0);
     assert(dt_output > 0);
 
     initialize();
 
     time_save_dir =
-        config.save_dir + config["time"]["time_save_dir"].as<std::string>();
+        config.save_dir + config["io"]["time_save_dir"].as<std::string>();
     if (io_enabled) {
       util::create_directories(time_save_dir);
     }

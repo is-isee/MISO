@@ -117,8 +117,8 @@ class Data:
 
         for rank in range(self.mpi.n_procs):
             filename = self.conf.mhd_data_dir / (
-                f"mhd.{n_output:0{self.conf.time.n_output_digits}d}"
-                f".{rank:0{self.conf.mhd.n_output_digits}d}.bin"
+                f"mhd.{n_output:0{self.conf.io.n_output_digits}d}"
+                f".{rank:0{self.conf.io.n_output_digits}d}.bin"
             )
 
             ijk_global = self._global_slice(rank)

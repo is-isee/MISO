@@ -3,11 +3,15 @@
 #include <cassert>
 #include <fstream>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 #include <yaml-cpp/yaml.h>
 
+#include "config_defaults.hpp"
 #include "env.hpp"
 #include "utility.hpp"
 
@@ -32,6 +36,31 @@ inline std::optional<std::string> parse_config_filepath(int argc, char **argv) {
   return std::nullopt;
 }
 
+inline void merge_yaml(YAML::Node &target, const YAML::Node &defaults) {
+  if (!defaults.IsMap()) {
+    return;
+  }
+
+  if (!target || !target.IsMap()) {
+    target = YAML::Node(YAML::NodeType::Map);
+  }
+
+  for (const auto &it : defaults) {
+    const std::string key = it.first.as<std::string>();
+    const YAML::Node &default_value = it.second;
+
+    if (default_value.IsMap()) {
+      YAML::Node child = target[key];
+      merge_yaml(child, default_value);
+      target[key] = child;
+    } else {
+      if (!target[key]) {
+        target[key] = default_value;
+      }
+    }
+  }
+}
+
 /// @brief Configuration class for MHD simulations
 struct Config {
   /// @brief file path for YAML configuration file
@@ -40,8 +69,6 @@ struct Config {
   YAML::Node yaml_obj;
   /// @brief Directories for saving parent results
   std::string save_dir;
-  /// @brief Directories for saving time information
-  std::string time_save_dir;
 
   Config(const std::string &load_filepath_) : load_filepath(load_filepath_) {
     std::string yaml_str;
@@ -64,7 +91,7 @@ struct Config {
       yaml_str = ss.str();
     }
 
-    int yaml_str_length = yaml_str.length();
+    int yaml_str_length = static_cast<int>(yaml_str.length());
     MPI_Bcast(&yaml_str_length, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (!mpi::is_root()) {
@@ -76,16 +103,17 @@ struct Config {
       yaml_obj = YAML::Load(yaml_str);
     }
 
-    if (!yaml_obj["base"]["io_enabled"]) {
-      yaml_obj["base"]["io_enabled"] = true;
-    }
+    // read default config from config_defaults.hpp
+    YAML::Node yaml_default_obj = YAML::Load(config_default_yaml);
+
+    merge_yaml(yaml_obj, yaml_default_obj);
 
     fs::path config_path = fs::absolute(load_filepath);
     fs::path config_dir = config_path.parent_path();
 
     save_dir =
-        (config_dir / yaml_obj["base"]["save_dir"].as<std::string>()).string();
-    if (yaml_obj["base"]["io_enabled"].as<bool>()) {
+        (config_dir / yaml_obj["io"]["save_dir"].as<std::string>()).string();
+    if (yaml_obj["io"]["enabled"].as<bool>()) {
       util::create_directories(save_dir);
     }
   }
@@ -98,7 +126,7 @@ struct Config {
   /// @brief  Save the configuration to a YAML file
   void save() const {
     if (mpi::is_root()) {
-      if (!yaml_obj["base"]["io_enabled"].as<bool>()) {
+      if (!yaml_obj["io"]["enabled"].as<bool>()) {
         return;
       }
       std::string save_filepath = save_dir + "/config.yaml";

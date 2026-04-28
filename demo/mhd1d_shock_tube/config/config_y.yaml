@@ -1,10 +1,8 @@
-base:
+io:
   save_dir: ../data_y/
   continue: false
 
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 0.2
   dt_output: 0.01
 
@@ -21,7 +19,6 @@ grid:
   z_max: 1.0
 
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
@@ -33,19 +30,10 @@ domain:
     z: false
 
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
-  cfl_number: 0.5
-  artificial_viscosity:
-    ep: 1.0
-    fh: 1.0
-    # for characteristic velocity
-    cs_fac: 1.0
-    ca_fac: 1.0
-    vv_fac: 1.0
 
 eos:
   gm: 2.0
+
 
 shock_tube:
   bm: 0.75
