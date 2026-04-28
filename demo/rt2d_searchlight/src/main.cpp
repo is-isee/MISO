@@ -62,11 +62,15 @@ struct SearchlightBoundaryCondition {
   }
 
   explicit SearchlightBoundaryCondition(const Config &config)
-      : direction(parse_boundary_face(config).first),
-        side(parse_boundary_face(config).second),
+      : direction(),
+        side(),
         incoming_intensity(
             config["searchlight"]["incoming_intensity"].as<Real>()),
-        radius(config["searchlight"]["radius"].as<Real>()) {}
+        radius(config["searchlight"]["radius"].as<Real>()) {
+    const auto parsed = parse_boundary_face(config);
+    direction = parsed.first;
+    side = parsed.second;
+  }
 
   void operator()(rt::RT<Real> &solver, const Grid<Real> &grid,
                   const mpi::Shape &mpi_shape) const {
