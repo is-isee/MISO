@@ -13,16 +13,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_CUDA "Enable CUDA support" OFF)
 if(USE_CUDA)
-    enable_language(CUDA)
-    set(CMAKE_CUDA_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-    # Select GPU architecture (e.g., L40S/4090: Ada)
+    # Select GPU architecture before enable_language(CUDA); otherwise CMake
+    # defines the default (52) and this setting is ignored.
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES
             native
             CACHE STRING "CUDA architectures")
     endif()
+    enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif(USE_CUDA)
 
 # App sources
