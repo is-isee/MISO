@@ -451,6 +451,8 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
     auto qq_v = qq.const_view();
     auto grid_v = grid.const_view();
     auto cs_v = cs.view();
+    // device lambdas must not capture `this`
+    const Real cfl_number_ = cfl_number;
 
     eos.sound_speed(backend::CUDA{}, qq_v, cs_v);
     Range3D range{{grid.i_margin, grid.i_total - grid.i_margin},
@@ -466,7 +468,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
                            qq_v.ro(i, j, k) * pii4<Real>);
       Real total_vel = cs_v(i, j, k) + vv + ca;
       Real dxyz = util::min3(grid_v.dx[i], grid_v.dy[j], grid_v.dz[k]);
-      return cfl_number * dxyz / total_vel;
+      return cfl_number_ * dxyz / total_vel;
     };
     const auto op = MISO_LAMBDA(Real a, Real b) { return util::min2(a, b); };
     const Real dt_max = 1.e10;

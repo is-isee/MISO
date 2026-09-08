@@ -46,11 +46,14 @@ public:
   /// @brief Interpolate values at the 1D array of x.
   void interpolate(Array1DView<const T> x, Array1DView<T> y) const noexcept {
     assert(x.size() == y.size());
+    // device lambdas must not capture `this`
+    const T *table = table_.data();
+    const int n = table_.size();
+    const T x_min = x_min_, dxi = dxi_;
     Range1D range{0, x.size()};
     for_each(
         Backend{}, range, MISO_LAMBDA(int i) {
-          y[i] = interpolate_uniform_table1d(table_.data(), x_min_, dxi_, x[i],
-                                             table_.size());
+          y[i] = interpolate_uniform_table1d(table, x_min, dxi, x[i], n);
         });
   }
 
@@ -59,11 +62,14 @@ public:
     assert(x.extent(0) == y.extent(0));
     assert(x.extent(1) == y.extent(1));
     assert(x.extent(2) == y.extent(2));
+    // device lambdas must not capture `this`
+    const T *table = table_.data();
+    const int n = table_.size();
+    const T x_min = x_min_, dxi = dxi_;
     Range1D range{0, x.size()};
     for_each(
         Backend{}, range, MISO_LAMBDA(int i) {
-          y[i] = interpolate_uniform_table1d(table_.data(), x_min_, dxi_, x[i],
-                                             table_.size());
+          y[i] = interpolate_uniform_table1d(table, x_min, dxi, x[i], n);
         });
   }
 };
@@ -135,12 +141,15 @@ public:
                    Array1DView<T> y) const noexcept {
     assert(x0.size() == x1.size());
     assert(x0.size() == y.size());
+    // device lambdas must not capture `this`
+    const T *table = table_.data();
+    const int n0 = table_.extent(0), n1 = table_.extent(1);
+    const T x0_min = x0_min_, dxi0 = dxi0_, x1_min = x1_min_, dxi1 = dxi1_;
     Range1D range{0, x0.size()};
     for_each(
         Backend{}, range, MISO_LAMBDA(int i) {
-          y[i] = interpolate_uniform_table2d(table_.data(), x0_min_, dxi0_,
-                                             x1_min_, dxi1_, x0[i], x1[i],
-                                             table_.extent(0), table_.extent(1));
+          y[i] = interpolate_uniform_table2d(table, x0_min, dxi0, x1_min, dxi1,
+                                             x0[i], x1[i], n0, n1);
         });
   }
 
@@ -153,12 +162,15 @@ public:
     assert(x0.extent(0) == y.extent(0));
     assert(x0.extent(1) == y.extent(1));
     assert(x0.extent(2) == y.extent(2));
+    // device lambdas must not capture `this`
+    const T *table = table_.data();
+    const int n0 = table_.extent(0), n1 = table_.extent(1);
+    const T x0_min = x0_min_, dxi0 = dxi0_, x1_min = x1_min_, dxi1 = dxi1_;
     Range1D range{0, x0.size()};
     for_each(
         Backend{}, range, MISO_LAMBDA(int i) {
-          y[i] = interpolate_uniform_table2d(table_.data(), x0_min_, dxi0_,
-                                             x1_min_, dxi1_, x0[i], x1[i],
-                                             table_.extent(0), table_.extent(1));
+          y[i] = interpolate_uniform_table2d(table, x0_min, dxi0, x1_min, dxi1,
+                                             x0[i], x1[i], n0, n1);
         });
   }
 };

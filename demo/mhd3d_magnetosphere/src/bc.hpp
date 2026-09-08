@@ -107,6 +107,11 @@ struct BoundaryCondition {
       bc::symmetric(btag, qq.ph, grid, Sign::Pos, Direction::Z, Side::OUTER);
     }
 
+    // Copy members to locals: device lambdas must not capture `this`.
+    const Real ro_sw_ = ro_sw, pr_sw_ = pr_sw, vx_sw_ = vx_sw, bz_imf_ = bz_imf_;
+    const Real rra_ = rra, a0_ = a0, ro_floor_ = ro_floor, pr_floor_ = pr_floor;
+    const Real gm_ = eos.gm;
+
     // Fix values at the upwind solar wind boundary (inner x-boundary)
     if (bc::is_physical_boundary(Direction::X, Side::INNER, mpi_shape)) {
       bc::symmetric(btag, qq.vy, grid, Sign::Pos, Direction::X, Side::INNER);
@@ -123,10 +128,10 @@ struct BoundaryCondition {
             int i_ghst, i_trgt;
             bc::symmetric_index(i, grid.i_total, grid.i_margin, i_ghst, i_trgt,
                                 Side::INNER);
-            qq.ro(i_ghst, j, k) = ro_sw;
-            qq.vx(i_ghst, j, k) = vx_sw;
-            qq.ei(i_ghst, j, k) = pr_sw / (eos.gm - 1.0) / qq.ro(i_ghst, j, k);
-            qq.bz(i_ghst, j, k) = bz_imf;
+            qq.ro(i_ghst, j, k) = ro_sw_;
+            qq.vx(i_ghst, j, k) = vx_sw_;
+            qq.ei(i_ghst, j, k) = pr_sw_ / (gm_ - 1.0) / qq.ro(i_ghst, j, k);
+            qq.bz(i_ghst, j, k) = bz_imf_;
           });
     }
 
@@ -142,8 +147,8 @@ struct BoundaryCondition {
             // Determine blending factor
             Real rr = util::sqrt(grid.x[i] * grid.x[i] + grid.y[j] * grid.y[j] +
                                  grid.z[k] * grid.z[k]);
-            Real hh = util::max2<Real>(0.0, util::pow2(rr / rra) - 1.0);
-            Real f = a0 * hh / (a0 * hh + 1.0);
+            Real hh = util::max2<Real>(0.0, util::pow2(rr / rra_) - 1.0);
+            Real f = a0_ * hh / (a0_ * hh + 1.0);
 
             // Blend values
             qq.ro(i, j, k) = lerp(qq.ro(i, j, k), qq_init_v.ro(i, j, k), f);
@@ -157,9 +162,9 @@ struct BoundaryCondition {
             qq.ph(i, j, k) = lerp(qq.ph(i, j, k), qq_init_v.ph(i, j, k), f);
 
             // Apply floors
-            qq.ro(i, j, k) = util::max2<Real>(qq.ro(i, j, k), ro_floor);
+            qq.ro(i, j, k) = util::max2<Real>(qq.ro(i, j, k), ro_floor_);
             qq.ei(i, j, k) = util::max2<Real>(
-                qq.ei(i, j, k), pr_floor / (eos.gm - 1.0) / qq.ro(i, j, k));
+                qq.ei(i, j, k), pr_floor_ / (gm_ - 1.0) / qq.ro(i, j, k));
           });
     }
   }
