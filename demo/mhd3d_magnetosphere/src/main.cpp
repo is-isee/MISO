@@ -20,7 +20,7 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
 
   Model(Config &config)
       : ModelBase(config), eos(config), ic(config, eos),
-        bc(config, mpi_shape, mhd.grid, eos), src(config, mhd.grid),
+        bc(config, mpi_shape, grid, eos, ic), src(config, mhd.grid),
         timestep(config, mhd.grid) {}
 };
 
