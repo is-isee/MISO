@@ -14,3 +14,5 @@ jobs:
         run: ruff check pymiso
       - name: Lint code
         run: ruff format pymiso --check
+      - name: Run tests
+        run: pytest pymiso/tests

@@ -81,11 +81,14 @@ def test_conf_sets_defaults_and_paths(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
-time:
   time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
   n_output_digits: 8
+time:
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -100,13 +103,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -127,13 +128,16 @@ def test_conf_rt_physics_override_is_preserved(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
+  time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
+  n_output_digits: 8
 physics:
   rt: true
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -148,12 +152,10 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 2
   y_procs: 1
   z_procs: 1
 rt:
-  save_dir: rt/
   num_rays: 2
 data_type:
   Endian: little
@@ -172,11 +174,14 @@ def test_grid_loads_geometry_and_edges(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
-time:
   time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
   n_output_digits: 8
+time:
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -191,13 +196,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 2
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -230,11 +233,14 @@ def test_mpi_loads_rank_coordinates(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
-time:
   time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
   n_output_digits: 8
+time:
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -249,13 +255,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 2
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -277,11 +281,14 @@ def test_time_load_reads_snapshot_metadata(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
-time:
   time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
   n_output_digits: 8
+time:
   tend: 2.0
   dt_output: 0.5
 grid:
@@ -296,13 +303,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -327,13 +332,16 @@ def test_data_loads_mhd_fixture(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
+  time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
+  n_output_digits: 8
 physics:
   mhd: true
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -348,13 +356,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -391,13 +397,16 @@ def test_data_getattr_delegates_to_grid_time_and_mpi(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
+  time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
+  n_output_digits: 8
 physics:
   mhd: true
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -412,13 +421,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -452,11 +459,14 @@ def test_data_defaults_to_mhd_when_physics_is_missing(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
-time:
   time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
   n_output_digits: 8
+time:
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -471,13 +481,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -509,14 +517,17 @@ def test_data_detect_model_rejects_invalid_physics(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
+  time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
+  n_output_digits: 8
 physics:
   mhd: false
   rt: false
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -531,13 +542,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -564,11 +573,14 @@ def test_data_dtype_from_elem_size_rejects_unknown_size(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
-time:
   time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
   n_output_digits: 8
+time:
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -583,13 +595,11 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 1
   y_procs: 1
   z_procs: 1
 mhd:
-  mhd_save_dir: mhd/
-  n_output_digits: 8
+  cfl_number: 0.5
 data_type:
   Endian: little
 """.strip()
@@ -619,13 +629,16 @@ def test_data_loads_rt_fixture(tmp_path: Path) -> None:
     _write_config(
         tmp_path,
         """
-base:
+io:
   save_dir: data/
+  time_save_dir: time/
+  mpi_save_dir: mpi/
+  mhd_save_dir: mhd/
+  rt_save_dir: rt/
+  n_output_digits: 8
 physics:
   rt: true
 time:
-  time_save_dir: time/
-  n_output_digits: 8
   tend: 1.0
   dt_output: 1.0
 grid:
@@ -640,12 +653,10 @@ grid:
   z_min: 0.0
   z_max: 1.0
 mpi:
-  mpi_save_dir: mpi/
   x_procs: 2
   y_procs: 1
   z_procs: 1
 rt:
-  save_dir: rt/
   num_rays: 2
 data_type:
   Endian: little
@@ -690,7 +701,7 @@ data_type:
     )
 
     _write_rt_rank(
-        tmp_path / "rt" / "rank_000000.bin",
+        tmp_path / "rt" / "rank_00000000.bin",
         num_rays,
         weights,
         mu_x,
@@ -701,7 +712,7 @@ data_type:
         rint_rank0,
     )
     _write_rt_rank(
-        tmp_path / "rt" / "rank_000001.bin",
+        tmp_path / "rt" / "rank_00000001.bin",
         num_rays,
         weights,
         mu_x,
