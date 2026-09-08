@@ -14,9 +14,14 @@ jobs:
           clang-format --version
       - name: Check format
         run: |
-          find miso demo -type d -name build -prune -o -type f \
-            \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) \
-            -print0 | xargs -0 clang-format --dry-run --Werror -fallback-style=none
+          mapfile -d '' files < <(find miso demo -type d -name build -prune -o -type f \
+            \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::No C++/CUDA source files found; check the find paths."
+            exit 1
+          fi
+          echo "Checking ${#files[@]} files"
+          clang-format --dry-run --Werror -fallback-style=none "${files[@]}"
   run-cpu-tests:
     runs-on: ubuntu-latest
     steps:
