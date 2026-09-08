@@ -2,10 +2,12 @@
 #include <miso/boundary_condition.hpp>
 
 #include "common.hpp"
+#include "ic.hpp"
 
 struct BoundaryCondition {
   mpi::Shape &mpi_shape;
   eos::IdealEOS<Real> &eos;
+  /// @brief Initial condition, blended into the solution near the Earth in apply().
   mhd::Fields<Real, Backend> qq_init;
 
   Real ro_sw;
@@ -20,9 +22,9 @@ struct BoundaryCondition {
   Real pr_floor;
 
   explicit BoundaryCondition(Config &config, mpi::Shape &mpi_shape,
-                             Grid<Real, Backend> &grid, eos::IdealEOS<Real> &eos)
-      : mpi_shape(mpi_shape), eos(eos),
-        qq_init(grid.i_total, grid.j_total, grid.k_total) {
+                             const Grid<Real, backend::Host> &grid,
+                             eos::IdealEOS<Real> &eos, const InitialCondition &ic)
+      : mpi_shape(mpi_shape), eos(eos), qq_init(grid) {
     ro_sw = config["solar_wind"]["mass_density"].as<Real>();
     pr_sw = config["solar_wind"]["gas_pressure"].as<Real>();
     vx_sw = config["solar_wind"]["x_velocity_field"].as<Real>();
@@ -33,6 +35,11 @@ struct BoundaryCondition {
 
     ro_floor = config["floor"]["ro_floor"].as<Real>();
     pr_floor = config["floor"]["pr_floor"].as<Real>();
+
+    // Fill qq_init with the initial condition (evaluated on the host).
+    mhd::Fields<Real, backend::Host> qq_h(grid);
+    ic.apply(qq_h.view(), grid.const_view());
+    qq_init.copy_from(qq_h);
   }
 
   // The signature must not be changed as it is called by miso integrator.
