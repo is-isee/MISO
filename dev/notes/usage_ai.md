@@ -31,7 +31,9 @@ cmake -B demo/mhd2d_vortex/build -S demo/mhd2d_vortex -DUSE_CUDA=OFF && cmake --
 
 # CUDA を使う場合は -DMISO_USE_CUDA=ON / -DUSE_CUDA=ON
 # フォーマット (build ディレクトリは除外する)
-find miso demo -path '*/build' -prune -o \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) -print | xargs clang-format --dry-run --Werror -fallback-style=none
+find miso demo -type d -name build -prune -o -type f \
+  \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) \
+  -print0 | xargs -0 clang-format --dry-run --Werror -fallback-style=none
 ruff check pymiso && ruff format pymiso --check
 python -m pytest pymiso/tests
 ```
