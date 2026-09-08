@@ -22,7 +22,7 @@ struct BoundaryCondition {
   Real pr_floor;
 
   explicit BoundaryCondition(Config &config, mpi::Shape &mpi_shape,
-                             Grid<Real, backend::Host> &grid,
+                             const Grid<Real, backend::Host> &grid,
                              eos::IdealEOS<Real> &eos, const InitialCondition &ic)
       : mpi_shape(mpi_shape), eos(eos), qq_init(grid) {
     ro_sw = config["solar_wind"]["mass_density"].as<Real>();
