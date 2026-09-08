@@ -35,7 +35,7 @@ find miso demo -type d -name build -prune -o -type f \
   \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) \
   -print0 | xargs -0 clang-format --dry-run --Werror -fallback-style=none
 ruff check pymiso && ruff format pymiso --check
-python -m pytest pymiso/tests
+pytest pymiso/tests   # python -m pytest はリポジトリ直下の古い pymiso/__init__.py を拾うので使わない
 ```
 
 ## コードの約束
@@ -55,4 +55,12 @@ python -m pytest pymiso/tests
 
 ## 出力形式
 
-- `save_dir/config.yaml`, `grid.bin`, `mpi/coords.csv`, `time/time.NNNNNNNN.txt`, `mhd/mhd.<n_output>.<rank>.bin` (先頭 uint32 の要素サイズ + 9 変数、ゴーストセル込み)。読み込みは `pymiso.Data`。
+すべて `io.save_dir` (既定 `data/`) の下に書かれる。読み込みは `pymiso.Data`。
+
+- `save_dir/config.yaml`: デフォルト値を補完した設定
+- `save_dir/grid.bin`: 全体格子の座標 (先頭 uint32 の要素サイズ + x, y, z)
+- `save_dir/mpi/coords.csv`: ランクごとの MPI 座標
+- `save_dir/time/time.NNNNNNNN.txt`: 各出力の時刻・出力番号・ステップ数
+- `save_dir/time/n_output.txt`: 最新の出力番号 (`pymiso.Time` が最初に読む)
+- `save_dir/mhd/mhd.<n_output>.<rank>.bin`: ランクごとの MHD 変数 (先頭 uint32 の要素サイズ + 9 変数、ゴーストセル込み)
+- `save_dir/rt/rank_<rank>.bin`: 輻射輸送の出力
