@@ -82,8 +82,7 @@ private:
 
 public:
   Array4D(int nx0, int nx1, int nx2, int nx3) : shape_{nx0, nx1, nx2, nx3} {
-    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
-           shape_[3] >= 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 && shape_[3] >= 0);
     const std::size_t array_size =
         ((static_cast<size_t>(shape_[0]) * static_cast<size_t>(shape_[1])) *
          static_cast<size_t>(shape_[2])) *
@@ -98,16 +97,14 @@ public:
 
   /// @brief Return a lightweight view of the array.
   Array4DView<T> view() noexcept {
-    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
-           shape_[3] >= 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 && shape_[3] >= 0);
     assert(size() == 0 || data_);
     return Array4DView<T>(data_, shape_[0], shape_[1], shape_[2], shape_[3]);
   }
 
   /// @brief Return a constant lightweight view of the array.
   Array4DView<const T> view() const noexcept {
-    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
-           shape_[3] >= 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 && shape_[3] >= 0);
     assert(size() == 0 || data_);
     return Array4DView<const T>(data_, shape_[0], shape_[1], shape_[2],
                                 shape_[3]);
@@ -213,8 +210,7 @@ private:
 
 public:
   Array4D(int nx0, int nx1, int nx2, int nx3) : shape_{nx0, nx1, nx2, nx3} {
-    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
-           shape_[3] >= 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 && shape_[3] >= 0);
     const std::size_t array_size =
         ((static_cast<size_t>(shape_[0]) * static_cast<size_t>(shape_[1])) *
          static_cast<size_t>(shape_[2])) *
@@ -233,16 +229,14 @@ public:
 
   /// @brief Return a lightweight view of the array.
   Array4DView<T> view() noexcept {
-    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
-           shape_[3] >= 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 && shape_[3] >= 0);
     assert(size() == 0 || data_);
     return Array4DView<T>(data_, shape_[0], shape_[1], shape_[2], shape_[3]);
   }
 
   /// @brief Return a constant lightweight view of the array.
   Array4DView<const T> view() const noexcept {
-    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 &&
-           shape_[3] >= 0);
+    assert(shape_[0] >= 0 && shape_[1] >= 0 && shape_[2] >= 0 && shape_[3] >= 0);
     assert(size() == 0 || data_);
     return Array4DView<const T>(data_, shape_[0], shape_[1], shape_[2],
                                 shape_[3]);

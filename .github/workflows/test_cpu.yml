@@ -13,7 +13,10 @@ jobs:
           pip install clang-format
           clang-format --version
       - name: Check format
-        run: find src include problems tests -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format --dry-run --Werror -fallback-style=none
+        run: |
+          find miso demo -type d -name build -prune -o -type f \
+            \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) \
+            -print0 | xargs -0 clang-format --dry-run --Werror -fallback-style=none
   run-cpu-tests:
     runs-on: ubuntu-latest
     steps:
