@@ -84,3 +84,13 @@ make.bat
 # doxygen files
 docs/doxygen/cpu
 docs/doxygen/gpu
+
+# AI agent local settings (shared info is in dev/notes/usage_ai.md)
+.claude/
+CLAUDE.local.md
+AGENTS.override.md
+.codex/
+.gemini/
+GEMINI.md
+copilot-instructions.md
+SKILL.md
