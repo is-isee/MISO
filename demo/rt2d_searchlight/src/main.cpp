@@ -62,8 +62,7 @@ struct SearchlightBoundaryCondition {
   }
 
   explicit SearchlightBoundaryCondition(const Config &config)
-      : direction(),
-        side(),
+      : direction(), side(),
         incoming_intensity(
             config["searchlight"]["incoming_intensity"].as<Real>()),
         radius(config["searchlight"]["radius"].as<Real>()) {

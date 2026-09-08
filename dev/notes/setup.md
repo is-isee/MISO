@@ -20,10 +20,12 @@ CUDA対応のコードを開発する場合は、Dev Containerを利用するこ
 
 ```shell
 # CLI
-find src include problems tests -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format -i
+find miso demo -type d -name build -prune -o -type f \
+  \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) \
+  -print0 | xargs -0 clang-format -i
 
 # VSCode上の設定 (上書き注意)
-mkdir -p .vscode && cp -i vscode/setting.json .vscode/setting.json
+mkdir -p .vscode && cp -i dev/vscode/settings.json .vscode/settings.json
 ```
 
 自動フォーマットしたくない範囲は `// clang-format off` と `// clang-format on` で囲む(`off`や`on`の後にスペースが挿入されていると動かないので注意)。

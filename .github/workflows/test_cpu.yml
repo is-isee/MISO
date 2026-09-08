@@ -13,7 +13,15 @@ jobs:
           pip install clang-format
           clang-format --version
       - name: Check format
-        run: find src include problems tests -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" | xargs clang-format --dry-run --Werror -fallback-style=none
+        run: |
+          mapfile -d '' files < <(find miso demo -type d -name build -prune -o -type f \
+            \( -name "*.cpp" -o -name "*.hpp" -o -name "*.cu" -o -name "*.cuh" \) -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::No C++/CUDA source files found; check the find paths."
+            exit 1
+          fi
+          echo "Checking ${#files[@]} files"
+          clang-format --dry-run --Werror -fallback-style=none "${files[@]}"
   run-cpu-tests:
     runs-on: ubuntu-latest
     steps:
