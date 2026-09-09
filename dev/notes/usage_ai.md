@@ -41,6 +41,13 @@ pytest pymiso/tests   # python -m pytest はリポジトリ直下の古い pymis
 ## コードの約束
 
 - C++: `.clang-format` (LLVM ベース, 2 スペース, 82 桁)。CUDA と共用するコードは `__host__ __device__` を付け、`MISO_LAMBDA` を使う。`Real` 型の演算に double リテラルを混ぜない (`Real(0.5)` と書く)。
+- `MISO_LAMBDA` の中でクラスのメンバ変数を直接使わない。メンバ変数は `this` (ホスト側のポインタ) 経由でキャプチャされ、GPU で不正アクセスになる (#170)。ラムダの直前でローカル変数にコピーしてから使う。
+
+  ```cpp
+  const Real gm_ = gm;  // メンバ変数をローカルにコピー
+  for_each(btag, range, MISO_LAMBDA(int i) { pr[i] = (gm_ - Real(1)) * qq.ro[i] * qq.ei[i]; });
+  ```
+
 - ヘッダオンリーなので、テンプレートでない自由関数には `inline` を付ける。
 - 実行時エラー (ファイルが開けない等) は `assert` ではなく例外で扱う。既定ビルドは Release で `assert` は消える。
 - パス結合は `std::filesystem::path` を使う (文字列連結にしない)。
