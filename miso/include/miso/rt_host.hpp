@@ -129,6 +129,7 @@ template <typename Real> struct RT {
   // * k_size = k_total - margin*2;
   // * kb1 = k_total - 2;
   // * The right-most grid (i.e., k=k_total-1) is not used in RT.
+  // * For a collapsed direction (k_size = 1, ks = 0): kb0 = kb1 = 0.
   const int ib0, ib1, jb0, jb1, kb0, kb1;
 
   /// TODO: `num_rays` of buffers can be reduced considering ray directions.
@@ -149,9 +150,9 @@ template <typename Real> struct RT {
         send_buff_y_neg(num_rays, grid.i_total, grid.k_total),
         send_buff_z_pos(num_rays, grid.i_total, grid.j_total),
         send_buff_z_neg(num_rays, grid.i_total, grid.j_total),
-        ib0(grid.i_margin - grid.is), ib1(ib0 + grid.i_size),
-        jb0(grid.j_margin - grid.js), jb1(jb0 + grid.j_size),
-        kb0(grid.k_margin - grid.ks), kb1(kb0 + grid.k_size) {
+        ib0(grid.i_margin - grid.is), ib1(ib0 + grid.i_size * grid.is),
+        jb0(grid.j_margin - grid.js), jb1(jb0 + grid.j_size * grid.js),
+        kb0(grid.k_margin - grid.ks), kb1(kb0 + grid.k_size * grid.ks) {
     util::clear_array(rint);
     util::clear_array(rint_old);
     util::clear_array(src_func);
