@@ -51,11 +51,24 @@ template <typename Real> struct Time {
 
     initialize();
 
-    time_save_dir =
-        config.save_dir + config["io"]["time_save_dir"].as<std::string>();
+    time_save_dir = (fs::path(config.save_dir) /
+                     config["io"]["time_save_dir"].as<std::string>())
+                        .string();
     if (io_enabled) {
       util::create_directories(time_save_dir);
     }
+  }
+
+  /// @brief File path of the time file for the given output number
+  std::string time_filepath(int n_output_) const {
+    return (fs::path(time_save_dir) /
+            ("time." + util::zfill(n_output_, n_output_digits) + ".txt"))
+        .string();
+  }
+
+  /// @brief File path of the file holding the latest output number
+  std::string n_output_filepath() const {
+    return (fs::path(time_save_dir) / "n_output.txt").string();
   }
 
   /// @brief update time parameters
@@ -70,16 +83,14 @@ template <typename Real> struct Time {
       return;
     }
     if (mpi::is_root()) {
-      std::ostringstream fname;
-      fname << time_save_dir << "/time." << util::zfill(n_output, n_output_digits)
-            << ".txt";
-      std::ofstream ofs(fname.str());
+      const std::string fname = time_filepath(n_output);
+      std::ofstream ofs(fname);
       assert(ofs.is_open());
       ofs << time << "\n";
       ofs << n_output << "\n";
       ofs << n_step << "\n";
 
-      std::ofstream ofs_step(time_save_dir + "/n_output.txt");
+      std::ofstream ofs_step(n_output_filepath());
       assert(ofs_step.is_open());
       ofs_step << n_output << "\n";
     }
@@ -92,15 +103,13 @@ template <typename Real> struct Time {
       return;
     }
     if (mpi::is_root()) {
-      std::ifstream ifs_step(time_save_dir + "/n_output.txt");
+      std::ifstream ifs_step(n_output_filepath());
       ifs_step >> n_output;
 
-      std::ostringstream fname;
-      fname << time_save_dir << "/time." << util::zfill(n_output, n_output_digits)
-            << ".txt";
-      std::ifstream ifs(fname.str());
+      const std::string fname = time_filepath(n_output);
+      std::ifstream ifs(fname);
       if (!ifs.is_open()) {
-        throw std::runtime_error("Failed to open time file: " + fname.str());
+        throw std::runtime_error("Failed to open time file: " + fname);
       }
 
       ifs >> time;

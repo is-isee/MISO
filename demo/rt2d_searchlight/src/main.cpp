@@ -113,11 +113,13 @@ int main(int argc, char **argv) {
   Time<Real> time(config);
   time.save();
 
-  const std::string rt_save_dir =
-      config.save_dir + config["io"]["rt_save_dir"].as<std::string>();
-  util::create_directories(rt_save_dir);
+  const fs::path rt_save_dir =
+      fs::path(config.save_dir) / config["io"]["rt_save_dir"].as<std::string>();
+  util::create_directories(rt_save_dir.string());
   const auto n_output_digits = config["io"]["n_output_digits"].as<int>();
   const std::string filepath =
-      rt_save_dir + "rank_" + util::zfill(mpi::rank(), n_output_digits) + ".bin";
+      (rt_save_dir /
+       ("rank_" + util::zfill(mpi::rank(), n_output_digits) + ".bin"))
+          .string();
   solver.save(filepath);
 }

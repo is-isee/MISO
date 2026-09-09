@@ -111,8 +111,9 @@ struct Config {
     fs::path config_path = fs::absolute(load_filepath);
     fs::path config_dir = config_path.parent_path();
 
-    save_dir =
-        (config_dir / yaml_obj["io"]["save_dir"].as<std::string>()).string();
+    save_dir = (config_dir / yaml_obj["io"]["save_dir"].as<std::string>())
+                   .lexically_normal()
+                   .string();
     if (yaml_obj["io"]["enabled"].as<bool>()) {
       util::create_directories(save_dir);
     }
@@ -129,7 +130,7 @@ struct Config {
       if (!yaml_obj["io"]["enabled"].as<bool>()) {
         return;
       }
-      std::string save_filepath = save_dir + "/config.yaml";
+      std::string save_filepath = (fs::path(save_dir) / "config.yaml").string();
       std::ofstream ofs(save_filepath);
       if (!ofs.is_open()) {
         throw std::runtime_error("Failed to open file: " + save_filepath);

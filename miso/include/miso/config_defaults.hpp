@@ -5,6 +5,8 @@ inline constexpr const char *config_default_yaml = R"yaml(
 io:
   # Whether to enable I/O operations
   enabled: true
+  # Whether to continue from the last checkpoint if it exists
+  continue: false
   # Directory for saving all output files
   save_dir: data/
   # Directory for saving time-related files

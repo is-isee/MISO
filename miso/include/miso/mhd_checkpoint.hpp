@@ -21,14 +21,16 @@ template <typename Real> struct Checkpoint {
   Checkpoint(Config &config, Grid<Real, backend::Host> &grid)
       : qq(grid), io_enabled(config.yaml_obj["io"]["enabled"].as<bool>()) {
     n_output_digits = config["io"]["n_output_digits"].as<int>();
-    mhd_save_dir =
-        config.save_dir + config["io"]["mhd_save_dir"].as<std::string>();
+    mhd_save_dir = (fs::path(config.save_dir) /
+                    config["io"]["mhd_save_dir"].as<std::string>())
+                       .string();
   }
 
   std::string get_filename(const Time<Real> &time) const {
-    return mhd_save_dir + "mhd." +
-           util::zfill(time.n_output, time.n_output_digits) + "." +
-           util::zfill(mpi::rank(), n_output_digits) + ".bin";
+    return (fs::path(mhd_save_dir) /
+            ("mhd." + util::zfill(time.n_output, time.n_output_digits) + "." +
+             util::zfill(mpi::rank(), n_output_digits) + ".bin"))
+        .string();
   }
 
   template <typename Backend>
