@@ -17,6 +17,8 @@ struct TimeStep {
     const Real slow_speed = 1.e-10;
     const Real dt_max = 1.e10;
 
+    // Copy members to locals: device lambdas must not capture `this`.
+    const Real cfl_number_ = cfl_number, rra_ = rra, gm_ = eos.gm;
     auto qq_v = qq.const_view();
     auto grid_v = grid.const_view();
 
@@ -24,7 +26,7 @@ struct TimeStep {
                   {grid.j_margin, grid.j_total - grid.j_margin},
                   {grid.k_margin, grid.k_total - grid.k_margin}};
     const auto f = MISO_LAMBDA(int i, int j, int k) {
-      Real cs = util::sqrt(eos.gm * (eos.gm - 1.0) * qq_v.ei(i, j, k));
+      Real cs = util::sqrt(gm_ * (gm_ - 1.0) * qq_v.ei(i, j, k));
       Real vv = util::sqrt(qq_v.vx(i, j, k) * qq_v.vx(i, j, k) +
                            qq_v.vy(i, j, k) * qq_v.vy(i, j, k) +
                            qq_v.vz(i, j, k) * qq_v.vz(i, j, k));
@@ -36,11 +38,11 @@ struct TimeStep {
 
       Real rr = util::sqrt(util::pow2(grid_v.x[i]) + util::pow2(grid_v.y[j]) +
                            util::pow2(grid_v.z[k]));
-      Real mask = rr > rra ? 1.0 : 0.0;
+      Real mask = rr > rra_ ? 1.0 : 0.0;
       Real masked_vel = total_vel * mask + slow_speed * (1.0 - mask);
 
       Real dxyz = util::min3(grid_v.dx[i], grid_v.dy[j], grid_v.dz[k]);
-      return cfl_number * dxyz / masked_vel;
+      return cfl_number_ * dxyz / masked_vel;
     };
     const auto op = MISO_LAMBDA(Real a, Real b) { return util::min2(a, b); };
     const auto dt = reduce(Backend{}, range, dt_max, f, op);

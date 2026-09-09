@@ -24,10 +24,11 @@ template <typename Real> struct IdealEOS {
   template <typename Backend>
   void gas_pressure(Backend btag, mhd::FieldsView<const Real> qq,
                     Array3DView<Real> pr) const {
+    const Real gm_ = gm;  // device lambdas must not capture `this`
     Range1D range{0, qq.size()};
     for_each(
         btag, range,
-        MISO_LAMBDA(int i) { pr[i] = (gm - Real(1)) * qq.ro[i] * qq.ei[i]; });
+        MISO_LAMBDA(int i) { pr[i] = (gm_ - Real(1)) * qq.ro[i] * qq.ei[i]; });
   }
 
   /// @brief Compute speed of sound from primitive MHD fields.
@@ -35,10 +36,11 @@ template <typename Real> struct IdealEOS {
   template <typename Backend>
   void sound_speed(Backend btag, mhd::FieldsView<const Real> qq,
                    Array3DView<Real> cs) const {
+    const Real gm_ = gm;  // device lambdas must not capture `this`
     Range1D range{0, qq.size()};
     for_each(
         btag, range, MISO_LAMBDA(int i) {
-          cs[i] = util::sqrt(gm * (gm - Real(1)) * qq.ei[i]);
+          cs[i] = util::sqrt(gm_ * (gm_ - Real(1)) * qq.ei[i]);
         });
   }
 };
