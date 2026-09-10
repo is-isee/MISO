@@ -46,6 +46,31 @@ def slice_on_boundary(
     raise ValueError("axis must be one of 'x', 'y', or 'z'")
 
 
+def slice_on_plane(
+    values: np.ndarray,
+    d: pymiso.Data,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, str, str]:
+    """Slice on the plane spanned by the two directions with more than one grid point.
+
+    Used for 2D runs, where the boundary face has only one grid point in one
+    direction and shows nothing.
+    """
+    full_shape = (d.grid.i_size, d.grid.j_size, d.grid.k_size)
+    values_3d = np.reshape(values, full_shape)
+    sizes = dict(zip("xyz", full_shape, strict=True))
+    collapsed = [axis for axis in "xyz" if sizes[axis] == 1]
+    if len(collapsed) != 1:
+        raise ValueError(
+            "slice_on_plane expects exactly one direction with one grid point"
+        )
+    mid = sizes[collapsed[0]] // 2
+    if collapsed[0] == "z":
+        return values_3d[:, :, mid], d.x, d.y, "x", "y"
+    if collapsed[0] == "y":
+        return values_3d[:, mid, :], d.x, d.z, "x", "z"
+    return values_3d[mid, :, :], d.y, d.z, "y", "z"
+
+
 this_dir = Path(__file__).resolve().parent
 
 d = pymiso.Data(data_dir=this_dir / "data")
@@ -55,6 +80,7 @@ fig_dir = this_dir / "figs"
 fig_dir.mkdir(exist_ok=True)
 
 axis, side = parse_boundary_face(d.conf)
+is_2d = 1 in (d.grid.i_size, d.grid.j_size, d.grid.k_size)
 
 full_rint = np.reshape(
     d.rint, (d.num_rays, d.grid.i_size, d.grid.j_size, d.grid.k_size)
@@ -75,7 +101,12 @@ plots = [
 fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)
 
 for ax, (title, values, cmap) in zip(axes.flat, plots, strict=True):
-    plane, coord_1, coord_2, label_1, label_2 = slice_on_boundary(values, axis, side, d)
+    if is_2d:
+        plane, coord_1, coord_2, label_1, label_2 = slice_on_plane(values, d)
+    else:
+        plane, coord_1, coord_2, label_1, label_2 = slice_on_boundary(
+            values, axis, side, d
+        )
     mesh = ax.pcolormesh(coord_1, coord_2, plane.T, shading="auto", cmap=cmap)
     ax.set_title(title)
     ax.set_xlabel(label_1)
