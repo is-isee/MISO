@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <filesystem>
+#include <stdexcept>
 
 // header for std::cout, std::fixed, std::setprecision, std::setw
 #include <iomanip>
@@ -85,13 +86,17 @@ template <typename Real> struct Time {
     if (mpi::is_root()) {
       const std::string fname = time_filepath(n_output);
       std::ofstream ofs(fname);
-      assert(ofs.is_open());
+      if (!ofs.is_open()) {
+        throw std::runtime_error("Failed to open file: " + fname);
+      }
       ofs << time << "\n";
       ofs << n_output << "\n";
       ofs << n_step << "\n";
 
       std::ofstream ofs_step(n_output_filepath());
-      assert(ofs_step.is_open());
+      if (!ofs_step.is_open()) {
+        throw std::runtime_error("Failed to open file: " + n_output_filepath());
+      }
       ofs_step << n_output << "\n";
     }
   }
@@ -104,6 +109,9 @@ template <typename Real> struct Time {
     }
     if (mpi::is_root()) {
       std::ifstream ifs_step(n_output_filepath());
+      if (!ifs_step.is_open()) {
+        throw std::runtime_error("Failed to open file: " + n_output_filepath());
+      }
       ifs_step >> n_output;
 
       const std::string fname = time_filepath(n_output);

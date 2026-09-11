@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 #include "array3d.hpp"
 #include "env.hpp"
 #include "grid.hpp"
@@ -43,7 +45,9 @@ template <typename Real> struct Checkpoint {
     util::create_directories(mhd_save_dir);
     std::string filename = get_filename(time);
     std::ofstream ofs(filename, std::ios::binary);
-    assert(ofs.is_open());
+    if (!ofs.is_open()) {
+      throw std::runtime_error("Failed to open file: " + filename);
+    }
 
     constexpr std::uint32_t elem_size = sizeof(Real);
     ofs.write(reinterpret_cast<const char *>(&elem_size), sizeof(std::uint32_t));
@@ -70,7 +74,9 @@ template <typename Real> struct Checkpoint {
     }
     std::string filename = get_filename(time);
     std::ifstream ifs(filename, std::ios::binary);
-    assert(ifs.is_open());
+    if (!ifs.is_open()) {
+      throw std::runtime_error("Failed to open file: " + filename);
+    }
 
     std::uint32_t elem_size;
     ifs.read(reinterpret_cast<char *>(&elem_size), sizeof(std::uint32_t));

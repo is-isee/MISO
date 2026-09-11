@@ -4,9 +4,13 @@ cmake_minimum_required(VERSION 3.18)
 get_filename_component(project_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 project(${project_name})
 
-set(CMAKE_BUILD_TYPE
-    Release
-    CACHE STRING "Choose a type of build.")
+# Default to Release. project() has already created an empty cache entry, so a
+# plain set(... CACHE) would be ignored; FORCE only when nothing was specified.
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE
+        Release
+        CACHE STRING "Choose a type of build." FORCE)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
