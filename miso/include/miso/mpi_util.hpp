@@ -59,8 +59,9 @@ struct Shape {
 
   Shape(const Config &config) {
 
-    mpi_save_dir =
-        config.save_dir + config["io"]["mpi_save_dir"].as<std::string>();
+    mpi_save_dir = (fs::path(config.save_dir) /
+                    config["io"]["mpi_save_dir"].as<std::string>())
+                       .string();
     io_enabled = config.yaml_obj["io"]["enabled"].as<bool>();
     if (io_enabled) {
       util::create_directories(mpi_save_dir);
@@ -116,7 +117,7 @@ struct Shape {
     MPI_Gather(coord, ndims, MPI_INT, all_coords, ndims, MPI_INT, 0, cart_comm);
 
     if (mpi::is_root()) {
-      std::ofstream ofs(mpi_save_dir + "/coords.csv");
+      std::ofstream ofs((fs::path(mpi_save_dir) / "coords.csv").string());
       ofs << "rank,x,y,z\n";
       for (int rank = 0; rank < n_procs; ++rank) {
         ofs << rank << "," << all_coords[rank * 3 + 0] << ","

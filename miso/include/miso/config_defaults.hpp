@@ -5,8 +5,13 @@ inline constexpr const char *config_default_yaml = R"yaml(
 io:
   # Whether to enable I/O operations
   enabled: true
-  # Directory for saving all output files
+  # Whether to continue from the last checkpoint if it exists in save_dir
+  # (a fresh run starts from the initial condition either way)
+  continue: true
+  # Directory for saving all output files (relative to the config file)
   save_dir: data/
+  # The *_save_dir below are relative to save_dir.
+  # An absolute path is used as it is (the same rule as pymiso).
   # Directory for saving time-related files
   time_save_dir: time/
   # Directory for saving MPI-related files

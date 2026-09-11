@@ -1,6 +1,5 @@
-base:
+io:
   save_dir: data/
-  continue: false
 
 physics:
   rt: true

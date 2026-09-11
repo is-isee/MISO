@@ -404,7 +404,8 @@ template <typename Real> struct Grid<Real, backend::Host> {
       auto z_grid = AxisGrid<Real>(k_size_g, margin, 0, z_provider);
 
       // Save global grid to a binary file
-      std::ofstream ofs(config.save_dir + "/grid.bin", std::ios::binary);
+      std::ofstream ofs((fs::path(config.save_dir) / "grid.bin").string(),
+                        std::ios::binary);
       assert(ofs.is_open());
 
       constexpr std::uint32_t elem_size = sizeof(Real);
