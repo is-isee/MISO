@@ -179,7 +179,7 @@ __global__ void update_bx_kernel(FieldsView<const Real> qq_orgn,
             + space_centered_4th(qq_argm.vx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
             + space_centered_4th(qq_argm.vx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks)
             - space_centered_4th(qq_argm.ph, grid.dxi[i], i, j, k, grid.is, 0, 0)
-            + source_bx(src, qq_argm, i, j, k));
+            + src.bx(qq_argm, i, j, k));
   // clang-format on
 }
 
@@ -201,7 +201,7 @@ __global__ void update_by_kernel(FieldsView<const Real> qq_orgn,
             + space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
             + space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks)
             - space_centered_4th(qq_argm.ph, grid.dyi[j], i, j, k, 0, grid.js, 0)
-            + source_by(src, qq_argm, i, j, k));
+            + src.by(qq_argm, i, j, k));
   // clang-format on
 }
 
@@ -223,7 +223,7 @@ __global__ void update_bz_kernel(FieldsView<const Real> qq_orgn,
             + space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
             + space_centered_4th(qq_argm.vz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
             - space_centered_4th(qq_argm.ph, grid.dzi[k], i, j, k, 0, 0, grid.ks)
-            + source_bz(src, qq_argm, i, j, k));
+            + src.bz(qq_argm, i, j, k));
   // clang-format on
 }
 
