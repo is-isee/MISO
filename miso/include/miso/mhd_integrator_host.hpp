@@ -238,7 +238,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
                   + qq_rslt.bx(i, j, k)*qq_rslt.bx(i, j, k)
                   + qq_rslt.by(i, j, k)*qq_rslt.by(i, j, k)
                   + qq_rslt.bz(i, j, k)*qq_rslt.bz(i, j, k) )
-              + src.ei(c_qq, i, j, k)
+              + dt * src.ei(c_qq, i, j, k)
           )/qq_rslt.ro(i, j, k);
           // clang-format on
         }

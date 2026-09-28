@@ -147,7 +147,7 @@ template <typename Real> struct EmptySourceTerm {
     return 0.0;
   }
 
-  /// External heating
+  /// External heating (energy per unit volume per unit time)
   __host__ __device__ inline Real ei(FieldsView<const Real>, int, int,
                                      int) const noexcept {
     return 0.0;
