@@ -1,13 +1,8 @@
 #include <string>
 #include <utility>
 
-#include <miso/boundary_condition.hpp>
-#include <miso/config.hpp>
-#include <miso/env.hpp>
-#include <miso/grid.hpp>
-#include <miso/mpi_util.hpp>
+#include <miso/core.hpp>
 #include <miso/rt.hpp>
-#include <miso/time.hpp>
 
 using namespace miso;
 

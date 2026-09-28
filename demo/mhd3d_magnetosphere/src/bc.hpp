@@ -1,5 +1,5 @@
 #pragma once
-#include <miso/boundary_condition.hpp>
+#include <miso/core.hpp>
 
 #include "common.hpp"
 #include "ic.hpp"

@@ -1,4 +1,5 @@
-#include <miso/mhd_model_base.hpp>
+#include <miso/core.hpp>
+#include <miso/mhd.hpp>
 
 using namespace miso;
 

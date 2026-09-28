@@ -7,7 +7,7 @@
 #include "eos.hpp"
 #include "execution.hpp"
 #include "grid.hpp"
-#include "mhd.hpp"
+#include "mhd_solver.hpp"
 #include "mpi_util.hpp"
 #include "time.hpp"
 #include "types.hpp"
