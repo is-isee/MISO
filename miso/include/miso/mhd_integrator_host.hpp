@@ -5,6 +5,7 @@
 #include "env.hpp"
 #include "mhd_artificial_viscosity_host.hpp"
 #include "mhd_fields.hpp"
+#include "mhd_resistivity.hpp"
 
 namespace miso {
 namespace mhd {
@@ -20,6 +21,8 @@ template <typename Real> struct Integrator<Real, backend::Host> {
   HaloExchanger<Real, backend::Host> halo_exchanger;
   /// @brief Artificial viscosity for MHD equations
   impl_host::ArtificialViscosity<Real> artdiff;
+  /// @brief Explicit resistivity
+  Resistivity<Real, backend::Host> resistivity;
 
   /// @brief gas pressure
   Array3D<Real, backend::Host> pr;
@@ -45,7 +48,8 @@ template <typename Real> struct Integrator<Real, backend::Host> {
   Integrator(Config &config, Grid<Real, backend::Host> &grid,
              ExecContext<Real, backend::Host> &exec_ctx)
       : grid(grid), qq_argm(grid), qq_rslt(grid), halo_exchanger(grid, exec_ctx),
-        artdiff(config, grid), pr(grid.i_total, grid.j_total, grid.k_total),
+        artdiff(config, grid), resistivity(config, grid),
+        pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total),
@@ -244,6 +248,9 @@ template <typename Real> struct Integrator<Real, backend::Host> {
         }
       }
     }
+
+    // resistive terms (no-op unless eta is set)
+    resistivity.apply(dt, qq_argm, qq_rslt);
   }
 
   /// @brief Apply boundary condition and halo exchange
@@ -330,7 +337,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
     Real dt_global;
     MPI_Allreduce(&dt, &dt_global, 1, mpi::data_type<Real>(), MPI_MIN,
                   mpi::comm());
-    return dt_global;
+    return util::min2(dt_global, resistivity.dt_limit);
   }
 
   /// @brief Set parameters for divergence B cleaning

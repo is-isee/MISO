@@ -34,6 +34,12 @@ template <typename Real, typename Backend> struct MHD {
     integrator.apply_boundary_condition(bc, qq);
   }
 
+  /// @brief Enable explicit resistivity with magnetic diffusivity `eta_h`.
+  /// @param eta_h Diffusivity at all cells including ghost cells (host).
+  void set_resistivity(const Array3D<Real, backend::Host> &eta_h) {
+    integrator.resistivity.set_eta(eta_h);
+  }
+
   template <typename EOS> Real cfl(const EOS &eos) {
     return integrator.cfl(qq, eos);
   }

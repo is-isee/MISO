@@ -9,6 +9,7 @@
 #include "mhd_artificial_viscosity_cuda.cuh"
 #include "mhd_fields.hpp"
 #include "mhd_halo_exchange.hpp"
+#include "mhd_resistivity.hpp"
 
 namespace miso {
 namespace mhd {
@@ -301,6 +302,8 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
   HaloExchanger<Real, backend::CUDA> halo_exchanger;
   /// @brief Artificial viscosity for MHD equations
   impl_cuda::ArtificialViscosity<Real> artdiff;
+  /// @brief Explicit resistivity
+  Resistivity<Real, backend::CUDA> resistivity;
 
   /// @brief Workspace for timestep calculation
   ReduceHelper<Real> cfl_helper;
@@ -328,7 +331,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
              ExecContext<Real, backend::CUDA> &exec_ctx)
       : cu_shape(exec_ctx.cu_shape), grid(grid), qq_argm(grid), qq_rslt(grid),
         halo_exchanger(grid, exec_ctx), artdiff(config, grid, exec_ctx.cu_shape),
-        pr(grid.i_total, grid.j_total, grid.k_total),
+        resistivity(config, grid), pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total),
@@ -389,6 +392,9 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
         qq_orgn.view(), qq_argm.view(), qq_rslt.view(), pr.const_view(),
         bb.const_view(), ht.const_view(), vb.const_view(), src, cgrid, dt);
     MISO_CUDA_CHECK(cudaGetLastError());
+
+    // resistive terms (no-op unless eta is set)
+    resistivity.apply(dt, qq_argm, qq_rslt);
   }
 
   /// @brief Apply boundary condition and halo exchange
@@ -476,7 +482,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
 
     Real dt_g;
     MPI_Allreduce(&dt, &dt_g, 1, mpi::data_type<Real>(), MPI_MIN, mpi::comm());
-    return dt_g;
+    return util::min2(dt_g, resistivity.dt_limit);
   }
 
   /// @brief Set parameters for divergence B cleaning
