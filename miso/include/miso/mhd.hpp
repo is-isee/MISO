@@ -6,4 +6,3 @@
 
 #include "eos.hpp"
 #include "mhd_model_base.hpp"
-#include "mhd_resistivity.hpp"

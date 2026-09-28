@@ -90,6 +90,9 @@ __host__ __device__ inline Real face_energy_flux(
 /// G_ij = eta (d_j B_i - d_i B_j), discretized in the flux form with second
 /// order accuracy.
 ///
+/// Not included by <miso/mhd.hpp>; include <miso/mhd_resistivity.hpp>
+/// explicitly.
+///
 /// This struct only holds views: the diffusivity array `eta` (at cell
 /// centers, including ghost cells) is owned by the caller and must outlive
 /// this object. Use it as `src` of a model, or call its member functions from
