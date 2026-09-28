@@ -7,6 +7,7 @@
 
 // fundamentals
 #include "backend.hpp"
+#include "constants.hpp"
 #include "types.hpp"
 #include "utility.hpp"
 
