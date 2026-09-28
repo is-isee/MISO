@@ -34,5 +34,9 @@ mhd:
         cs_fac: 1.0
         ca_fac: 1.0
         vv_fac: 1.0
+    resistivity:
+        # dt <= cfl_number / max(eta*(1/dx^2 + 1/dy^2 + 1/dz^2)).
+        # RK4 is stable up to about 0.69.
+        cfl_number: 0.5
     )yaml";
 }
