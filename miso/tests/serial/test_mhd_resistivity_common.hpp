@@ -8,6 +8,7 @@
 
 #include <miso/array3d.hpp>
 #include <miso/constants.hpp>
+#include <miso/execution.hpp>
 #include <miso/grid.hpp>
 #include <miso/mhd_fields.hpp>
 #include <miso/mhd_resistivity.hpp>
@@ -23,9 +24,6 @@ namespace test_resistivity {
 
 using Real = double;
 using namespace miso;
-using Grid_h = Grid<Real, backend::Host>;
-using Fields_h = mhd::Fields<Real, backend::Host>;
-using Array3D_h = Array3D<Real, backend::Host>;
 
 constexpr Real pi2 = 2.0 * M_PI;
 
@@ -44,24 +42,26 @@ inline constexpr Orientation orient_zxy{{2, 0, 1}};
 
 /// @brief Tendency of B (per component) and total energy
 struct Tendency {
-  Array3D_h dbx, dby, dbz, de;
-  explicit Tendency(const Grid_h &g)
+  Array3D<Real, backend::Host> dbx, dby, dbz, de;
+  explicit Tendency(const Grid<Real, backend::Host> &g)
       : dbx(g.i_total, g.j_total, g.k_total),
         dby(g.i_total, g.j_total, g.k_total),
         dbz(g.i_total, g.j_total, g.k_total),
         de(g.i_total, g.j_total, g.k_total) {}
-  const Array3D_h &db(int m) const { return m == 0 ? dbx : (m == 1 ? dby : dbz); }
+  const Array3D<Real, backend::Host> &db(int m) const {
+    return m == 0 ? dbx : (m == 1 ? dby : dbz);
+  }
 };
 
 /// @brief Problem sizes along (u, v, w) mapped to the (x, y, z) grid
-inline Grid_h make_grid(std::array<int, 3> n_uvw, const Orientation &o,
-                        int margin = 2) {
+inline Grid<Real, backend::Host> make_grid(std::array<int, 3> n_uvw,
+                                           const Orientation &o, int margin = 2) {
   std::array<int, 3> n_xyz{};
   for (int a = 0; a < 3; ++a) {
     n_xyz[o.axis[a]] = n_uvw[a];
   }
-  return Grid_h(n_xyz[0], n_xyz[1], n_xyz[2], margin, 0.0, 1.0, 0.0, 1.0, 0.0,
-                1.0);
+  return Grid<Real, backend::Host>(n_xyz[0], n_xyz[1], n_xyz[2], margin, 0.0, 1.0,
+                                   0.0, 1.0, 0.0, 1.0);
 }
 
 inline int wrap(int i, int size, int margin) {
@@ -72,7 +72,8 @@ inline int wrap(int i, int size, int margin) {
 }
 
 /// @brief Copy interior values to ghost cells periodically (edges/corners too)
-inline void fill_periodic(Array3D_h &a, const Grid_h &g) {
+inline void fill_periodic(Array3D<Real, backend::Host> &a,
+                          const Grid<Real, backend::Host> &g) {
   for (int i = 0; i < g.i_total; ++i) {
     for (int j = 0; j < g.j_total; ++j) {
       for (int k = 0; k < g.k_total; ++k) {
@@ -85,16 +86,18 @@ inline void fill_periodic(Array3D_h &a, const Grid_h &g) {
 }
 
 /// @brief Coordinates (u, v, w) of the cell (i, j, k)
-inline std::array<Real, 3> uvw_of(const Grid_h &g, const Orientation &o, int i,
-                                  int j, int k) {
+inline std::array<Real, 3> uvw_of(const Grid<Real, backend::Host> &g,
+                                  const Orientation &o, int i, int j, int k) {
   const std::array<Real, 3> xyz{g.x[i], g.y[j], g.z[k]};
   return {xyz[o.axis[0]], xyz[o.axis[1]], xyz[o.axis[2]]};
 }
 
 /// @brief Set B (given in (u, v, w) components) and eta on the grid.
-inline void set_problem(const Grid_h &g, const Orientation &o, const VecFunc &b,
-                        const ScalarFunc &eta_f, Fields_h &qq, Array3D_h &eta) {
-  Array3D_h *bxyz[3] = {&qq.bx, &qq.by, &qq.bz};
+inline void set_problem(const Grid<Real, backend::Host> &g, const Orientation &o,
+                        const VecFunc &b, const ScalarFunc &eta_f,
+                        mhd::Fields<Real, backend::Host> &qq,
+                        Array3D<Real, backend::Host> &eta) {
+  Array3D<Real, backend::Host> *bxyz[3] = {&qq.bx, &qq.by, &qq.bz};
   for (int i = g.i_margin; i < g.i_total - g.i_margin; ++i) {
     for (int j = g.j_margin; j < g.j_total - g.j_margin; ++j) {
       for (int k = g.k_margin; k < g.k_total - g.k_margin; ++k) {
@@ -117,30 +120,56 @@ inline void set_problem(const Grid_h &g, const Orientation &o, const VecFunc &b,
   }
 }
 
-/// @brief Evaluate the resistive source terms (ResistiveSource) on the host.
-inline Tendency tendency_host(const Grid_h &g, const Array3D_h &eta,
-                              const Fields_h &qq) {
-  const mhd::ResistiveSource<Real, backend::Host> src(g, eta, Real(0.5));
+/// @brief Evaluate the resistive source terms (ResistiveSource) with the
+/// backend `Backend`. The input is given on the host, and the result is
+/// returned on the host.
+template <typename Backend>
+Tendency tendency(const Grid<Real, backend::Host> &g,
+                  const Array3D<Real, backend::Host> &eta_h,
+                  const mhd::Fields<Real, backend::Host> &qq_h) {
+  const Grid<Real, Backend> grid(g);
+  mhd::Fields<Real, Backend> qq(g);
+  qq.copy_from(qq_h);
+  Array3D<Real, Backend> eta(g.i_total, g.j_total, g.k_total);
+  eta.copy_from(eta_h);
+  const mhd::ResistiveSource<Real, Backend> src(grid, eta, Real(0.5));
+
+  Array3D<Real, Backend> dbx(g.i_total, g.j_total, g.k_total),
+      dby(g.i_total, g.j_total, g.k_total), dbz(g.i_total, g.j_total, g.k_total),
+      de(g.i_total, g.j_total, g.k_total);
   const auto q = qq.const_view();
+  const auto dbx_v = dbx.view(), dby_v = dby.view(), dbz_v = dbz.view(),
+             de_v = de.view();
+
+  Range3D all{{0, g.i_total}, {0, g.j_total}, {0, g.k_total}};
+  for_each(
+      Backend{}, all, MISO_LAMBDA(int i, int j, int k) {
+        dbx_v(i, j, k) = dby_v(i, j, k) = dbz_v(i, j, k) = de_v(i, j, k) =
+            Real(0);
+      });
+  Range3D interior{{g.i_margin, g.i_total - g.i_margin},
+                   {g.j_margin, g.j_total - g.j_margin},
+                   {g.k_margin, g.k_total - g.k_margin}};
+  for_each(
+      Backend{}, interior, MISO_LAMBDA(int i, int j, int k) {
+        dbx_v(i, j, k) = src.bx(q, i, j, k);
+        dby_v(i, j, k) = src.by(q, i, j, k);
+        dbz_v(i, j, k) = src.bz(q, i, j, k);
+        de_v(i, j, k) = src.ei(q, i, j, k);
+      });
+
   Tendency t(g);
-  for (int n = 0; n < qq.ro.size(); ++n) {
-    t.dbx[n] = t.dby[n] = t.dbz[n] = t.de[n] = 0;
-  }
-  for (int i = g.i_margin; i < g.i_total - g.i_margin; ++i) {
-    for (int j = g.j_margin; j < g.j_total - g.j_margin; ++j) {
-      for (int k = g.k_margin; k < g.k_total - g.k_margin; ++k) {
-        t.dbx(i, j, k) = src.bx(q, i, j, k);
-        t.dby(i, j, k) = src.by(q, i, j, k);
-        t.dbz(i, j, k) = src.bz(q, i, j, k);
-        t.de(i, j, k) = src.ei(q, i, j, k);
-      }
-    }
-  }
-  const int ic = g.i_total / 2, jc = g.j_total / 2, kc = g.k_total / 2;
-  CHECK(src.vx(q, ic, jc, kc) == 0);
-  CHECK(src.vy(q, ic, jc, kc) == 0);
-  CHECK(src.vz(q, ic, jc, kc) == 0);
+  t.dbx.copy_from(dbx);
+  t.dby.copy_from(dby);
+  t.dbz.copy_from(dbz);
+  t.de.copy_from(de);
   return t;
+}
+
+inline Tendency tendency_host(const Grid<Real, backend::Host> &g,
+                              const Array3D<Real, backend::Host> &eta,
+                              const mhd::Fields<Real, backend::Host> &qq) {
+  return tendency<backend::Host>(g, eta, qq);
 }
 
 // ---------------------------------------------------------------------------
@@ -206,9 +235,9 @@ inline std::array<Real, 4> reference_tendency(const VecFunc &b,
 
 /// @brief Maximum error of the tendency against the reference
 inline Real max_error(std::array<int, 3> n_uvw, const Orientation &o) {
-  Grid_h g = make_grid(n_uvw, o);
-  Fields_h qq(g);
-  Array3D_h eta(g.i_total, g.j_total, g.k_total);
+  Grid<Real, backend::Host> g = make_grid(n_uvw, o);
+  mhd::Fields<Real, backend::Host> qq(g);
+  Array3D<Real, backend::Host> eta(g.i_total, g.j_total, g.k_total);
   set_problem(g, o, b_smooth, eta_smooth, qq, eta);
   const Tendency t = tendency_host(g, eta, qq);
   const std::array<bool, 3> active{n_uvw[0] > 1, n_uvw[1] > 1, n_uvw[2] > 1};

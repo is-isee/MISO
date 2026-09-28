@@ -8,7 +8,8 @@ namespace {
 const Orientation orients[3] = {orient_xyz, orient_yzx, orient_zxy};
 
 /// @brief Value of `a` at problem index (iu, iv, iw) on the oriented grid
-Real at_uvw(const Array3D_h &a, const Grid_h &g, const Orientation &o,
+Real at_uvw(const Array3D<Real, backend::Host> &a,
+            const Grid<Real, backend::Host> &g, const Orientation &o,
             std::array<int, 3> iuvw) {
   const std::array<int, 3> margin{g.i_margin, g.j_margin, g.k_margin};
   std::array<int, 3> idx{0, 0, 0};
@@ -19,16 +20,16 @@ Real at_uvw(const Array3D_h &a, const Grid_h &g, const Orientation &o,
 }
 
 struct Solved {
-  Grid_h grid;
+  Grid<Real, backend::Host> grid;
   Tendency t;
   Solved(std::array<int, 3> n, const Orientation &o, const VecFunc &b,
          const ScalarFunc &eta_f)
       : grid(make_grid(n, o)), t(solve(grid, o, b, eta_f)) {}
 
-  static Tendency solve(const Grid_h &g, const Orientation &o, const VecFunc &b,
-                        const ScalarFunc &eta_f) {
-    Fields_h qq(g);
-    Array3D_h eta(g.i_total, g.j_total, g.k_total);
+  static Tendency solve(const Grid<Real, backend::Host> &g, const Orientation &o,
+                        const VecFunc &b, const ScalarFunc &eta_f) {
+    mhd::Fields<Real, backend::Host> qq(g);
+    Array3D<Real, backend::Host> eta(g.i_total, g.j_total, g.k_total);
     set_problem(g, o, b, eta_f, qq, eta);
     return tendency_host(g, eta, qq);
   }
@@ -163,9 +164,9 @@ TEST_CASE("Resistivity: energy conservation and dissipation" *
   for (const auto &o : orients) {
     CAPTURE(o.axis[0]);
     const std::array<int, 3> n{12, 10, 8};
-    Grid_h g = make_grid(n, o);
-    Fields_h qq(g);
-    Array3D_h eta(g.i_total, g.j_total, g.k_total);
+    Grid<Real, backend::Host> g = make_grid(n, o);
+    mhd::Fields<Real, backend::Host> qq(g);
+    Array3D<Real, backend::Host> eta(g.i_total, g.j_total, g.k_total);
     set_problem(g, o, b_smooth, eta_smooth, qq, eta);
     const Tendency t = tendency_host(g, eta, qq);
 
@@ -186,5 +187,24 @@ TEST_CASE("Resistivity: energy conservation and dissipation" *
     CHECK(std::abs(de_sum) < 1.e-12 * de_abs);
     // magnetic energy decreases (Joule heating is positive in total)
     CHECK(dmag_sum < 0);
+  }
+}
+
+TEST_CASE("Resistivity: no source in the momentum equations" *
+          doctest::test_suite("resistivity")) {
+  Grid<Real, backend::Host> g = make_grid({8, 6, 4}, orient_xyz);
+  mhd::Fields<Real, backend::Host> qq(g);
+  Array3D<Real, backend::Host> eta(g.i_total, g.j_total, g.k_total);
+  set_problem(g, orient_xyz, b_smooth, eta_smooth, qq, eta);
+  const mhd::ResistiveSource<Real, backend::Host> src(g, eta, Real(0.5));
+  const auto q = qq.const_view();
+  for (int i = g.i_margin; i < g.i_total - g.i_margin; ++i) {
+    for (int j = g.j_margin; j < g.j_total - g.j_margin; ++j) {
+      for (int k = g.k_margin; k < g.k_total - g.k_margin; ++k) {
+        CHECK(src.vx(q, i, j, k) == 0);
+        CHECK(src.vy(q, i, j, k) == 0);
+        CHECK(src.vz(q, i, j, k) == 0);
+      }
+    }
   }
 }
