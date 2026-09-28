@@ -46,9 +46,9 @@ struct has_dt_limit<T,
 /// - eos: equation of state
 /// - ic: initial condition
 /// - bc: boundary condition
-/// - src: source term (see EmptySourceTerm for the required members: vx, vy,
-///   vz, bx, by, bz, ei). It may also define dt_limit(), the upper limit of
-///   the time step.
+/// - src: source term. Every term (ro, vx, vy, vz, bx, by, bz, ei) and
+///   dt_limit(), the upper limit of the time step, are optional
+///   (EmptySourceTerm defines none of them).
 template <class Derived, class Real, class Backend> class ModelBase {
 public:
   Config &config;
@@ -141,50 +141,11 @@ template <typename Real> struct EmptyBoundaryCondition {
 };
 
 /// @brief Empty source term class (without source terms).
-/// @details Volumetric heat / force terms are expected.
-template <typename Real> struct EmptySourceTerm {
-  /// External force: x-direction
-  __host__ __device__ inline Real vx(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: y-direction
-  __host__ __device__ inline Real vy(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: z-direction
-  __host__ __device__ inline Real vz(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// Induction equation: x-direction
-  __host__ __device__ inline Real bx(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// Induction equation: y-direction
-  __host__ __device__ inline Real by(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// Induction equation: z-direction
-  __host__ __device__ inline Real bz(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External heating (energy per unit volume per unit time)
-  __host__ __device__ inline Real ei(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-};
+/// @details All source terms are optional (see mhd_integrator.hpp): a source
+/// term class defines only the terms it needs, e.g.,
+/// `Real vx(FieldsView<const Real> qq, int i, int j, int k) const` for an
+/// external force in the x direction, and optionally `Real dt_limit() const`.
+template <typename Real> struct EmptySourceTerm {};
 
 }  // namespace mhd
 }  // namespace miso

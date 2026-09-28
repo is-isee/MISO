@@ -117,24 +117,6 @@ struct SourceTerm {
     return 0.0;
   }
 
-  /// Induction equation: x-direction
-  __host__ __device__ inline Real bx(mhd::FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// Induction equation: y-direction
-  __host__ __device__ inline Real by(mhd::FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// Induction equation: z-direction
-  __host__ __device__ inline Real bz(mhd::FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
   /// External heating
   __host__ __device__ inline Real ei(mhd::FieldsView<const Real>, int, int,
                                      int) const noexcept {

@@ -116,6 +116,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
           -space_centered_4th(c_ro, c_vx, dxi, i, j, k, grid.is, 0, 0)
           -space_centered_4th(c_ro, c_vy, dyi, i, j, k, 0, grid.js, 0)
           -space_centered_4th(c_ro, c_vz, dzi, i, j, k, 0, 0, grid.ks)
+          +source_ro(src, c_qq, i, j, k)
           );
 
           // x equation of motion
@@ -131,7 +132,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
                   +space_centered_4th(c_bx, c_by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(c_bx, c_bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
-              +src.vx(c_qq, i, j, k)
+              +source_vx(src, c_qq, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -148,7 +149,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
                   +space_centered_4th(c_by, c_by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(c_by, c_bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
-              +src.vy(c_qq, i, j, k)
+              +source_vy(src, c_qq, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -165,7 +166,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
                   +space_centered_4th(c_bz, c_by, dyi, i, j, k, 0, grid.js, 0)
                   +space_centered_4th(c_bz, c_bz, dzi, i, j, k, 0, 0, grid.ks)
                   )
-              +src.vz(c_qq, i, j, k)
+              +source_vz(src, c_qq, i, j, k)
               )
           )/qq_rslt.ro(i, j, k);
 
@@ -176,7 +177,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               +space_centered_4th(c_vx, c_by, dyi, i, j, k, 0, grid.js, 0)
               +space_centered_4th(c_vx, c_bz, dzi, i, j, k, 0, 0, grid.ks)
               -space_centered_4th(c_ph, dxi, i, j, k, grid.is, 0, 0)
-              +src.bx(c_qq, i, j, k)
+              +source_bx(src, c_qq, i, j, k)
           );
 
           // y magnetic induction
@@ -186,7 +187,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               +space_centered_4th(c_vy, c_bx, dxi, i, j, k, grid.is, 0, 0)
               +space_centered_4th(c_vy, c_bz, dzi, i, j, k, 0, 0, grid.ks)
               -space_centered_4th(c_ph, dyi, i, j, k, 0, grid.js, 0)
-              +src.by(c_qq, i, j, k)
+              +source_by(src, c_qq, i, j, k)
           );
 
           // z magnetic induction
@@ -196,7 +197,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               +space_centered_4th(c_vz, c_bx, dxi, i, j, k, grid.is, 0, 0)
               +space_centered_4th(c_vz, c_by, dyi, i, j, k, 0, grid.js, 0)
               -space_centered_4th(c_ph, dzi, i, j, k, 0, 0, grid.ks)
-              +src.bz(c_qq, i, j, k)
+              +source_bz(src, c_qq, i, j, k)
           );
 
           // div B factor
@@ -241,7 +242,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
                   + qq_rslt.bx(i, j, k)*qq_rslt.bx(i, j, k)
                   + qq_rslt.by(i, j, k)*qq_rslt.by(i, j, k)
                   + qq_rslt.bz(i, j, k)*qq_rslt.bz(i, j, k) )
-              + dt * src.ei(c_qq, i, j, k)
+              + dt * source_ei(src, c_qq, i, j, k)
           )/qq_rslt.ro(i, j, k);
           // clang-format on
         }
