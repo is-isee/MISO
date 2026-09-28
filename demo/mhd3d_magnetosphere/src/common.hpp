@@ -1,4 +1,5 @@
 #pragma once
+#include <miso/core.hpp>
 #include <miso/mhd_model_base.hpp>
 
 using namespace miso;
