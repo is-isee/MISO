@@ -3,7 +3,7 @@
 // Umbrella header for the common layer shared by MHD and RT.
 // Include this together with a physics header, e.g.
 //   #include <miso/core.hpp>
-//   #include <miso/mhd_model_base.hpp>  // or <miso/rt.hpp>
+//   #include <miso/mhd.hpp>  // or <miso/rt.hpp>
 
 // fundamentals
 #include "backend.hpp"

@@ -2,7 +2,7 @@
 
 #include "config.hpp"
 #include "execution.hpp"
-#include "mhd.hpp"
+#include "mhd_solver.hpp"
 #include "utility.hpp"
 
 namespace miso {
