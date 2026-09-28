@@ -46,9 +46,9 @@ struct has_dt_limit<T,
 /// - eos: equation of state
 /// - ic: initial condition
 /// - bc: boundary condition
-/// - src: source term (optional; default is no source). Besides vx, vy, vz,
-///   ei, it may define bx, by, bz (induction equation) and dt_limit()
-///   (upper limit of the time step).
+/// - src: source term (see EmptySourceTerm for the required members: vx, vy,
+///   vz, bx, by, bz, ei). It may also define dt_limit(), the upper limit of
+///   the time step.
 template <class Derived, class Real, class Backend> class ModelBase {
 public:
   Config &config;
@@ -157,6 +157,24 @@ template <typename Real> struct EmptySourceTerm {
 
   /// External force: z-direction
   __host__ __device__ inline Real vz(FieldsView<const Real>, int, int,
+                                     int) const noexcept {
+    return 0.0;
+  }
+
+  /// Induction equation: x-direction
+  __host__ __device__ inline Real bx(FieldsView<const Real>, int, int,
+                                     int) const noexcept {
+    return 0.0;
+  }
+
+  /// Induction equation: y-direction
+  __host__ __device__ inline Real by(FieldsView<const Real>, int, int,
+                                     int) const noexcept {
+    return 0.0;
+  }
+
+  /// Induction equation: z-direction
+  __host__ __device__ inline Real bz(FieldsView<const Real>, int, int,
                                      int) const noexcept {
     return 0.0;
   }
