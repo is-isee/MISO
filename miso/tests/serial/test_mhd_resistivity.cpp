@@ -1,6 +1,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "test_mhd_resistivity_common.hpp"
 
+#include <miso/mhd_model_base.hpp>
+
 using namespace test_resistivity;
 
 namespace {
@@ -190,7 +192,7 @@ TEST_CASE("Resistivity: energy conservation and dissipation" *
   }
 }
 
-TEST_CASE("Resistivity: no source in the momentum equations" *
+TEST_CASE("Resistivity: no source in the mass and momentum equations" *
           doctest::test_suite("resistivity")) {
   Grid<Real, backend::Host> g = make_grid({8, 6, 4}, orient_xyz);
   mhd::Fields<Real, backend::Host> qq(g);
@@ -198,13 +200,12 @@ TEST_CASE("Resistivity: no source in the momentum equations" *
   set_problem(g, orient_xyz, b_smooth, eta_smooth, qq, eta);
   const mhd::ResistiveSource<Real, backend::Host> src(g, eta, Real(0.5));
   const auto q = qq.const_view();
-  for (int i = g.i_margin; i < g.i_total - g.i_margin; ++i) {
-    for (int j = g.j_margin; j < g.j_total - g.j_margin; ++j) {
-      for (int k = g.k_margin; k < g.k_total - g.k_margin; ++k) {
-        CHECK(src.vx(q, i, j, k) == 0);
-        CHECK(src.vy(q, i, j, k) == 0);
-        CHECK(src.vz(q, i, j, k) == 0);
-      }
-    }
-  }
+  const int i = g.i_total / 2, j = g.j_total / 2, k = g.k_total / 2;
+  CHECK(mhd::source_ro(src, q, i, j, k) == 0);
+  CHECK(mhd::source_vx(src, q, i, j, k) == 0);
+  CHECK(mhd::source_vy(src, q, i, j, k) == 0);
+  CHECK(mhd::source_vz(src, q, i, j, k) == 0);
+  CHECK(mhd::source_bx(src, q, i, j, k) != 0);
+  CHECK(mhd::source_ei(src, q, i, j, k) != 0);
+  CHECK(mhd::has_dt_limit<mhd::ResistiveSource<Real, backend::Host>>::value);
 }

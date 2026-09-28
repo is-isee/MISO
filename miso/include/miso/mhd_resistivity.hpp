@@ -12,75 +12,35 @@
 namespace miso {
 namespace mhd {
 
-namespace impl_resistivity {
-
-/// @brief Cell index (i, j, k) that can be shifted in direction d
-struct Cell {
-  int c[3];
-  __host__ __device__ Cell shift(int d, int s) const {
-    Cell r = *this;
-    r.c[d] += s;
-    return r;
-  }
-};
-
+/// @brief Resistive flux G_md = eta (d_d B_m - d_m B_d) on the face between
+/// the cell (i, j, k) and (i + ni, j + nj, k + nk).
+/// @details The face normal is the direction d given by the offsets
+/// (ni, nj, nk) and the inverse spacing `dsi_n` of that axis. The tangential
+/// direction m is given by (ti, tj, tk) and `dsi_t`, in the same way as the
+/// artificial viscosity (e.g., (grid.is, 0, 0) and grid.dxi for x).
+/// - d_d B_m (normal): compact difference of the two cells adjacent to the
+///   face, which avoids odd-even decoupling.
+/// - d_m B_d (tangential): average of the centered differences in the two
+///   cells.
+/// An inactive direction has zero offsets and zero inverse spacing, so that
+/// its contribution vanishes.
 template <typename Real>
-__host__ __device__ inline Real at(const Array3DView<const Real> &a,
-                                   const Cell &p) {
-  return a(p.c[0], p.c[1], p.c[2]);
-}
-
-/// @brief Inverse grid spacing of the cell `p` in direction `d`
-template <typename Real>
-__host__ __device__ inline Real inv_ds(const GridView<const Real> &grid, int d,
-                                       const Cell &p) {
-  return d == 0 ? grid.dxi[p.c[0]]
-                : (d == 1 ? grid.dyi[p.c[1]] : grid.dzi[p.c[2]]);
-}
-
-/// @brief G_md = eta (d_d B_m - d_m B_d) on the face between `pl` and
-/// `pl + e_d` (m != d).
-/// @details The normal derivative d_d B_m uses the two cells adjacent to the
-/// face (compact), which avoids odd-even decoupling. The tangential
-/// derivative d_m B_d is the average of the centered differences in the two
-/// adjacent cells.
-template <typename Real>
-__host__ __device__ inline Real
-face_flux(const Array3DView<const Real> (&b)[3],
-          const Array3DView<const Real> &eta, const GridView<const Real> &grid,
-          const int (&st)[3], int d, int m, const Cell &pl) {
-  const Cell pr = pl.shift(d, st[d]);
-  const Real eta_f = Real(0.5) * (at(eta, pl) + at(eta, pr));
-  const Real idf = Real(0.5) * (inv_ds(grid, d, pl) + inv_ds(grid, d, pr));
-  const Real normal = (at(b[m], pr) - at(b[m], pl)) * idf;
-  const Real tangential =
-      Real(0.25) *
-      ((at(b[d], pl.shift(m, st[m])) - at(b[d], pl.shift(m, -st[m]))) *
-           inv_ds(grid, m, pl) +
-       (at(b[d], pr.shift(m, st[m])) - at(b[d], pr.shift(m, -st[m]))) *
-           inv_ds(grid, m, pr));
+__host__ __device__ inline Real resistive_flux(
+    const Array3DView<const Real> &bm, const Array3DView<const Real> &bd,
+    const Array3DView<const Real> &eta, const Real *dsi_n, int ni, int nj, int nk,
+    const Real *dsi_t, int ti, int tj, int tk, int i, int j, int k) {
+  // clang-format off
+  const int ip = i + ni, jp = j + nj, kp = k + nk;
+  const Real eta_f = Real(0.5) * (eta(i, j, k) + eta(ip, jp, kp));
+  const Real dsi_f = Real(0.5) * (dsi_n[i * ni + j * nj + k * nk] +
+                                  dsi_n[ip * ni + jp * nj + kp * nk]);
+  const Real normal = (bm(ip, jp, kp) - bm(i, j, k)) * dsi_f;
+  const Real tangential = Real(0.25) * (
+      (bd(i  + ti, j  + tj, k  + tk) - bd(i  - ti, j  - tj, k  - tk)) * dsi_t[i  * ti + j  * tj + k  * tk]
+    + (bd(ip + ti, jp + tj, kp + tk) - bd(ip - ti, jp - tj, kp - tk)) * dsi_t[ip * ti + jp * tj + kp * tk]);
+  // clang-format on
   return eta_f * (normal - tangential);
 }
-
-/// @brief Energy flux (1/4pi) sum_m B_m G_md on the face between `pl` and
-/// `pl + e_d` (B is averaged to the face).
-template <typename Real>
-__host__ __device__ inline Real face_energy_flux(
-    const Array3DView<const Real> (&b)[3], const Array3DView<const Real> &eta,
-    const GridView<const Real> &grid, const int (&st)[3], int d, const Cell &pl) {
-  const Cell pr = pl.shift(d, st[d]);
-  Real fe = Real(0);
-  for (int m = 0; m < 3; ++m) {
-    if (m == d) {
-      continue;
-    }
-    fe += Real(0.5) * (at(b[m], pl) + at(b[m], pr)) *
-          face_flux(b, eta, grid, st, d, m, pl);
-  }
-  return pii4<Real> * fe;
-}
-
-}  // namespace impl_resistivity
 
 /// @brief Explicit resistivity (magnetic diffusion) as a source term.
 /// @details Adds -curl(eta curl B) to the induction equation and the
@@ -88,7 +48,7 @@ __host__ __device__ inline Real face_energy_flux(
 /// equation (the Joule heating goes to the internal energy). In index
 /// notation, dB_i/dt = d_j G_ij, dE/dt = d_j ((1/4pi) B_i G_ij),
 /// G_ij = eta (d_j B_i - d_i B_j), discretized in the flux form with second
-/// order accuracy.
+/// order accuracy (see resistive_flux).
 ///
 /// Not included by <miso/mhd.hpp>; include <miso/mhd_resistivity.hpp>
 /// explicitly.
@@ -130,49 +90,50 @@ template <typename Real, typename Backend> struct ResistiveSource {
             grid_, eta_,
             config["mhd"]["resistivity"]["cfl_number"].template as<Real>()) {}
 
-  __host__ __device__ Real vx(const FieldsView<const Real> &, int, int,
-                              int) const {
-    return Real(0);
-  }
-  __host__ __device__ Real vy(const FieldsView<const Real> &, int, int,
-                              int) const {
-    return Real(0);
-  }
-  __host__ __device__ Real vz(const FieldsView<const Real> &, int, int,
-                              int) const {
-    return Real(0);
-  }
+  // clang-format off
+  /// @brief x induction: d_y G_xy + d_z G_xz
   __host__ __device__ Real bx(const FieldsView<const Real> &qq, int i, int j,
                               int k) const {
-    return induction(qq, 0, i, j, k);
-  }
-  __host__ __device__ Real by(const FieldsView<const Real> &qq, int i, int j,
-                              int k) const {
-    return induction(qq, 1, i, j, k);
-  }
-  __host__ __device__ Real bz(const FieldsView<const Real> &qq, int i, int j,
-                              int k) const {
-    return induction(qq, 2, i, j, k);
+    const int is = grid.is, js = grid.js, ks = grid.ks;
+    return
+      + (resistive_flux(qq.bx, qq.by, eta, grid.dyi, 0, js, 0, grid.dxi, is, 0, 0, i, j     , k)
+       - resistive_flux(qq.bx, qq.by, eta, grid.dyi, 0, js, 0, grid.dxi, is, 0, 0, i, j - js, k)) * grid.dyi[j]
+      + (resistive_flux(qq.bx, qq.bz, eta, grid.dzi, 0, 0, ks, grid.dxi, is, 0, 0, i, j, k     )
+       - resistive_flux(qq.bx, qq.bz, eta, grid.dzi, 0, 0, ks, grid.dxi, is, 0, 0, i, j, k - ks)) * grid.dzi[k];
   }
 
-  /// @brief Divergence of the resistive energy flux
+  /// @brief y induction: d_x G_yx + d_z G_yz
+  __host__ __device__ Real by(const FieldsView<const Real> &qq, int i, int j,
+                              int k) const {
+    const int is = grid.is, js = grid.js, ks = grid.ks;
+    return
+      + (resistive_flux(qq.by, qq.bx, eta, grid.dxi, is, 0, 0, grid.dyi, 0, js, 0, i     , j, k)
+       - resistive_flux(qq.by, qq.bx, eta, grid.dxi, is, 0, 0, grid.dyi, 0, js, 0, i - is, j, k)) * grid.dxi[i]
+      + (resistive_flux(qq.by, qq.bz, eta, grid.dzi, 0, 0, ks, grid.dyi, 0, js, 0, i, j, k     )
+       - resistive_flux(qq.by, qq.bz, eta, grid.dzi, 0, 0, ks, grid.dyi, 0, js, 0, i, j, k - ks)) * grid.dzi[k];
+  }
+
+  /// @brief z induction: d_x G_zx + d_y G_zy
+  __host__ __device__ Real bz(const FieldsView<const Real> &qq, int i, int j,
+                              int k) const {
+    const int is = grid.is, js = grid.js, ks = grid.ks;
+    return
+      + (resistive_flux(qq.bz, qq.bx, eta, grid.dxi, is, 0, 0, grid.dzi, 0, 0, ks, i     , j, k)
+       - resistive_flux(qq.bz, qq.bx, eta, grid.dxi, is, 0, 0, grid.dzi, 0, 0, ks, i - is, j, k)) * grid.dxi[i]
+      + (resistive_flux(qq.bz, qq.by, eta, grid.dyi, 0, js, 0, grid.dzi, 0, 0, ks, i, j     , k)
+       - resistive_flux(qq.bz, qq.by, eta, grid.dyi, 0, js, 0, grid.dzi, 0, 0, ks, i, j - js, k)) * grid.dyi[j];
+  }
+
+  /// @brief Energy: divergence of the energy flux (1/4pi) B_m G_md
   __host__ __device__ Real ei(const FieldsView<const Real> &qq, int i, int j,
                               int k) const {
-    using namespace impl_resistivity;
-    const Array3DView<const Real> b[3] = {qq.bx, qq.by, qq.bz};
-    const int st[3] = {grid.is, grid.js, grid.ks};
-    const Cell p{{i, j, k}};
-    Real de = Real(0);
-    for (int d = 0; d < 3; ++d) {
-      if (st[d] == 0) {
-        continue;
-      }
-      de += (face_energy_flux(b, eta, grid, st, d, p) -
-             face_energy_flux(b, eta, grid, st, d, p.shift(d, -st[d]))) *
-            inv_ds(grid, d, p);
-    }
-    return de;
+    const int is = grid.is, js = grid.js, ks = grid.ks;
+    return pii4<Real> * (
+      + (energy_flux_x(qq, i, j, k) - energy_flux_x(qq, i - is, j, k)) * grid.dxi[i]
+      + (energy_flux_y(qq, i, j, k) - energy_flux_y(qq, i, j - js, k)) * grid.dyi[j]
+      + (energy_flux_z(qq, i, j, k) - energy_flux_z(qq, i, j, k - ks)) * grid.dzi[k]);
   }
+  // clang-format on
 
   /// @brief Upper limit of the time step: cfl_number / max(eta*sum(1/ds^2))
   Real dt_limit() const {
@@ -196,24 +157,40 @@ template <typename Real, typename Backend> struct ResistiveSource {
   }
 
 private:
-  /// @brief (d/dt B_m) = sum_{d != m} d_d G_md
-  __host__ __device__ Real induction(const FieldsView<const Real> &qq, int m,
-                                     int i, int j, int k) const {
-    using namespace impl_resistivity;
-    const Array3DView<const Real> b[3] = {qq.bx, qq.by, qq.bz};
-    const int st[3] = {grid.is, grid.js, grid.ks};
-    const Cell p{{i, j, k}};
-    Real db = Real(0);
-    for (int d = 0; d < 3; ++d) {
-      if (d == m || st[d] == 0) {
-        continue;
-      }
-      db += (face_flux(b, eta, grid, st, d, m, p) -
-             face_flux(b, eta, grid, st, d, m, p.shift(d, -st[d]))) *
-            inv_ds(grid, d, p);
-    }
-    return db;
+  // clang-format off
+  /// @brief sum_m B_m G_mx on the x face between (i, j, k) and (i + is, j, k)
+  __host__ __device__ Real energy_flux_x(const FieldsView<const Real> &qq,
+                                         int i, int j, int k) const {
+    const int is = grid.is, js = grid.js, ks = grid.ks;
+    return
+      + Real(0.5) * (qq.by(i, j, k) + qq.by(i + is, j, k))
+        * resistive_flux(qq.by, qq.bx, eta, grid.dxi, is, 0, 0, grid.dyi, 0, js, 0, i, j, k)
+      + Real(0.5) * (qq.bz(i, j, k) + qq.bz(i + is, j, k))
+        * resistive_flux(qq.bz, qq.bx, eta, grid.dxi, is, 0, 0, grid.dzi, 0, 0, ks, i, j, k);
   }
+
+  /// @brief sum_m B_m G_my on the y face between (i, j, k) and (i, j + js, k)
+  __host__ __device__ Real energy_flux_y(const FieldsView<const Real> &qq,
+                                         int i, int j, int k) const {
+    const int is = grid.is, js = grid.js, ks = grid.ks;
+    return
+      + Real(0.5) * (qq.bx(i, j, k) + qq.bx(i, j + js, k))
+        * resistive_flux(qq.bx, qq.by, eta, grid.dyi, 0, js, 0, grid.dxi, is, 0, 0, i, j, k)
+      + Real(0.5) * (qq.bz(i, j, k) + qq.bz(i, j + js, k))
+        * resistive_flux(qq.bz, qq.by, eta, grid.dyi, 0, js, 0, grid.dzi, 0, 0, ks, i, j, k);
+  }
+
+  /// @brief sum_m B_m G_mz on the z face between (i, j, k) and (i, j, k + ks)
+  __host__ __device__ Real energy_flux_z(const FieldsView<const Real> &qq,
+                                         int i, int j, int k) const {
+    const int is = grid.is, js = grid.js, ks = grid.ks;
+    return
+      + Real(0.5) * (qq.bx(i, j, k) + qq.bx(i, j, k + ks))
+        * resistive_flux(qq.bx, qq.bz, eta, grid.dzi, 0, 0, ks, grid.dxi, is, 0, 0, i, j, k)
+      + Real(0.5) * (qq.by(i, j, k) + qq.by(i, j, k + ks))
+        * resistive_flux(qq.by, qq.bz, eta, grid.dzi, 0, 0, ks, grid.dyi, 0, js, 0, i, j, k);
+  }
+  // clang-format on
 };
 
 }  // namespace mhd
