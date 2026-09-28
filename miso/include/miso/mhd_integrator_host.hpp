@@ -176,6 +176,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               +space_centered_4th(c_vx, c_by, dyi, i, j, k, 0, grid.js, 0)
               +space_centered_4th(c_vx, c_bz, dzi, i, j, k, 0, 0, grid.ks)
               -space_centered_4th(c_ph, dxi, i, j, k, grid.is, 0, 0)
+              +source_bx(src, c_qq, i, j, k)
           );
 
           // y magnetic induction
@@ -185,6 +186,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               +space_centered_4th(c_vy, c_bx, dxi, i, j, k, grid.is, 0, 0)
               +space_centered_4th(c_vy, c_bz, dzi, i, j, k, 0, 0, grid.ks)
               -space_centered_4th(c_ph, dyi, i, j, k, 0, grid.js, 0)
+              +source_by(src, c_qq, i, j, k)
           );
 
           // z magnetic induction
@@ -194,6 +196,7 @@ template <typename Real> struct Integrator<Real, backend::Host> {
               +space_centered_4th(c_vz, c_bx, dxi, i, j, k, grid.is, 0, 0)
               +space_centered_4th(c_vz, c_by, dyi, i, j, k, 0, grid.js, 0)
               -space_centered_4th(c_ph, dzi, i, j, k, 0, 0, grid.ks)
+              +source_bz(src, c_qq, i, j, k)
           );
 
           // div B factor

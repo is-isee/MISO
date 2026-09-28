@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <utility>
 
 #include "config.hpp"
 #include "env.hpp"
@@ -11,6 +12,7 @@
 #include "mpi_util.hpp"
 #include "time.hpp"
 #include "types.hpp"
+#include "utility.hpp"
 
 namespace miso {
 namespace mhd {
@@ -32,12 +34,21 @@ template <class T, class = void> struct has_src : std::false_type {};
 template <class T>
 struct has_src<T, std::void_t<decltype(&T::src)>> : std::true_type {};
 
+// Optional time step limit of the source term: Real dt_limit() const
+template <class T, class = void> struct has_dt_limit : std::false_type {};
+template <class T>
+struct has_dt_limit<T,
+                    std::void_t<decltype(std::declval<const T &>().dt_limit())>>
+    : std::true_type {};
+
 /// @brief Base class of MHD models using CRTP.
 /// @details The derived class must implement the following members:
 /// - eos: equation of state
 /// - ic: initial condition
 /// - bc: boundary condition
-/// - src: source term (optional; default is no source)
+/// - src: source term (optional; default is no source). Besides vx, vy, vz,
+///   ei, it may define bx, by, bz (induction equation) and dt_limit()
+///   (upper limit of the time step).
 template <class Derived, class Real, class Backend> class ModelBase {
 public:
   Config &config;
@@ -56,7 +67,10 @@ public:
   /// @details The derived class may provide its own `update()` method.
   void update() {
     auto &d = derived();
-    const auto dt = mhd.cfl(derived().eos);
+    auto dt = mhd.cfl(d.eos);
+    if constexpr (has_dt_limit<decltype(d.src)>::value) {
+      dt = util::min2(dt, static_cast<decltype(dt)>(d.src.dt_limit()));
+    }
     mhd.update(dt, d.eos, d.bc, d.src);
     time.update(dt);
   }
