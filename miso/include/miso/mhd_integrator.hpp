@@ -1,5 +1,8 @@
 #pragma once
 
+#include <type_traits>
+#include <utility>
+
 #include "array3d.hpp"
 #include "constants.hpp"
 #include "cuda_compat.hpp"
@@ -9,6 +12,70 @@ namespace miso {
 namespace mhd {
 
 template <typename Real, typename Backend> struct Integrator;
+
+// Source terms of the induction equation are optional: a Source type may
+// define bx, by, bz with the same signature as vx. They are 0 otherwise.
+namespace impl_source {
+template <class Source, class Real, class = void>
+struct has_bx : std::false_type {};
+template <class Source, class Real>
+struct has_bx<Source, Real,
+              std::void_t<decltype(std::declval<const Source &>().bx(
+                  std::declval<FieldsView<const Real>>(), 0, 0, 0))>>
+    : std::true_type {};
+
+template <class Source, class Real, class = void>
+struct has_by : std::false_type {};
+template <class Source, class Real>
+struct has_by<Source, Real,
+              std::void_t<decltype(std::declval<const Source &>().by(
+                  std::declval<FieldsView<const Real>>(), 0, 0, 0))>>
+    : std::true_type {};
+
+template <class Source, class Real, class = void>
+struct has_bz : std::false_type {};
+template <class Source, class Real>
+struct has_bz<Source, Real,
+              std::void_t<decltype(std::declval<const Source &>().bz(
+                  std::declval<FieldsView<const Real>>(), 0, 0, 0))>>
+    : std::true_type {};
+}  // namespace impl_source
+
+/// @brief Source term of the x induction equation (0 if not defined)
+template <typename Real, typename Source>
+__host__ __device__ inline Real source_bx(const Source &src,
+                                          const FieldsView<const Real> &qq, int i,
+                                          int j, int k) {
+  if constexpr (impl_source::has_bx<Source, Real>::value) {
+    return src.bx(qq, i, j, k);
+  } else {
+    return Real(0);
+  }
+}
+
+/// @brief Source term of the y induction equation (0 if not defined)
+template <typename Real, typename Source>
+__host__ __device__ inline Real source_by(const Source &src,
+                                          const FieldsView<const Real> &qq, int i,
+                                          int j, int k) {
+  if constexpr (impl_source::has_by<Source, Real>::value) {
+    return src.by(qq, i, j, k);
+  } else {
+    return Real(0);
+  }
+}
+
+/// @brief Source term of the z induction equation (0 if not defined)
+template <typename Real, typename Source>
+__host__ __device__ inline Real source_bz(const Source &src,
+                                          const FieldsView<const Real> &qq, int i,
+                                          int j, int k) {
+  if constexpr (impl_source::has_bz<Source, Real>::value) {
+    return src.bz(qq, i, j, k);
+  } else {
+    return Real(0);
+  }
+}
 
 /// @brief Calculate 4th order space-centered derivative for qq
 template <typename Real>
