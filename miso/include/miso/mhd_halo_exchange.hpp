@@ -55,7 +55,12 @@ template <typename Real> struct HaloExchanger<Real, backend::Host> {
     MPI_Request reqs[12];
     int req_count = 0;
 
+    // Exchange one direction at a time so that edge and corner ghost cells
+    // are filled with up-to-date values (the y/z buffers include the
+    // ghost cells received in the previous directions).
+
     // ################
+    // x-direction
     // positive x-direction
     if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_size > 1) {
       for (int i = 0; i < grid.i_margin; ++i) {
@@ -95,7 +100,40 @@ template <typename Real> struct HaloExchanger<Real, backend::Host> {
                 &reqs[req_count++]);
     }
 
+    if (req_count > 0) {
+      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+    }
+    req_count = 0;
+
+    // positive x-direction
+    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_size > 1) {
+      for (int v = 0; v < 9; ++v) {
+        for (int i = 0; i < grid.i_margin; ++i) {
+          for (int j = 0; j < grid.j_total; ++j) {
+            for (int k = 0; k < grid.k_total; ++k) {
+              (*vars[v])(grid.i_total - grid.i_margin + i, j, k) =
+                  recv_x_pos(i, j, k, v);
+            }
+          }
+        }
+      }
+    }
+
+    // negative x-direction
+    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_size > 1) {
+      for (int v = 0; v < 9; ++v) {
+        for (int i = 0; i < grid.i_margin; ++i) {
+          for (int j = 0; j < grid.j_total; ++j) {
+            for (int k = 0; k < grid.k_total; ++k) {
+              (*vars[v])(i, j, k) = recv_x_neg(i, j, k, v);
+            }
+          }
+        }
+      }
+    }
+
     // ################
+    // y-direction
     // positive y-direction
     if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_size > 1) {
       for (int i = 0; i < grid.i_total; ++i) {
@@ -135,7 +173,40 @@ template <typename Real> struct HaloExchanger<Real, backend::Host> {
                 &reqs[req_count++]);
     }
 
+    if (req_count > 0) {
+      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+    }
+    req_count = 0;
+
+    // positive y-direction
+    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_size > 1) {
+      for (int v = 0; v < 9; ++v) {
+        for (int i = 0; i < grid.i_total; ++i) {
+          for (int j = 0; j < grid.j_margin; ++j) {
+            for (int k = 0; k < grid.k_total; ++k) {
+              (*vars[v])(i, grid.j_total - grid.j_margin + j, k) =
+                  recv_y_pos(i, j, k, v);
+            }
+          }
+        }
+      }
+    }
+
+    // negative y-direction
+    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_size > 1) {
+      for (int v = 0; v < 9; ++v) {
+        for (int i = 0; i < grid.i_total; ++i) {
+          for (int j = 0; j < grid.j_margin; ++j) {
+            for (int k = 0; k < grid.k_total; ++k) {
+              (*vars[v])(i, j, k) = recv_y_neg(i, j, k, v);
+            }
+          }
+        }
+      }
+    }
+
     // ################
+    // z-direction
     // positive z-direction
     if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_size > 1) {
       for (int i = 0; i < grid.i_total; ++i) {
@@ -178,64 +249,8 @@ template <typename Real> struct HaloExchanger<Real, backend::Host> {
     if (req_count > 0) {
       MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
     }
+    req_count = 0;
 
-    // ################
-    // positive x-direction
-    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_margin; ++i) {
-          for (int j = 0; j < grid.j_total; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(grid.i_total - grid.i_margin + i, j, k) =
-                  recv_x_pos(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // negative x-direction
-    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_margin; ++i) {
-          for (int j = 0; j < grid.j_total; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, j, k) = recv_x_neg(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // ################
-    // positive y-direction
-    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_total; ++i) {
-          for (int j = 0; j < grid.j_margin; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, grid.j_total - grid.j_margin + j, k) =
-                  recv_y_pos(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // negative y-direction
-    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_total; ++i) {
-          for (int j = 0; j < grid.j_margin; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, j, k) = recv_y_neg(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // ################
     // positive z-direction
     if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_size > 1) {
       for (int v = 0; v < 9; ++v) {
@@ -463,7 +478,12 @@ template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
     MPI_Request reqs[12];
     int req_count = 0;
 
+    // Exchange one direction at a time so that edge and corner ghost cells
+    // are filled with up-to-date values (the y/z buffers include the
+    // ghost cells received in the previous directions).
+
     // ##################
+    // x-direction
     // positive x-direction
     if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
       pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
@@ -481,6 +501,45 @@ template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
                 mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
+    // negative x-direction
+    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
+      pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
+          buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
+      MPI_Isend(buff.send_x_neg,
+                grid.i_margin * grid.j_total * grid.k_total * n_fields,
+                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 200,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(buff.recv_x_neg,
+                grid.i_margin * grid.j_total * grid.k_total * n_fields,
+                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 100,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+    }
+
+    if (req_count > 0) {
+      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+    }
+    req_count = 0;
+
+    // positive x-direction
+    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
+      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
+          qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
+    }
+
+    // negative x-direction
+    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
+      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
+          qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
+    }
+
+    // ##################
+    // y-direction
     // positive y-direction
     if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
       pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
@@ -498,6 +557,45 @@ template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
                 mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
+    // negative y-direction
+    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
+      pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
+          buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
+      MPI_Isend(buff.send_y_neg,
+                grid.i_total * grid.j_margin * grid.k_total * n_fields,
+                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 400,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(buff.recv_y_neg,
+                grid.i_total * grid.j_margin * grid.k_total * n_fields,
+                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 300,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+    }
+
+    if (req_count > 0) {
+      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+    }
+    req_count = 0;
+
+    // positive y-direction
+    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
+      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
+          qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
+    }
+
+    // negative y-direction
+    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
+      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
+          qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
+      MISO_CUDA_CHECK(cudaGetLastError());
+      MISO_CUDA_CHECK(cudaDeviceSynchronize());
+    }
+
+    // ##################
+    // z-direction
     // positive z-direction
     if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
       pack_z_send<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
@@ -512,39 +610,6 @@ template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
       MPI_Irecv(buff.recv_z_pos,
                 grid.i_total * grid.j_total * grid.k_margin * n_fields,
                 mpi::data_type<Real>(), mpi_shape.z_procs_pos, 600,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    // ##################
-    // negative x-direction
-    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
-      pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-      MPI_Isend(buff.send_x_neg,
-                grid.i_margin * grid.j_total * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 200,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_x_neg,
-                grid.i_margin * grid.j_total * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 100,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    // negative y-direction
-    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
-      pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-      MPI_Isend(buff.send_y_neg,
-                grid.i_total * grid.j_margin * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 400,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_y_neg,
-                grid.i_total * grid.j_margin * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 300,
                 mpi_shape.cart_comm, &reqs[req_count++]);
     }
 
@@ -567,45 +632,12 @@ template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
     if (req_count > 0) {
       MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
     }
-
-    // ##################
-    // positive x-direction
-    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
-      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // positive y-direction
-    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
-      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
+    req_count = 0;
 
     // positive z-direction
     if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
       unpack_z_recv<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
           qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // ##################
-    // negative x-direction
-    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
-      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // negative y-direction
-    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
-      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
       MISO_CUDA_CHECK(cudaGetLastError());
       MISO_CUDA_CHECK(cudaDeviceSynchronize());
     }
