@@ -30,6 +30,27 @@ struct FullSource {
   Real dt_limit() const { return 0.1; }
 };
 
+/// @brief vx takes FieldsView<Real> (not const): a typo that must not be
+/// silently ignored
+struct MalformedSource {
+  Real vx(mhd::FieldsView<Real>, int, int, int) const { return 1; }
+};
+
+/// @brief dt_limit is not const
+struct MalformedDtLimit {
+  Real dt_limit() { return 1; }
+};
+
+// A member with the name but a wrong signature is detected as present but not
+// callable, which source_vx and ModelBase::update reject by static_assert.
+static_assert(mhd::impl_source::has_member_vx<MalformedSource>::value);
+static_assert(!mhd::impl_source::has_vx<MalformedSource, Real>::value);
+static_assert(mhd::has_member_dt_limit<MalformedDtLimit>::value);
+static_assert(!mhd::has_dt_limit<MalformedDtLimit>::value);
+// A missing member is simply absent.
+static_assert(
+    !mhd::impl_source::has_member_vx<mhd::EmptySourceTerm<Real>>::value);
+
 }  // namespace
 
 TEST_CASE("Source terms are optional" * doctest::test_suite("mhd_source")) {

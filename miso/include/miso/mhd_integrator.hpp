@@ -20,10 +20,18 @@ template <typename Real, typename Backend> struct Integrator;
 //   Real vx(...), vy(...), vz(...)  // momentum (force per unit volume)
 //   Real bx(...), by(...), bz(...)  // induction equation
 //   Real ei(...)                    // total energy (per unit volume and time)
-// A term that is not defined is not computed (treated as 0).
+// A term that is not defined is not computed (treated as 0). A member with
+// the same name that cannot be called in this way (e.g., not const, or
+// taking FieldsView<Real>) is a compile error, not silently ignored.
+// With the CUDA backend, the member functions must be __host__ __device__.
 // clang-format off
 #define MISO_MHD_DEFINE_SOURCE_TERM(name)                                      \
   namespace impl_source {                                                      \
+  template <class Source, class = void>                                        \
+  struct has_member_##name : std::false_type {};                               \
+  template <class Source>                                                      \
+  struct has_member_##name<Source, std::void_t<decltype(&Source::name)>>       \
+      : std::true_type {};                                                     \
   template <class Source, class Real, class = void>                            \
   struct has_##name : std::false_type {};                                      \
   template <class Source, class Real>                                          \
@@ -37,6 +45,10 @@ template <typename Real, typename Backend> struct Integrator;
   __host__ __device__ inline Real source_##name(                               \
       const Source &src, const FieldsView<const Real> &qq, int i, int j,       \
       int k) {                                                                 \
+    static_assert(!impl_source::has_member_##name<Source>::value ||            \
+                      impl_source::has_##name<Source, Real>::value,            \
+                  "Source::" #name " must be callable as " #name               \
+                  "(FieldsView<const Real>, int, int, int) const");            \
     if constexpr (impl_source::has_##name<Source, Real>::value) {              \
       return src.name(qq, i, j, k);                                            \
     } else {                                                                   \

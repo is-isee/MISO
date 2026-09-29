@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <type_traits>
 #include <utility>
 
@@ -12,7 +13,6 @@
 #include "mpi_util.hpp"
 #include "time.hpp"
 #include "types.hpp"
-#include "utility.hpp"
 
 namespace miso {
 namespace mhd {
@@ -39,6 +39,10 @@ template <class T, class = void> struct has_dt_limit : std::false_type {};
 template <class T>
 struct has_dt_limit<T,
                     std::void_t<decltype(std::declval<const T &>().dt_limit())>>
+    : std::true_type {};
+template <class T, class = void> struct has_member_dt_limit : std::false_type {};
+template <class T>
+struct has_member_dt_limit<T, std::void_t<decltype(&T::dt_limit)>>
     : std::true_type {};
 
 /// @brief Base class of MHD models using CRTP.
@@ -67,9 +71,18 @@ public:
   /// @details The derived class may provide its own `update()` method.
   void update() {
     auto &d = derived();
+    using Source = decltype(d.src);
+    static_assert(!has_member_dt_limit<Source>::value ||
+                      has_dt_limit<Source>::value,
+                  "Source::dt_limit must be callable as dt_limit() const");
     auto dt = mhd.cfl(d.eos);
-    if constexpr (has_dt_limit<decltype(d.src)>::value) {
-      dt = util::min2(dt, static_cast<decltype(dt)>(d.src.dt_limit()));
+    if constexpr (has_dt_limit<Source>::value) {
+      // The limit may differ between ranks: take the global minimum.
+      Real dt_src = static_cast<Real>(d.src.dt_limit());
+      Real dt_src_g;
+      MPI_Allreduce(&dt_src, &dt_src_g, 1, mpi::data_type<Real>(), MPI_MIN,
+                    mpi::comm());
+      dt = std::min(dt, dt_src_g);
     }
     mhd.update(dt, d.eos, d.bc, d.src);
     time.update(dt);
@@ -143,8 +156,15 @@ template <typename Real> struct EmptyBoundaryCondition {
 /// @brief Empty source term class (without source terms).
 /// @details All source terms are optional (see mhd_integrator.hpp): a source
 /// term class defines only the terms it needs, e.g.,
-/// `Real vx(FieldsView<const Real> qq, int i, int j, int k) const` for an
-/// external force in the x direction, and optionally `Real dt_limit() const`.
+/// @code
+/// __host__ __device__ Real vx(FieldsView<const Real> qq, int i, int j,
+///                             int k) const;  // external force in x
+/// Real dt_limit() const;  // optional upper limit of the time step
+/// @endcode
+/// The terms are called in CUDA kernels with the CUDA backend, so they must
+/// be `__host__ __device__` and use only device-accessible data (e.g., views
+/// of arrays of the backend). dt_limit() is called on the host every step,
+/// and its minimum over all MPI ranks is used.
 template <typename Real> struct EmptySourceTerm {};
 
 }  // namespace mhd
