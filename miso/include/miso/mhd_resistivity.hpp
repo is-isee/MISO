@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 #include "array3d.hpp"
 #include "config.hpp"
 #include "constants.hpp"
@@ -7,7 +9,6 @@
 #include "grid.hpp"
 #include "mhd_fields.hpp"
 #include "mpi_util.hpp"
-#include "utility.hpp"
 
 namespace miso {
 namespace mhd {
@@ -77,6 +78,9 @@ template <typename Real, typename Backend> struct ResistiveSource {
   /// @details Stability of RK4 requires lambda*dt < 2.78 with
   /// lambda <= 4*eta*sum(1/ds^2), i.e., cfl_number < 0.69.
   Real cfl_number;
+  /// @brief Cached time step limit (see dt_limit)
+  mutable Real dt_max = Real(0);
+  mutable bool dt_max_valid = false;
 
   ResistiveSource(const Grid<Real, Backend> &grid_,
                   const Array3D<Real, Backend> &eta_, Real cfl_number_)
@@ -136,24 +140,59 @@ template <typename Real, typename Backend> struct ResistiveSource {
   // clang-format on
 
   /// @brief Upper limit of the time step: cfl_number / max(eta*sum(1/ds^2))
+  /// @details The maximum is taken over all MPI ranks. It is computed on the
+  /// first call and reused, since eta usually does not change; call
+  /// update_dt_limit() after changing eta.
+  /// @throws std::runtime_error if eta is negative or not finite somewhere
   Real dt_limit() const {
+    if (!dt_max_valid) {
+      update_dt_limit();
+    }
+    return dt_max;
+  }
+
+  /// @brief Check eta and recompute the time step limit (see dt_limit)
+  void update_dt_limit() const {
     const auto eta_v = eta;  // device lambdas must not capture `this`
     const auto grid_v = grid;
-    Range3D range{{grid.i_margin, grid.i_total - grid.i_margin},
-                  {grid.j_margin, grid.j_total - grid.j_margin},
-                  {grid.k_margin, grid.k_total - grid.k_margin}};
-    const auto f = MISO_LAMBDA(int i, int j, int k) {
+
+    // eta must be finite and non-negative in all cells (incl. ghost cells)
+    Range3D all{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
+    // (reduced in Real: a CUDA reduction with another type in the same
+    // translation unit conflicts in its extern shared memory)
+    const auto invalid = MISO_LAMBDA(int i, int j, int k) {
+      const Real e = eta_v(i, j, k);
+      // false for negative values, NaN, and inf (inf - inf is NaN)
+      const bool ok = (e >= Real(0)) && (e - e == Real(0));
+      return ok ? Real(0) : Real(1);
+    };
+    const auto op_or = MISO_LAMBDA(Real a, Real b) { return a > b ? a : b; };
+    const Real n_invalid = reduce(Backend{}, all, Real(0), invalid, op_or);
+    Real n_invalid_g;
+    MPI_Allreduce(&n_invalid, &n_invalid_g, 1, mpi::data_type<Real>(), MPI_MAX,
+                  mpi::comm());
+    if (n_invalid_g > Real(0)) {
+      throw std::runtime_error(
+          "ResistiveSource: eta must be finite and non-negative.");
+    }
+
+    // max(eta*sum(1/ds^2)) over the interior cells
+    Range3D interior{{grid.i_margin, grid.i_total - grid.i_margin},
+                     {grid.j_margin, grid.j_total - grid.j_margin},
+                     {grid.k_margin, grid.k_total - grid.k_margin}};
+    const auto rate = MISO_LAMBDA(int i, int j, int k) {
       const Real s = grid_v.dxi[i] * grid_v.dxi[i] +
                      grid_v.dyi[j] * grid_v.dyi[j] +
                      grid_v.dzi[k] * grid_v.dzi[k];
       return eta_v(i, j, k) * s;
     };
-    const auto op = MISO_LAMBDA(Real a, Real b) { return util::max2(a, b); };
-    const Real rate = reduce(Backend{}, range, Real(0), f, op);
-    Real rate_g;
-    MPI_Allreduce(&rate, &rate_g, 1, mpi::data_type<Real>(), MPI_MAX,
+    const auto op_max = MISO_LAMBDA(Real a, Real b) { return a > b ? a : b; };
+    const Real rate_max = reduce(Backend{}, interior, Real(0), rate, op_max);
+    Real rate_max_g;
+    MPI_Allreduce(&rate_max, &rate_max_g, 1, mpi::data_type<Real>(), MPI_MAX,
                   mpi::comm());
-    return rate_g > Real(0) ? cfl_number / rate_g : Real(1.e10);
+    dt_max = rate_max_g > Real(0) ? cfl_number / rate_max_g : Real(1.e10);
+    dt_max_valid = true;
   }
 
 private:
