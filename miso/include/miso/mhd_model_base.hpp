@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <type_traits>
+#include <utility>
 
 #include "config.hpp"
 #include "env.hpp"
@@ -32,12 +34,25 @@ template <class T, class = void> struct has_src : std::false_type {};
 template <class T>
 struct has_src<T, std::void_t<decltype(&T::src)>> : std::true_type {};
 
+// Optional time step limit of the source term: Real dt_limit() const
+template <class T, class = void> struct has_dt_limit : std::false_type {};
+template <class T>
+struct has_dt_limit<T,
+                    std::void_t<decltype(std::declval<const T &>().dt_limit())>>
+    : std::true_type {};
+template <class T, class = void> struct has_member_dt_limit : std::false_type {};
+template <class T>
+struct has_member_dt_limit<T, std::void_t<decltype(&T::dt_limit)>>
+    : std::true_type {};
+
 /// @brief Base class of MHD models using CRTP.
 /// @details The derived class must implement the following members:
 /// - eos: equation of state
 /// - ic: initial condition
 /// - bc: boundary condition
-/// - src: source term (optional; default is no source)
+/// - src: source term. Every term (ro, vx, vy, vz, bx, by, bz, ei) and
+///   dt_limit(), the upper limit of the time step, are optional
+///   (EmptySourceTerm defines none of them).
 template <class Derived, class Real, class Backend> class ModelBase {
 public:
   Config &config;
@@ -56,7 +71,19 @@ public:
   /// @details The derived class may provide its own `update()` method.
   void update() {
     auto &d = derived();
-    const auto dt = mhd.cfl(derived().eos);
+    using Source = decltype(d.src);
+    static_assert(!has_member_dt_limit<Source>::value ||
+                      has_dt_limit<Source>::value,
+                  "Source::dt_limit must be callable as dt_limit() const");
+    auto dt = mhd.cfl(d.eos);
+    if constexpr (has_dt_limit<Source>::value) {
+      // The limit may differ between ranks: take the global minimum.
+      Real dt_src = static_cast<Real>(d.src.dt_limit());
+      Real dt_src_g;
+      MPI_Allreduce(&dt_src, &dt_src_g, 1, mpi::data_type<Real>(), MPI_MIN,
+                    mpi::comm());
+      dt = std::min(dt, dt_src_g);
+    }
     mhd.update(dt, d.eos, d.bc, d.src);
     time.update(dt);
   }
@@ -127,32 +154,18 @@ template <typename Real> struct EmptyBoundaryCondition {
 };
 
 /// @brief Empty source term class (without source terms).
-/// @details Volumetric heat / force terms are expected.
-template <typename Real> struct EmptySourceTerm {
-  /// External force: x-direction
-  __host__ __device__ inline Real vx(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: y-direction
-  __host__ __device__ inline Real vy(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External force: z-direction
-  __host__ __device__ inline Real vz(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-
-  /// External heating (energy per unit volume per unit time)
-  __host__ __device__ inline Real ei(FieldsView<const Real>, int, int,
-                                     int) const noexcept {
-    return 0.0;
-  }
-};
+/// @details All source terms are optional (see mhd_integrator.hpp): a source
+/// term class defines only the terms it needs, e.g.,
+/// @code
+/// __host__ __device__ Real vx(FieldsView<const Real> qq, int i, int j,
+///                             int k) const;  // external force in x
+/// Real dt_limit() const;  // optional upper limit of the time step
+/// @endcode
+/// The terms are called in CUDA kernels with the CUDA backend, so they must
+/// be `__host__ __device__` and use only device-accessible data (e.g., views
+/// of arrays of the backend). dt_limit() is called on the host every step,
+/// and its minimum over all MPI ranks is used.
+template <typename Real> struct EmptySourceTerm {};
 
 }  // namespace mhd
 }  // namespace miso

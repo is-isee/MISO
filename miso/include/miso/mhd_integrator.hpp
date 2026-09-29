@@ -1,5 +1,8 @@
 #pragma once
 
+#include <type_traits>
+#include <utility>
+
 #include "array3d.hpp"
 #include "constants.hpp"
 #include "cuda_compat.hpp"
@@ -9,6 +12,59 @@ namespace miso {
 namespace mhd {
 
 template <typename Real, typename Backend> struct Integrator;
+
+// Source terms are optional. A Source type may define any of the following
+// member functions, each returning the source term of the equation for the
+// named variable at cell (i, j, k):
+//   Real ro(FieldsView<const Real> qq, int i, int j, int k) const;  // mass
+//   Real vx(...), vy(...), vz(...)  // momentum (force per unit volume)
+//   Real bx(...), by(...), bz(...)  // induction equation
+//   Real ei(...)                    // total energy (per unit volume and time)
+// A term that is not defined is not computed (treated as 0). A member with
+// the same name that cannot be called in this way (e.g., not const, or
+// taking FieldsView<Real>) is a compile error, not silently ignored.
+// With the CUDA backend, the member functions must be __host__ __device__.
+// clang-format off
+#define MISO_MHD_DEFINE_SOURCE_TERM(name)                                      \
+  namespace impl_source {                                                      \
+  template <class Source, class = void>                                        \
+  struct has_member_##name : std::false_type {};                               \
+  template <class Source>                                                      \
+  struct has_member_##name<Source, std::void_t<decltype(&Source::name)>>       \
+      : std::true_type {};                                                     \
+  template <class Source, class Real, class = void>                            \
+  struct has_##name : std::false_type {};                                      \
+  template <class Source, class Real>                                          \
+  struct has_##name<Source, Real,                                              \
+                    std::void_t<decltype(std::declval<const Source &>().name(  \
+                        std::declval<FieldsView<const Real>>(), 0, 0, 0))>>    \
+      : std::true_type {};                                                     \
+  }                                                                            \
+  /** @brief Source term of `name` (0 if the Source does not define it) */     \
+  template <typename Real, typename Source>                                    \
+  __host__ __device__ inline Real source_##name(                               \
+      const Source &src, const FieldsView<const Real> &qq, int i, int j,       \
+      int k) {                                                                 \
+    static_assert(!impl_source::has_member_##name<Source>::value ||            \
+                      impl_source::has_##name<Source, Real>::value,            \
+                  "Source::" #name " must be callable as " #name               \
+                  "(FieldsView<const Real>, int, int, int) const");            \
+    if constexpr (impl_source::has_##name<Source, Real>::value) {              \
+      return src.name(qq, i, j, k);                                            \
+    } else {                                                                   \
+      return Real(0);                                                          \
+    }                                                                          \
+  }
+MISO_MHD_DEFINE_SOURCE_TERM(ro)
+MISO_MHD_DEFINE_SOURCE_TERM(vx)
+MISO_MHD_DEFINE_SOURCE_TERM(vy)
+MISO_MHD_DEFINE_SOURCE_TERM(vz)
+MISO_MHD_DEFINE_SOURCE_TERM(bx)
+MISO_MHD_DEFINE_SOURCE_TERM(by)
+MISO_MHD_DEFINE_SOURCE_TERM(bz)
+MISO_MHD_DEFINE_SOURCE_TERM(ei)
+#undef MISO_MHD_DEFINE_SOURCE_TERM
+// clang-format on
 
 /// @brief Calculate 4th order space-centered derivative for qq
 template <typename Real>

@@ -60,10 +60,11 @@ __device__ inline bool compute_index_within_margin(int &i, int &j, int &k,
            k < grid.k_margin || k >= grid.k_total - grid.k_margin);
 }
 
-template <typename Real>
-__global__ void
-update_ro_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridView<const Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_ro_kernel(FieldsView<const Real> qq_orgn,
+                                 FieldsView<const Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Source src,
+                                 GridView<const Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -73,7 +74,8 @@ update_ro_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
   qq_rslt.ro(i, j, k) = qq_orgn.ro(i, j, k) + dt * (
       - space_centered_4th(qq_argm.ro, qq_argm.vx, grid.dxi[i], i, j, k, grid.is, 0, 0)
       - space_centered_4th(qq_argm.ro, qq_argm.vy, grid.dyi[j], i, j, k, 0, grid.js, 0)
-      - space_centered_4th(qq_argm.ro, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks));
+      - space_centered_4th(qq_argm.ro, qq_argm.vz, grid.dzi[k], i, j, k, 0, 0, grid.ks)
+      + source_ro(src, qq_argm, i, j, k));
   // clang-format on
 }
 
@@ -100,7 +102,7 @@ update_vx_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
             + pii4<Real> * (+ space_centered_4th(qq_argm.bx, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
                             + space_centered_4th(qq_argm.bx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
                             + space_centered_4th(qq_argm.bx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks))
-            + src.vx(qq_argm, i, j, k)
+            + source_vx(src, qq_argm, i, j, k)
             )) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
@@ -128,7 +130,7 @@ update_vy_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
             + pii4<Real> * (+ space_centered_4th(qq_argm.by, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
                             + space_centered_4th(qq_argm.by, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
                             + space_centered_4th(qq_argm.by, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks))
-            + src.vy(qq_argm, i, j, k)
+            + source_vy(src, qq_argm, i, j, k)
             )) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
@@ -156,15 +158,16 @@ update_vz_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
              + pii4<Real> * (+ space_centered_4th(qq_argm.bz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
                              + space_centered_4th(qq_argm.bz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
                              + space_centered_4th(qq_argm.bz, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks))
-             + src.vz(qq_argm, i, j, k)
+             + source_vz(src, qq_argm, i, j, k)
           )) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
 
-template <typename Real>
-__global__ void
-update_bx_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridView<const Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_bx_kernel(FieldsView<const Real> qq_orgn,
+                                 FieldsView<const Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Source src,
+                                 GridView<const Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -177,14 +180,16 @@ update_bx_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
             - space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dzi[k], i, j, k, 0, 0, grid.ks)
             + space_centered_4th(qq_argm.vx, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
             + space_centered_4th(qq_argm.vx, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks)
-            - space_centered_4th(qq_argm.ph, grid.dxi[i], i, j, k, grid.is, 0, 0));
+            - space_centered_4th(qq_argm.ph, grid.dxi[i], i, j, k, grid.is, 0, 0)
+            + source_bx(src, qq_argm, i, j, k));
   // clang-format on
 }
 
-template <typename Real>
-__global__ void
-update_by_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridView<const Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_by_kernel(FieldsView<const Real> qq_orgn,
+                                 FieldsView<const Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Source src,
+                                 GridView<const Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -197,14 +202,16 @@ update_by_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
             - space_centered_4th(qq_argm.vz, qq_argm.by, grid.dzi[k], i, j, k, 0, 0, grid.ks)
             + space_centered_4th(qq_argm.vy, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
             + space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks)
-            - space_centered_4th(qq_argm.ph, grid.dyi[j], i, j, k, 0, grid.js, 0));
+            - space_centered_4th(qq_argm.ph, grid.dyi[j], i, j, k, 0, grid.js, 0)
+            + source_by(src, qq_argm, i, j, k));
   // clang-format on
 }
 
-template <typename Real>
-__global__ void
-update_bz_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
-                 FieldsView<Real> qq_rslt, GridView<const Real> grid, Real dt) {
+template <typename Real, typename Source>
+__global__ void update_bz_kernel(FieldsView<const Real> qq_orgn,
+                                 FieldsView<const Real> qq_argm,
+                                 FieldsView<Real> qq_rslt, Source src,
+                                 GridView<const Real> grid, Real dt) {
   int i, j, k;
   if (!compute_index_within_margin(i, j, k, grid))
     return;
@@ -217,7 +224,8 @@ update_bz_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
             - space_centered_4th(qq_argm.vy, qq_argm.bz, grid.dyi[j], i, j, k, 0, grid.js, 0)
             + space_centered_4th(qq_argm.vz, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
             + space_centered_4th(qq_argm.vz, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
-            - space_centered_4th(qq_argm.ph, grid.dzi[k], i, j, k, 0, 0, grid.ks));
+            - space_centered_4th(qq_argm.ph, grid.dzi[k], i, j, k, 0, 0, grid.ks)
+            + source_bz(src, qq_argm, i, j, k));
   // clang-format on
 }
 
@@ -283,7 +291,7 @@ update_ei_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
            (+ qq_rslt.bx(i, j, k) * qq_rslt.bx(i, j, k)
             + qq_rslt.by(i, j, k) * qq_rslt.by(i, j, k)
             + qq_rslt.bz(i, j, k) * qq_rslt.bz(i, j, k))
-       + dt * src.ei(qq_argm, i, j, k)
+       + dt * source_ei(src, qq_argm, i, j, k)
       ) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
@@ -350,7 +358,7 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ro_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), cgrid, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), src, cgrid, dt);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_vx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
@@ -369,15 +377,15 @@ template <typename Real> struct Integrator<Real, backend::CUDA> {
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_bx_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), cgrid, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), src, cgrid, dt);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_by_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), cgrid, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), src, cgrid, dt);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_bz_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
-        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), cgrid, dt);
+        qq_orgn.view(), qq_argm.view(), qq_rslt.view(), src, cgrid, dt);
     MISO_CUDA_CHECK(cudaGetLastError());
 
     update_ph_kernel<Real><<<cu_shape.grid_dim, cu_shape.block_dim>>>(
