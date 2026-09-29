@@ -16,7 +16,16 @@ function(miso_add_tests pattern suffix)
         target_link_libraries(${target_name} PRIVATE MISO::MISO
                                                      doctest::doctest)
 
+        # Number of MPI processes (the configs of hd1d_shock_tube use 1 process)
         set(mpi_num_procs 2)
+        if(test_name STREQUAL "test_hd1d_shock_tube")
+            set(mpi_num_procs 1)
+            target_compile_definitions(
+                ${target_name}
+                PRIVATE
+                    HD1D_SHOCK_TUBE_CONFIG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test_hd1d_shock_tube/config"
+            )
+        endif()
         set(mpi_cmd ${CMAKE_SOURCE_DIR}/shared/mpiexec_with_env.sh
                     ${MPIEXEC_NUMPROC_FLAG} ${mpi_num_procs})
         add_test(NAME ${target_name} COMMAND ${mpi_cmd}
