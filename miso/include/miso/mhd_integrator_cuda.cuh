@@ -283,7 +283,7 @@ update_ei_kernel(FieldsView<const Real> qq_orgn, FieldsView<const Real> qq_argm,
            (+ qq_rslt.bx(i, j, k) * qq_rslt.bx(i, j, k)
             + qq_rslt.by(i, j, k) * qq_rslt.by(i, j, k)
             + qq_rslt.bz(i, j, k) * qq_rslt.bz(i, j, k))
-       + src.ei(qq_argm, i, j, k)
+       + dt * src.ei(qq_argm, i, j, k)
       ) / qq_rslt.ro(i, j, k);
   // clang-format on
 }
