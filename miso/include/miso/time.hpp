@@ -112,7 +112,9 @@ template <typename Real> struct Time {
       if (!ifs_step.is_open()) {
         throw std::runtime_error("Failed to open file: " + n_output_filepath());
       }
-      ifs_step >> n_output;
+      if (!(ifs_step >> n_output)) {
+        throw std::runtime_error("Failed to read file: " + n_output_filepath());
+      }
 
       const std::string fname = time_filepath(n_output);
       std::ifstream ifs(fname);
@@ -120,9 +122,9 @@ template <typename Real> struct Time {
         throw std::runtime_error("Failed to open time file: " + fname);
       }
 
-      ifs >> time;
-      ifs >> n_output;
-      ifs >> n_step;
+      if (!(ifs >> time) || !(ifs >> n_output) || !(ifs >> n_step)) {
+        throw std::runtime_error("Failed to read time file: " + fname);
+      }
     }
 
     MPI_Bcast(&time, 1, mpi::data_type<Real>(), 0, mpi::comm());
