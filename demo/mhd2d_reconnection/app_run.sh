@@ -22,12 +22,13 @@ set -a
 source "${THIS_DIR}"/../shared/openmpi_config.env
 set +a
 
-# Run the same problem in the zx, xy, and yz planes
-for PLANE in zx xy yz; do
-    CONFIG_PATH="${THIS_DIR}/config/config_${PLANE}.yaml"
-    if [[ ! -f "${CONFIG_PATH}" ]]; then
-        echo "Error: Config file not found at ${CONFIG_PATH}"
-        exit 1
-    fi
-    (set -x; mpiexec -np ${NUM_PROCS} "${APP_NAME}" --config="${CONFIG_PATH}")
-done
+# Config file path
+CONFIG_PATH="${THIS_DIR}/config.yaml"
+if [[ ! -f "${CONFIG_PATH}" ]]; then
+    echo "Error: Config file not found at ${CONFIG_PATH}"
+    exit 1
+fi
+
+# Run command
+set -x
+mpiexec -np ${NUM_PROCS} "${APP_NAME}" --config="${CONFIG_PATH}"

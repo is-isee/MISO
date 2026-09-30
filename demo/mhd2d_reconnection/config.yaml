@@ -1,12 +1,12 @@
 io:
-  save_dir: ../data_zx/
+  save_dir: data/
   continue: false
 
 time:
   tend: 250.0
   dt_output: 10.0
 
-# Paper's (x, y, z) = MISO's (x, y, z)
+# The paper uses [0, 200] x [0, 150] with 12000 x 9000 cells.
 grid:
   i_size: 1500
   j_size: 1
