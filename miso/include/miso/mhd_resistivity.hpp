@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <stdexcept>
 
 #include "array3d.hpp"
@@ -8,7 +9,6 @@
 #include "execution.hpp"
 #include "grid.hpp"
 #include "mhd_fields.hpp"
-#include "mpi_util.hpp"
 
 namespace miso {
 namespace mhd {
@@ -43,6 +43,32 @@ __host__ __device__ inline Real resistive_flux(
   return eta_f * (normal - tangential);
 }
 
+namespace impl_resistivity {
+
+/// @brief Reduction with a persistent workspace (CUDA) or none (host)
+template <typename Real, typename Backend> struct ReduceWorkspace {
+  template <typename F, typename Op>
+  Real reduce(Range3D range, Real init, F f, Op op) const {
+    return miso::reduce(Backend{}, range, init, f, op);
+  }
+};
+
+#ifdef __CUDACC__
+/// @details The helper is held by shared_ptr so that ResistiveSource stays
+/// cheap to copy (it is passed to CUDA kernels by value); the helper is used
+/// on the host only.
+template <typename Real> struct ReduceWorkspace<Real, backend::CUDA> {
+  std::shared_ptr<ReduceHelper<Real>> helper =
+      std::make_shared<ReduceHelper<Real>>();
+  template <typename F, typename Op>
+  Real reduce(Range3D range, Real init, F f, Op op) const {
+    return miso::reduce(backend::CUDA{}, range, init, f, op, *helper);
+  }
+};
+#endif  // __CUDACC__
+
+}  // namespace impl_resistivity
+
 /// @brief Explicit resistivity (magnetic diffusion) as a source term.
 /// @details Adds -curl(eta curl B) to the induction equation and the
 /// corresponding energy flux div((1/4pi) eta (curl B) x B) to the energy
@@ -54,10 +80,10 @@ __host__ __device__ inline Real resistive_flux(
 /// Not included by <miso/mhd.hpp>; include <miso/mhd_resistivity.hpp>
 /// explicitly.
 ///
-/// This struct only holds views: the diffusivity array `eta` (at cell
-/// centers, including ghost cells) is owned by the caller and must outlive
-/// this object. Use it as `src` of a model, or call its member functions from
-/// a user-defined source term to combine it with other sources.
+/// This struct holds views: the diffusivity array `eta` (at cell centers,
+/// including ghost cells) is owned by the caller and must outlive this
+/// object. eta may be changed during the run (e.g., time-dependent eta);
+/// dt_limit() recomputes the limit every step.
 /// @code
 /// struct Model : public mhd::ModelBase<Model, Real, Backend> {
 ///   ...
@@ -66,6 +92,24 @@ __host__ __device__ inline Real resistive_flux(
 ///   Model(Config &config)
 ///       : ModelBase(config), ..., eta(make_eta(...)),
 ///         src(config, mhd.grid, eta) {}
+/// };
+/// @endcode
+///
+/// To combine it with other source terms, hold it in a user-defined source
+/// term and forward bx, by, bz, ei **and dt_limit()**. Without dt_limit(),
+/// neither the stability limit of the diffusion nor the check of eta is
+/// applied, and no error is reported.
+/// @code
+/// struct MySource {
+///   mhd::ResistiveSource<Real, Backend> resistivity;
+///   __host__ __device__ Real vz(FieldsView<const Real> qq, int i, int j,
+///                               int k) const { return -g * qq.ro(i, j, k); }
+///   __host__ __device__ Real bx(FieldsView<const Real> qq, int i, int j,
+///                               int k) const {
+///     return resistivity.bx(qq, i, j, k);
+///   }
+///   ...  // by, bz, ei in the same way
+///   Real dt_limit() const { return resistivity.dt_limit(); }
 /// };
 /// @endcode
 /// @note Ghost cells of the MHD fields including edges and corners are used.
@@ -78,14 +122,20 @@ template <typename Real, typename Backend> struct ResistiveSource {
   /// @details Stability of RK4 requires lambda*dt < 2.78 with
   /// lambda <= 4*eta*sum(1/ds^2), i.e., cfl_number < 0.69.
   Real cfl_number;
-  /// @brief Cached time step limit (see dt_limit)
-  mutable Real dt_max = Real(0);
-  mutable bool dt_max_valid = false;
+  /// @brief Workspace of the reduction in dt_limit() (used on the host only)
+  impl_resistivity::ReduceWorkspace<Real, Backend> workspace;
 
+  /// @throws std::runtime_error if eta is negative or not finite somewhere
+  /// on this rank
   ResistiveSource(const Grid<Real, Backend> &grid_,
                   const Array3D<Real, Backend> &eta_, Real cfl_number_)
       : grid(grid_.const_view()), eta(eta_.const_view()),
-        cfl_number(cfl_number_) {}
+        cfl_number(cfl_number_) {
+    if (max_rate() < Real(0)) {
+      throw std::runtime_error(
+          "ResistiveSource: eta must be finite and non-negative.");
+    }
+  }
 
   /// @brief Construct with `mhd.resistivity.cfl_number` in the config
   ResistiveSource(const Config &config, const Grid<Real, Backend> &grid_,
@@ -139,60 +189,49 @@ template <typename Real, typename Backend> struct ResistiveSource {
   }
   // clang-format on
 
-  /// @brief Upper limit of the time step: cfl_number / max(eta*sum(1/ds^2))
-  /// @details The maximum is taken over all MPI ranks. It is computed on the
-  /// first call and reused, since eta usually does not change; call
-  /// update_dt_limit() after changing eta.
-  /// @throws std::runtime_error if eta is negative or not finite somewhere
+  /// @brief Upper limit of the time step on this rank:
+  /// cfl_number / max(eta*sum(1/ds^2)).
+  /// @details Recomputed at every call, so that a change of eta is followed.
+  /// ModelBase::update takes the minimum over all ranks.
+  /// @return -1 if eta is negative or not finite somewhere on this rank
+  /// (ModelBase::update then throws on every rank)
   Real dt_limit() const {
-    if (!dt_max_valid) {
-      update_dt_limit();
+    const Real rate = max_rate();
+    if (rate < Real(0)) {
+      return Real(-1);
     }
-    return dt_max;
+    return rate > Real(0) ? cfl_number / rate : Real(1.e10);
   }
 
-  /// @brief Check eta and recompute the time step limit (see dt_limit)
-  void update_dt_limit() const {
+  /// @brief max(eta*sum(1/ds^2)) over the interior cells of this rank, or -1
+  /// if eta is negative or not finite in any cell (including ghost cells)
+  /// @note Public because nvcc does not allow extended device lambdas in
+  /// private member functions.
+  Real max_rate() const {
     const auto eta_v = eta;  // device lambdas must not capture `this`
     const auto grid_v = grid;
-
-    // eta must be finite and non-negative in all cells (incl. ghost cells)
     Range3D all{{0, grid.i_total}, {0, grid.j_total}, {0, grid.k_total}};
-    // (reduced in Real: a CUDA reduction with another type in the same
-    // translation unit conflicts in its extern shared memory)
-    const auto invalid = MISO_LAMBDA(int i, int j, int k) {
+    const auto f = MISO_LAMBDA(int i, int j, int k) {
       const Real e = eta_v(i, j, k);
       // false for negative values, NaN, and inf (inf - inf is NaN)
-      const bool ok = (e >= Real(0)) && (e - e == Real(0));
-      return ok ? Real(0) : Real(1);
+      if (!((e >= Real(0)) && (e - e == Real(0)))) {
+        return Real(-1);
+      }
+      const bool interior =
+          i >= grid_v.i_margin && i < grid_v.i_total - grid_v.i_margin &&
+          j >= grid_v.j_margin && j < grid_v.j_total - grid_v.j_margin &&
+          k >= grid_v.k_margin && k < grid_v.k_total - grid_v.k_margin;
+      if (!interior) {
+        return Real(0);
+      }
+      return e * (grid_v.dxi[i] * grid_v.dxi[i] + grid_v.dyi[j] * grid_v.dyi[j] +
+                  grid_v.dzi[k] * grid_v.dzi[k]);
     };
-    const auto op_or = MISO_LAMBDA(Real a, Real b) { return a > b ? a : b; };
-    const Real n_invalid = reduce(Backend{}, all, Real(0), invalid, op_or);
-    Real n_invalid_g;
-    MPI_Allreduce(&n_invalid, &n_invalid_g, 1, mpi::data_type<Real>(), MPI_MAX,
-                  mpi::comm());
-    if (n_invalid_g > Real(0)) {
-      throw std::runtime_error(
-          "ResistiveSource: eta must be finite and non-negative.");
-    }
-
-    // max(eta*sum(1/ds^2)) over the interior cells
-    Range3D interior{{grid.i_margin, grid.i_total - grid.i_margin},
-                     {grid.j_margin, grid.j_total - grid.j_margin},
-                     {grid.k_margin, grid.k_total - grid.k_margin}};
-    const auto rate = MISO_LAMBDA(int i, int j, int k) {
-      const Real s = grid_v.dxi[i] * grid_v.dxi[i] +
-                     grid_v.dyi[j] * grid_v.dyi[j] +
-                     grid_v.dzi[k] * grid_v.dzi[k];
-      return eta_v(i, j, k) * s;
+    // -1 (invalid) wins over any rate
+    const auto op = MISO_LAMBDA(Real a, Real b) {
+      return (a < Real(0) || b < Real(0)) ? Real(-1) : (a > b ? a : b);
     };
-    const auto op_max = MISO_LAMBDA(Real a, Real b) { return a > b ? a : b; };
-    const Real rate_max = reduce(Backend{}, interior, Real(0), rate, op_max);
-    Real rate_max_g;
-    MPI_Allreduce(&rate_max, &rate_max_g, 1, mpi::data_type<Real>(), MPI_MAX,
-                  mpi::comm());
-    dt_max = rate_max_g > Real(0) ? cfl_number / rate_max_g : Real(1.e10);
-    dt_max_valid = true;
+    return workspace.reduce(all, Real(0), f, op);
   }
 
 private:

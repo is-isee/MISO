@@ -9,3 +9,8 @@ TEST_CASE("ResistiveSource::dt_limit with MPI (CUDA)" *
           doctest::test_suite("resistivity")) {
   check_dt_limit<backend::CUDA>();
 }
+
+TEST_CASE("ModelBase::update with ResistiveSource (CUDA)" *
+          doctest::test_suite("resistivity")) {
+  check_model_update<backend::CUDA>();
+}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -77,11 +78,22 @@ public:
                   "Source::dt_limit must be callable as dt_limit() const");
     auto dt = mhd.cfl(d.eos);
     if constexpr (has_dt_limit<Source>::value) {
-      // The limit may differ between ranks: take the global minimum.
+      // dt_limit() returns the limit of this rank: take the global minimum.
+      // A non-positive (or NaN) value means that the source term is in an
+      // invalid state; it is reported on every rank, so that no rank is left
+      // waiting in a collective communication.
       Real dt_src = static_cast<Real>(d.src.dt_limit());
+      if (!(dt_src > Real(0))) {
+        dt_src = Real(-1);
+      }
       Real dt_src_g;
       MPI_Allreduce(&dt_src, &dt_src_g, 1, mpi::data_type<Real>(), MPI_MIN,
                     mpi::comm());
+      if (dt_src_g <= Real(0)) {
+        throw std::runtime_error(
+            "ModelBase::update: dt_limit() of the source term is not "
+            "positive on some rank.");
+      }
       dt = std::min(dt, dt_src_g);
     }
     mhd.update(dt, d.eos, d.bc, d.src);
@@ -163,8 +175,9 @@ template <typename Real> struct EmptyBoundaryCondition {
 /// @endcode
 /// The terms are called in CUDA kernels with the CUDA backend, so they must
 /// be `__host__ __device__` and use only device-accessible data (e.g., views
-/// of arrays of the backend). dt_limit() is called on the host every step,
-/// and its minimum over all MPI ranks is used.
+/// of arrays of the backend). dt_limit() is called on the host every step and
+/// returns the limit of the rank; the minimum over all MPI ranks is used. A
+/// non-positive value on any rank throws std::runtime_error on every rank.
 template <typename Real> struct EmptySourceTerm {};
 
 }  // namespace mhd

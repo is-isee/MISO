@@ -9,3 +9,8 @@ TEST_CASE("ResistiveSource::dt_limit with MPI (Host)" *
           doctest::test_suite("resistivity")) {
   check_dt_limit<backend::Host>();
 }
+
+TEST_CASE("ModelBase::update with ResistiveSource (Host)" *
+          doctest::test_suite("resistivity")) {
+  check_model_update<backend::Host>();
+}
