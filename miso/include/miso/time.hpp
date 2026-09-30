@@ -47,8 +47,12 @@ template <typename Real> struct Time {
         dt_output(config["time"]["dt_output"].as<Real>()),
         n_output_digits(config["io"]["n_output_digits"].as<int>()),
         io_enabled(config.yaml_obj["io"]["enabled"].as<bool>()) {
-    assert(tend > 0);
-    assert(dt_output > 0);
+    if (!(tend > 0)) {
+      throw std::runtime_error("time.tend must be positive.");
+    }
+    if (!(dt_output > 0)) {
+      throw std::runtime_error("time.dt_output must be positive.");
+    }
 
     initialize();
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 #include "array3d.hpp"
 #include "constants.hpp"
 #include "grid.hpp"
@@ -42,8 +44,14 @@ template <typename Real> struct ArtificialViscosity {
     cs_fac = config["mhd"]["artificial_viscosity"]["cs_fac"].as<Real>();
     ca_fac = config["mhd"]["artificial_viscosity"]["ca_fac"].as<Real>();
     vv_fac = config["mhd"]["artificial_viscosity"]["vv_fac"].as<Real>();
-    assert(ep >= 0);
-    assert(fh >= 0);
+    if (!(ep >= 0)) {
+      throw std::runtime_error(
+          "mhd.artificial_viscosity.ep must be non-negative.");
+    }
+    if (!(fh >= 0)) {
+      throw std::runtime_error(
+          "mhd.artificial_viscosity.fh must be non-negative.");
+    }
   }
 
   /// @brief Evaluate the characteristic velocity
