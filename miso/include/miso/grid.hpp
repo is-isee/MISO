@@ -423,6 +423,10 @@ template <typename Real> struct Grid<Real, backend::Host> {
       write_array(x_grid.s);
       write_array(y_grid.s);
       write_array(z_grid.s);
+      ofs.close();
+      if (!ofs) {
+        throw std::runtime_error("Failed to write file: " + filename);
+      }
     }
   }
 

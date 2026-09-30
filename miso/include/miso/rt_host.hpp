@@ -200,6 +200,9 @@ template <typename Real> struct RT {
     write_array3d(abs_coeff);
     write_array4d(rint);
     ofs.close();
+    if (!ofs) {
+      throw std::runtime_error("Failed to write file: " + file_path);
+    }
   };
 
   void load(const std::string &file_path) {

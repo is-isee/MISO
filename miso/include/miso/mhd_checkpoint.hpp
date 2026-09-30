@@ -65,6 +65,10 @@ template <typename Real> struct Checkpoint {
     write_array(qq.bz);
     write_array(qq.ei);
     write_array(qq.ph);
+    ofs.close();
+    if (!ofs) {
+      throw std::runtime_error("Failed to write file: " + filename);
+    }
   };
 
   template <typename Backend>

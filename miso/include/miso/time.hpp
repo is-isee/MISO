@@ -96,12 +96,22 @@ template <typename Real> struct Time {
       ofs << time << "\n";
       ofs << n_output << "\n";
       ofs << n_step << "\n";
+      // 時刻ファイルの書き出しを確かめてから n_output.txt を進める
+      // (壊れたチェックポイントを指さないように)
+      ofs.close();
+      if (!ofs) {
+        throw std::runtime_error("Failed to write file: " + fname);
+      }
 
       std::ofstream ofs_step(n_output_filepath());
       if (!ofs_step.is_open()) {
         throw std::runtime_error("Failed to open file: " + n_output_filepath());
       }
       ofs_step << n_output << "\n";
+      ofs_step.close();
+      if (!ofs_step) {
+        throw std::runtime_error("Failed to write file: " + n_output_filepath());
+      }
     }
   }
 
