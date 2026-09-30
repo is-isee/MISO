@@ -1,0 +1,44 @@
+io:
+  save_dir: ../data_yz/
+  continue: false
+
+time:
+  tend: 250.0
+  dt_output: 10.0
+
+# Paper's (x, y, z) = MISO's (z, x, y)
+grid:
+  i_size: 1
+  j_size: 750
+  k_size: 1000
+  margin: 2
+  x_min: 0.0
+  x_max: 1.0
+  y_min: 0.0
+  y_max: 150.0
+  z_min: 0.0
+  z_max: 200.0
+
+mpi:
+  x_procs: 1
+  y_procs: 1
+  z_procs: 2
+
+domain:
+  periodic:
+    x: false
+    y: false
+    z: false
+
+mhd:
+  cfl_number: 0.5
+
+eos:
+  gm: 1.6666666666666667
+
+# Zenitani (2015): run 1 (beta_up = 0.1), run 2 (beta_up = 0.2)
+reconnection:
+  beta_up: 0.2
+  eta0: 0.001
+  eta1: 0.016666666666666666
+  a_pert: 0.06
