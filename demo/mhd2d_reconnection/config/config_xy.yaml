@@ -8,14 +8,14 @@ time:
 
 # Paper's (x, y, z) = MISO's (y, z, x)
 grid:
-  i_size: 250
-  j_size: 1000
+  i_size: 150
+  j_size: 750
   k_size: 1
   margin: 2
   x_min: 0.0
-  x_max: 50.0
+  x_max: 30.0
   y_min: 0.0
-  y_max: 200.0
+  y_max: 150.0
   z_min: 0.0
   z_max: 1.0
 
