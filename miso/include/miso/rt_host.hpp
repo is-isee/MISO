@@ -218,8 +218,11 @@ template <typename Real> struct RT {
       ifs.read(reinterpret_cast<char *>(arr.data()), sizeof(Real) * arr.size());
     };
 
-    int num_rays;
+    int num_rays = 0;
     ifs.read(reinterpret_cast<char *>(&num_rays), sizeof(int));
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + file_path);
+    }
     if (num_rays != ang_quad.num_rays) {
       throw std::runtime_error("RT file num_rays does not match: " + file_path);
     }
@@ -230,6 +233,9 @@ template <typename Real> struct RT {
     read_array3d(src_func);
     read_array3d(abs_coeff);
     read_array4d(rint);
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + file_path);
+    }
     ifs.close();
   };
 

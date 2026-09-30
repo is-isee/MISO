@@ -78,8 +78,11 @@ template <typename Real> struct Checkpoint {
       throw std::runtime_error("Failed to open file: " + filename);
     }
 
-    std::uint32_t elem_size;
+    std::uint32_t elem_size = 0;
     ifs.read(reinterpret_cast<char *>(&elem_size), sizeof(std::uint32_t));
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + filename);
+    }
     if (elem_size != sizeof(Real)) {
       throw std::runtime_error(
           "Checkpoint file element size does not match Real type size.");
@@ -97,6 +100,9 @@ template <typename Real> struct Checkpoint {
     read_array(qq.bz);
     read_array(qq.ei);
     read_array(qq.ph);
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + filename);
+    }
 
     qq_.copy_from(qq);
   };
