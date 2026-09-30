@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.18)
 project(MISO)
 
-set(CMAKE_BUILD_TYPE
-    Release
-    CACHE STRING "Choose a type of build.")
+# Default to Release. project() has already created an empty cache entry, so a
+# plain set(... CACHE) would be ignored; FORCE only when nothing was specified.
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE
+        Release
+        CACHE STRING "Choose a type of build." FORCE)
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

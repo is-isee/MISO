@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <exception>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -404,9 +405,12 @@ template <typename Real> struct Grid<Real, backend::Host> {
       auto z_grid = AxisGrid<Real>(k_size_g, margin, 0, z_provider);
 
       // Save global grid to a binary file
-      std::ofstream ofs((fs::path(config.save_dir) / "grid.bin").string(),
-                        std::ios::binary);
-      assert(ofs.is_open());
+      const std::string filename =
+          (fs::path(config.save_dir) / "grid.bin").string();
+      std::ofstream ofs(filename, std::ios::binary);
+      if (!ofs.is_open()) {
+        throw std::runtime_error("Failed to open file: " + filename);
+      }
 
       constexpr std::uint32_t elem_size = sizeof(Real);
       ofs.write(reinterpret_cast<const char *>(&elem_size),
@@ -419,6 +423,10 @@ template <typename Real> struct Grid<Real, backend::Host> {
       write_array(x_grid.s);
       write_array(y_grid.s);
       write_array(z_grid.s);
+      ofs.close();
+      if (!ofs) {
+        throw std::runtime_error("Failed to write file: " + filename);
+      }
     }
   }
 

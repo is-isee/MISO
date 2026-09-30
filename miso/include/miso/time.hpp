@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <filesystem>
+#include <stdexcept>
 
 // header for std::cout, std::fixed, std::setprecision, std::setw
 #include <iomanip>
@@ -46,8 +47,12 @@ template <typename Real> struct Time {
         dt_output(config["time"]["dt_output"].as<Real>()),
         n_output_digits(config["io"]["n_output_digits"].as<int>()),
         io_enabled(config.yaml_obj["io"]["enabled"].as<bool>()) {
-    assert(tend > 0);
-    assert(dt_output > 0);
+    if (!(tend > 0)) {
+      throw std::runtime_error("time.tend must be positive.");
+    }
+    if (!(dt_output > 0)) {
+      throw std::runtime_error("time.dt_output must be positive.");
+    }
 
     initialize();
 
@@ -85,14 +90,28 @@ template <typename Real> struct Time {
     if (mpi::is_root()) {
       const std::string fname = time_filepath(n_output);
       std::ofstream ofs(fname);
-      assert(ofs.is_open());
+      if (!ofs.is_open()) {
+        throw std::runtime_error("Failed to open file: " + fname);
+      }
       ofs << time << "\n";
       ofs << n_output << "\n";
       ofs << n_step << "\n";
+      // 時刻ファイルの書き出しを確かめてから n_output.txt を進める
+      // (壊れたチェックポイントを指さないように)
+      ofs.close();
+      if (!ofs) {
+        throw std::runtime_error("Failed to write file: " + fname);
+      }
 
       std::ofstream ofs_step(n_output_filepath());
-      assert(ofs_step.is_open());
+      if (!ofs_step.is_open()) {
+        throw std::runtime_error("Failed to open file: " + n_output_filepath());
+      }
       ofs_step << n_output << "\n";
+      ofs_step.close();
+      if (!ofs_step) {
+        throw std::runtime_error("Failed to write file: " + n_output_filepath());
+      }
     }
   }
 
@@ -104,7 +123,12 @@ template <typename Real> struct Time {
     }
     if (mpi::is_root()) {
       std::ifstream ifs_step(n_output_filepath());
-      ifs_step >> n_output;
+      if (!ifs_step.is_open()) {
+        throw std::runtime_error("Failed to open file: " + n_output_filepath());
+      }
+      if (!(ifs_step >> n_output)) {
+        throw std::runtime_error("Failed to read file: " + n_output_filepath());
+      }
 
       const std::string fname = time_filepath(n_output);
       std::ifstream ifs(fname);
@@ -112,9 +136,9 @@ template <typename Real> struct Time {
         throw std::runtime_error("Failed to open time file: " + fname);
       }
 
-      ifs >> time;
-      ifs >> n_output;
-      ifs >> n_step;
+      if (!(ifs >> time) || !(ifs >> n_output) || !(ifs >> n_step)) {
+        throw std::runtime_error("Failed to read time file: " + fname);
+      }
     }
 
     MPI_Bcast(&time, 1, mpi::data_type<Real>(), 0, mpi::comm());

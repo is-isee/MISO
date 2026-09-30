@@ -22,8 +22,35 @@ jobs:
           fi
           echo "Checking ${#files[@]} files"
           clang-format --dry-run --Werror -fallback-style=none "${files[@]}"
+  default-build-type:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libyaml-cpp-dev libopenmpi-dev openmpi-bin
+      - name: Check the default build type
+        run: |
+          check() {
+            cmake -B "$2" -S "$1" "${@:3}" > /dev/null
+            type=$(cmake -L -N "$2" | sed -n 's/^CMAKE_BUILD_TYPE:STRING=//p')
+            echo "$1: CMAKE_BUILD_TYPE=${type:-(empty)}"
+            if [ "$type" != "Release" ]; then
+              echo "::error::Default CMAKE_BUILD_TYPE of $1 is '${type}',"\
+                   "expected Release."
+              exit 1
+            fi
+          }
+          check miso build-miso -DMISO_USE_CUDA=OFF -DENABLE_TESTING=OFF
+          check demo/mhd2d_vortex build-demo -DUSE_CUDA=OFF
   run-cpu-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +60,7 @@ jobs:
           sudo apt-get install -y libyaml-cpp-dev libopenmpi-dev openmpi-bin
       - name: Generate build directory
         run: |
-          cmake -B build -S miso -DMISO_USE_CUDA=OFF
+          cmake -B build -S miso -DMISO_USE_CUDA=OFF -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           cmake --build build -j
       - name: Run unit tests
         working-directory: build
@@ -44,5 +71,5 @@ jobs:
       - name: Build demo
         working-directory: demo/mhd2d_vortex
         run: |
-          cmake -B build -S . -DUSE_CUDA=OFF
+          cmake -B build -S . -DUSE_CUDA=OFF -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           cmake --build build -j

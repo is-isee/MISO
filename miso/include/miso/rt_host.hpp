@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -173,7 +174,9 @@ template <typename Real> struct RT {
 
   void save(const std::string &file_path) const {
     std::ofstream ofs(file_path, std::ios::binary);
-    assert(ofs.is_open());
+    if (!ofs.is_open()) {
+      throw std::runtime_error("Failed to open file: " + file_path);
+    }
 
     auto write_array1d = [&ofs](const std::vector<Real> &arr) {
       ofs.write(reinterpret_cast<const char *>(arr.data()),
@@ -197,11 +200,16 @@ template <typename Real> struct RT {
     write_array3d(abs_coeff);
     write_array4d(rint);
     ofs.close();
+    if (!ofs) {
+      throw std::runtime_error("Failed to write file: " + file_path);
+    }
   };
 
   void load(const std::string &file_path) {
     std::ifstream ifs(file_path, std::ios::binary);
-    assert(ifs.is_open());
+    if (!ifs.is_open()) {
+      throw std::runtime_error("Failed to open file: " + file_path);
+    }
 
     auto read_array1d = [&ifs](std::vector<Real> &arr) {
       ifs.read(reinterpret_cast<char *>(arr.data()), sizeof(Real) * arr.size());
@@ -213,9 +221,14 @@ template <typename Real> struct RT {
       ifs.read(reinterpret_cast<char *>(arr.data()), sizeof(Real) * arr.size());
     };
 
-    int num_rays;
+    int num_rays = 0;
     ifs.read(reinterpret_cast<char *>(&num_rays), sizeof(int));
-    assert(num_rays == ang_quad.num_rays);
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + file_path);
+    }
+    if (num_rays != ang_quad.num_rays) {
+      throw std::runtime_error("RT file num_rays does not match: " + file_path);
+    }
     read_array1d(ang_quad.weights);
     read_array1d(ang_quad.mu_x);
     read_array1d(ang_quad.mu_y);
@@ -223,6 +236,9 @@ template <typename Real> struct RT {
     read_array3d(src_func);
     read_array3d(abs_coeff);
     read_array4d(rint);
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + file_path);
+    }
     ifs.close();
   };
 

@@ -138,6 +138,10 @@ struct Config {
       YAML::Emitter out;
       out << yaml_obj;
       ofs << out.c_str();
+      ofs.close();
+      if (!ofs) {
+        throw std::runtime_error("Failed to write file: " + save_filepath);
+      }
     }
   }
 };

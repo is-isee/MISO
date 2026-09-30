@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 #include "array3d.hpp"
 #include "env.hpp"
 #include "grid.hpp"
@@ -43,7 +45,9 @@ template <typename Real> struct Checkpoint {
     util::create_directories(mhd_save_dir);
     std::string filename = get_filename(time);
     std::ofstream ofs(filename, std::ios::binary);
-    assert(ofs.is_open());
+    if (!ofs.is_open()) {
+      throw std::runtime_error("Failed to open file: " + filename);
+    }
 
     constexpr std::uint32_t elem_size = sizeof(Real);
     ofs.write(reinterpret_cast<const char *>(&elem_size), sizeof(std::uint32_t));
@@ -61,6 +65,10 @@ template <typename Real> struct Checkpoint {
     write_array(qq.bz);
     write_array(qq.ei);
     write_array(qq.ph);
+    ofs.close();
+    if (!ofs) {
+      throw std::runtime_error("Failed to write file: " + filename);
+    }
   };
 
   template <typename Backend>
@@ -70,10 +78,15 @@ template <typename Real> struct Checkpoint {
     }
     std::string filename = get_filename(time);
     std::ifstream ifs(filename, std::ios::binary);
-    assert(ifs.is_open());
+    if (!ifs.is_open()) {
+      throw std::runtime_error("Failed to open file: " + filename);
+    }
 
-    std::uint32_t elem_size;
+    std::uint32_t elem_size = 0;
     ifs.read(reinterpret_cast<char *>(&elem_size), sizeof(std::uint32_t));
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + filename);
+    }
     if (elem_size != sizeof(Real)) {
       throw std::runtime_error(
           "Checkpoint file element size does not match Real type size.");
@@ -91,6 +104,9 @@ template <typename Real> struct Checkpoint {
     read_array(qq.bz);
     read_array(qq.ei);
     read_array(qq.ph);
+    if (!ifs) {
+      throw std::runtime_error("Failed to read file: " + filename);
+    }
 
     qq_.copy_from(qq);
   };
