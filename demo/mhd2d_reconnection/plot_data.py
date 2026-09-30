@@ -50,7 +50,8 @@ def main():
         f = to_paper(d, plane)
         x, z = f["x"], f["z"]
 
-        fig, ax = plt.subplots(figsize=(11, 3.0), layout="constrained")
+        fig = plt.figure(figsize=(10, 4.4))
+        ax = fig.add_axes((0.07, 0.12, 0.8, 0.8))
         # Upper half: v_x at z > 0. Lower half: div v, mirrored to z < 0.
         im_vx = ax.pcolormesh(
             x, z, f["vx"].T, cmap="jet", vmin=0, vmax=1, shading="nearest"
@@ -58,11 +59,14 @@ def main():
         im_dv = ax.pcolormesh(
             x, -z, f["divv"].T, cmap="RdBu_r", vmin=-0.2, vmax=0.2, shading="nearest"
         )
-        fig.colorbar(im_vx, ax=ax, label="$v_x$ (upper)", pad=0.01)
-        fig.colorbar(im_dv, ax=ax, label=r"$\nabla\cdot v$ (lower)", pad=0.01)
         ax.set_xlim(*X_RANGE)
         ax.set_ylim(*Z_RANGE)
-        ax.set_aspect("equal")
+        ax.set_aspect(2)  # z is stretched by 2
+        # Color bars next to the upper and lower halves
+        cax_vx = ax.inset_axes((1.02, 0.53, 0.015, 0.45))
+        cax_dv = ax.inset_axes((1.02, 0.02, 0.015, 0.45))
+        fig.colorbar(im_vx, cax=cax_vx, label="$v_x$")
+        fig.colorbar(im_dv, cax=cax_dv, label=r"$\nabla\cdot v$")
         ax.set_xlabel("$x$")
         ax.set_ylabel("$z$")
 
