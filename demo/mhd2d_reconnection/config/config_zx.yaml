@@ -10,14 +10,14 @@ time:
 grid:
   i_size: 1000
   j_size: 1
-  k_size: 750
+  k_size: 250
   margin: 2
   x_min: 0.0
   x_max: 200.0
   y_min: 0.0
   y_max: 1.0
   z_min: 0.0
-  z_max: 150.0
+  z_max: 50.0
 
 mpi:
   x_procs: 2
