@@ -67,3 +67,21 @@ TEST_CASE("Test reduce 3D CUDA" * doctest::test_suite("execution")) {
 
   CHECK(count == range.size());
 }
+
+// #190: reductions of different types in the same translation unit must
+// compile (the dynamic shared memory must not be declared per type).
+TEST_CASE("Test reduce of mixed types CUDA" * doctest::test_suite("execution")) {
+  int n = 1000;
+  Range1D range{0, n};
+
+  const auto fi = MISO_LAMBDA(int i) { return i; };
+  const auto opi = MISO_LAMBDA(int a, int b) { return a + b; };
+  const auto fd = MISO_LAMBDA(int i) { return 0.5 * i; };
+  const auto opd = MISO_LAMBDA(double a, double b) { return a + b; };
+  const auto fc = MISO_LAMBDA(int i) { return char(i % 7); };
+  const auto opc = MISO_LAMBDA(char a, char b) { return a > b ? a : b; };
+
+  CHECK(reduce(backend::CUDA{}, range, 0, fi, opi) == n * (n - 1) / 2);
+  CHECK(reduce(backend::CUDA{}, range, 0.0, fd, opd) == 0.25 * n * (n - 1));
+  CHECK(reduce(backend::CUDA{}, range, char(0), fc, opc) == char(6));
+}
