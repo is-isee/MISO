@@ -380,28 +380,21 @@ template <typename Real, typename Backend> struct Integrator {
                                        grid.const_view(),    dt,
                                        ch_divb_square,       tau_divb};
 
-    // One launch per equation, as the former CUDA implementation. Fusing them
-    // into one for_each (as the former host implementation) is a one-line
-    // change; which is faster depends on the backend (see the PR).
+    // All equations in one loop. On RTX 3090 this is faster than one loop
+    // per equation (#197), although it uses many registers.
     const auto range = inner_range();
     for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.ro(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.vx(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.vy(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.vz(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.bx(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.by(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.bz(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.ph(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.ei(i, j, k); });
+        Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
+          kern.ro(i, j, k);
+          kern.vx(i, j, k);
+          kern.vy(i, j, k);
+          kern.vz(i, j, k);
+          kern.bx(i, j, k);
+          kern.by(i, j, k);
+          kern.bz(i, j, k);
+          kern.ph(i, j, k);
+          kern.ei(i, j, k);
+        });
   }
 
   /// @brief Apply boundary condition and halo exchange

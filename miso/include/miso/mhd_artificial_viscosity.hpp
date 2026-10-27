@@ -249,24 +249,20 @@ template <typename Real, typename Backend> struct ArtificialViscosity {
                               ep,
                               fh,
                               dt};
+    // All variables in one loop (faster on RTX 3090 than one loop per
+    // variable, #197).
     for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.ro(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.vx(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.vy(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.vz(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.bx(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.by(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.bz(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.ph(i, j, k); });
-    for_each(
-        Backend{}, range, MISO_LAMBDA(int i, int j, int k) { kern.ei(i, j, k); });
+        Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
+          kern.ro(i, j, k);
+          kern.vx(i, j, k);
+          kern.vy(i, j, k);
+          kern.vz(i, j, k);
+          kern.bx(i, j, k);
+          kern.by(i, j, k);
+          kern.bz(i, j, k);
+          kern.ph(i, j, k);
+          kern.ei(i, j, k);
+        });
   }
 };
 
