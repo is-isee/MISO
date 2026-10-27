@@ -133,7 +133,7 @@ template <typename Real> struct AvKernel {
     };
     const Real Et =
         qq.ro(i, j, k) * qq.ei(i, j, k) +
-        0.5 * qq.ro(i, j, k) *
+        Real(0.5) * qq.ro(i, j, k) *
             (qq.vx(i, j, k) * qq.vx(i, j, k) + qq.vy(i, j, k) * qq.vy(i, j, k) +
              qq.vz(i, j, k) * qq.vz(i, j, k)) +
         pii8<Real> *
@@ -142,7 +142,7 @@ template <typename Real> struct AvKernel {
 
     qq_rslt.ei(i, j, k) =
         (Et - flux_difference(q, i, j, k) -
-         0.5 * qq_rslt.ro(i, j, k) *
+         Real(0.5) * qq_rslt.ro(i, j, k) *
              (qq_rslt.vx(i, j, k) * qq_rslt.vx(i, j, k) +
               qq_rslt.vy(i, j, k) * qq_rslt.vy(i, j, k) +
               qq_rslt.vz(i, j, k) * qq_rslt.vz(i, j, k)) -

@@ -76,8 +76,8 @@ space_centered_4th(Array3DView<const Real> qq, Real dxyzi, int i, int j, int k,
   // clang-format off
   return (
     -     qq(i + 2*is, j + 2*js, k + 2*ks)
-    + 8.0*qq(i +   is, j +   js, k +   ks)
-    - 8.0*qq(i -   is, j -   js, k -   ks)
+    + Real(8)*qq(i +   is, j +   js, k +   ks)
+    - Real(8)*qq(i -   is, j -   js, k -   ks)
     +     qq(i - 2*is, j - 2*js, k - 2*ks)
   )*inv12<Real>*dxyzi;
   // clang-format on
@@ -91,8 +91,8 @@ space_centered_4th(Array3DView<const Real> qq1, Array3DView<const Real> qq2,
   // clang-format off
   return (
     -     qq1(i + 2*is, j + 2*js, k + 2*ks)*qq2(i + 2*is, j + 2*js, k + 2*ks)
-    + 8.0*qq1(i +   is, j +   js, k +   ks)*qq2(i +   is, j +   js, k +   ks)
-    - 8.0*qq1(i -   is, j -   js, k -   ks)*qq2(i -   is, j -   js, k -   ks)
+    + Real(8)*qq1(i +   is, j +   js, k +   ks)*qq2(i +   is, j +   js, k +   ks)
+    - Real(8)*qq1(i -   is, j -   js, k -   ks)*qq2(i -   is, j -   js, k -   ks)
     +     qq1(i - 2*is, j - 2*js, k - 2*ks)*qq2(i - 2*is, j - 2*js, k - 2*ks)
   )*inv12<Real>*dxyzi;
   // clang-format on
@@ -107,8 +107,8 @@ space_centered_4th(Array3DView<const Real> qq1, Array3DView<const Real> qq2,
   // clang-format off
   return (
     -     qq1(i + 2*is, j + 2*js, k + 2*ks)*qq2(i + 2*is, j + 2*js, k + 2*ks)*qq3(i + 2*is, j + 2*js, k + 2*ks)
-    + 8.0*qq1(i +   is, j +   js, k +   ks)*qq2(i +   is, j +   js, k +   ks)*qq3(i +   is, j +   js, k +   ks)
-    - 8.0*qq1(i -   is, j -   js, k -   ks)*qq2(i -   is, j -   js, k -   ks)*qq3(i -   is, j -   js, k -   ks)
+    + Real(8)*qq1(i +   is, j +   js, k +   ks)*qq2(i +   is, j +   js, k +   ks)*qq3(i +   is, j +   js, k +   ks)
+    - Real(8)*qq1(i -   is, j -   js, k -   ks)*qq2(i -   is, j -   js, k -   ks)*qq3(i -   is, j -   js, k -   ks)
     +     qq1(i - 2*is, j - 2*js, k - 2*ks)*qq2(i - 2*is, j - 2*js, k - 2*ks)*qq3(i - 2*is, j - 2*js, k - 2*ks)
   )*inv12<Real>*dxyzi;
   // clang-format on
@@ -242,7 +242,7 @@ template <typename Real, typename Source> struct Sc4Kernel {
   __host__ __device__ void ei(int i, int j, int k) const {
     const Real Et =
         +qq_orgn.ro(i, j, k) * qq_orgn.ei(i, j, k) +
-        0.5 * qq_orgn.ro(i, j, k) *
+        Real(0.5) * qq_orgn.ro(i, j, k) *
             (+ qq_orgn.vx(i, j, k) * qq_orgn.vx(i, j, k)
              + qq_orgn.vy(i, j, k) * qq_orgn.vy(i, j, k)
              + qq_orgn.vz(i, j, k) * qq_orgn.vz(i, j, k)) +
@@ -259,7 +259,7 @@ template <typename Real, typename Source> struct Sc4Kernel {
                + pii4<Real> * (+ space_centered_4th(vb, qq_argm.bx, grid.dxi[i], i, j, k, grid.is, 0, 0)
                                + space_centered_4th(vb, qq_argm.by, grid.dyi[j], i, j, k, 0, grid.js, 0)
                                + space_centered_4th(vb, qq_argm.bz, grid.dzi[k], i, j, k, 0, 0, grid.ks)))
-         - 0.5 * qq_rslt.ro(i, j, k) *
+         - Real(0.5) * qq_rslt.ro(i, j, k) *
              (+ qq_rslt.vx(i, j, k) * qq_rslt.vx(i, j, k)
               + qq_rslt.vy(i, j, k) * qq_rslt.vy(i, j, k)
               + qq_rslt.vz(i, j, k) * qq_rslt.vz(i, j, k)) -
@@ -359,7 +359,7 @@ template <typename Real, typename Backend> struct Integrator {
       ht_v(i, j, k) =
           +c_qq.ro(i, j, k) * c_qq.ei(i, j, k) +
           c_pr(i, j, k) + bb_v(i, j, k) * pii4<Real> +
-          0.5 * c_qq.ro(i, j, k) *
+          Real(0.5) * c_qq.ro(i, j, k) *
               (+ c_qq.vx(i, j, k) * c_qq.vx(i, j, k)
                + c_qq.vy(i, j, k) * c_qq.vy(i, j, k)
                + c_qq.vz(i, j, k) * c_qq.vz(i, j, k));

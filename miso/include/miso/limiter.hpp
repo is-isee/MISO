@@ -12,7 +12,7 @@ __host__ __device__ inline Real dqq_eval(Real qq_dw, Real qq_cn, Real qq_up,
                                          Real ep) {
   Real dqq_dw = qq_cn - qq_dw;
   Real dqq_up = qq_up - qq_cn;
-  Real dqq_cn = (qq_up - qq_dw) * 0.5;
+  Real dqq_cn = (qq_up - qq_dw) * Real(0.5);
 
   Real dqq_max = util::max3(ep * dqq_dw, ep * dqq_up, dqq_cn);
   Real dqq_min = util::min3(ep * dqq_dw, ep * dqq_up, dqq_cn);
@@ -24,8 +24,8 @@ __host__ __device__ inline Real dqq_eval(Real qq_dw, Real qq_cn, Real qq_up,
 template <typename Real>
 __host__ __device__ inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw,
                                           Real dqq_up, Real cc, Real fh) {
-  Real qql = qq_dw + 0.5 * dqq_dw;
-  Real qqr = qq_up - 0.5 * dqq_up;
+  Real qql = qq_dw + Real(0.5) * dqq_dw;
+  Real qqr = qq_up - Real(0.5) * dqq_up;
   Real dqq = qq_up - qq_dw;
   dqq = util::copysign(util::max2(util::fabs(dqq), Real(1e-20)), dqq);
 
@@ -33,7 +33,7 @@ __host__ __device__ inline Real flux_core(Real qq_dw, Real qq_up, Real dqq_dw,
   Real pp = (Real(0.5) + util::copysign(Real(0.5), ra)) *
             util::max2(Real(0.0), Real(1.0) + fh * (ra - Real(1.0)));
 
-  return -0.5 * cc * pp * (qqr - qql);
+  return Real(-0.5) * cc * pp * (qqr - qql);
 }
 
 }  // namespace limiter
