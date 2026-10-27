@@ -16,6 +16,7 @@ C++17 ヘッダオンリー (`miso/include/miso/`) + CUDA バックエンド + M
 - `miso/` コアライブラリ (CMake target `MISO::MISO`)。`miso/tests/serial`, `miso/tests/parallel` は doctest。
 - `demo/<app>/` デモ問題。`src/main.cpp`, `config.yaml` (または `config/config_*.yaml`), `app_run.sh`, `app_clean.sh`, `plot_data.py`。共通ルールは `dev/notes/rules_demo.md`。
 - `pymiso/src/pymiso/` Python パッケージ。テストは `pymiso/tests/`。
+- `input_data/` デモやテストが読む入力データ (状態方程式の表など)。出力先の `data*/` とは別。中身と出典は `input_data/README.md`。
 - `dev/notes/` 開発ルール (`rules_all.md`, `rules_demo.md`, `rules_ai.md`)、環境構築 (`setup.md`)。
 
 ## ビルドとテスト
