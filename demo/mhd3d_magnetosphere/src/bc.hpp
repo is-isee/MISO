@@ -108,7 +108,7 @@ struct BoundaryCondition {
     }
 
     // Copy members to locals: device lambdas must not capture `this`.
-    const Real ro_sw_ = ro_sw, pr_sw_ = pr_sw, vx_sw_ = vx_sw, bz_imf_ = bz_imf_;
+    const Real ro_sw_ = ro_sw, pr_sw_ = pr_sw, vx_sw_ = vx_sw, bz_imf_ = bz_imf;
     const Real rra_ = rra, a0_ = a0, ro_floor_ = ro_floor, pr_floor_ = pr_floor;
     const Real gm_ = eos.gm;
 
