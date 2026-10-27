@@ -412,15 +412,15 @@ template <typename Real, typename Backend> struct Integrator {
   void runge_kutta_4step(const Real dt, const EOS &eos,
                          const BoundaryCondition &bc, const Source &src,
                          Fields<Real, Backend> &qq) {
-    update_sc4(dt / 4.0, eos, src, qq, qq, qq_rslt);
+    update_sc4(dt / Real(4), eos, src, qq, qq, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt / 3.0, eos, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt / Real(3), eos, src, qq, qq_argm, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
-    update_sc4(dt / 2.0, eos, src, qq, qq_argm, qq_rslt);
+    update_sc4(dt / Real(2), eos, src, qq, qq_argm, qq_rslt);
     qq_argm.copy_from(qq_rslt);
     apply_boundary_condition(bc, qq_argm);
 
@@ -476,7 +476,7 @@ template <typename Real, typename Backend> struct Integrator {
       return cfl_number_ * dxyz / total_vel;
     };
     const auto op = MISO_LAMBDA(Real a, Real b) { return util::min2(a, b); };
-    const Real dt_max = 1.e10;
+    const Real dt_max = Real(1e10);
     const Real dt = cfl_workspace.reduce(inner_range(), dt_max, f, op);
 
     Real dt_global;
@@ -487,9 +487,9 @@ template <typename Real, typename Backend> struct Integrator {
 
   /// @brief Set parameters for divergence B cleaning
   void divb_parameters_set(const Real dt) {
-    ch_divb = 0.8 * cfl_number * grid.min_dxyz / dt;
+    ch_divb = Real(0.8) * cfl_number * grid.min_dxyz / dt;
     ch_divb_square = ch_divb * ch_divb;
-    tau_divb = 2.0 * dt;
+    tau_divb = Real(2) * dt;
   }
 
   /// @brief Update MHD equations by one time step
