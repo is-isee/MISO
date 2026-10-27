@@ -315,8 +315,7 @@ template <typename Real, typename Backend> struct Integrator {
   Integrator(Config &config, Grid<Real, Backend> &grid,
              ExecContext<Real, Backend> &exec_ctx)
       : grid(grid), qq_argm(grid), qq_rslt(grid), halo_exchanger(grid, exec_ctx),
-        artdiff(config, grid, exec_ctx),
-        pr(grid.i_total, grid.j_total, grid.k_total),
+        artdiff(config, grid), pr(grid.i_total, grid.j_total, grid.k_total),
         bb(grid.i_total, grid.j_total, grid.k_total),
         ht(grid.i_total, grid.j_total, grid.k_total),
         vb(grid.i_total, grid.j_total, grid.k_total),
@@ -410,7 +409,8 @@ template <typename Real, typename Backend> struct Integrator {
   void apply_boundary_condition(const BoundaryCondition &bc,
                                 Fields<Real, Backend> &qq) {
     bc.apply(qq.view(), grid.const_view());
-    fence(Backend{});  // May not be necessary
+    // No fence is needed here: the halo exchanger waits for the device before
+    // passing the buffers to MPI.
     halo_exchanger.apply(qq);
   }
 
