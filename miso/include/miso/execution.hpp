@@ -167,6 +167,17 @@ template <typename T> struct ReduceHelper {
   }
 };
 
+/// @brief Dynamic shared memory for reduction kernels, viewed as T.
+/// @details `extern __shared__` arrays share one name across all
+/// instantiations, so declaring it as `T s[]` breaks when different T are used
+/// in one translation unit (#190). Declare it once as raw bytes with enough
+/// alignment for any type used here, and cast it.
+template <class T> __device__ inline T *reduce_shared_memory() {
+  extern __shared__ __align__(16) unsigned char reduce_smem[];
+  static_assert(alignof(T) <= 16, "Unsupported alignment for reduce");
+  return reinterpret_cast<T *>(reduce_smem);
+}
+
 template <class T, class Op>
 __device__ inline T block_reduce_shared(T *s, int tid, int n, Op op) {
   __syncthreads();
@@ -184,7 +195,7 @@ __device__ inline T block_reduce_shared(T *s, int tid, int n, Op op) {
 template <class T, class Range, class F, class Op>
 __global__ void reduce_stage_kernel(Range range, T init, F map, Op op,
                                     T *__restrict__ out) {
-  extern __shared__ T s[];
+  T *s = reduce_shared_memory<T>();
   const int tid = threadIdx.x;
   const int idx = blockIdx.x * blockDim.x + tid;
 
@@ -207,7 +218,7 @@ __global__ void reduce_stage_kernel(Range range, T init, F map, Op op,
 template <class T, class Op>
 __global__ void reduce_stage_array_kernel(const T *__restrict__ in, int n, T init,
                                           Op op, T *__restrict__ out) {
-  extern __shared__ T s[];
+  T *s = reduce_shared_memory<T>();
   const int tid = threadIdx.x;
   const int idx = blockIdx.x * blockDim.x + tid;
   s[tid] = (idx < n) ? in[idx] : init;
