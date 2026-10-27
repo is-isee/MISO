@@ -626,7 +626,10 @@ template <typename Real> struct RT {
     }
   }
 
-  /// @brief Get maximum difference from previous state
+  /// @brief Get maximum relative difference from previous state
+  /// @details |I - I_old| / max(|I|, |I_old|), so that the tolerance does not
+  /// depend on the unit of the intensity. Points where both are zero are
+  /// skipped.
   /// TODO: Reduce the number of evaluation (evaluate only at boundaries).
   Real get_max_diff(const Grid<Real> &grid) const {
     Real max_diff = 0.0;
@@ -634,9 +637,12 @@ template <typename Real> struct RT {
       for (int i = ib0; i <= ib1; ++i) {
         for (int j = jb0; j <= jb1; ++j) {
           for (int k = kb0; k <= kb1; ++k) {
-            const Real diff =
-                std::abs(rint(i_ray, i, j, k) - rint_old(i_ray, i, j, k));
-            max_diff = util::max2(max_diff, diff);
+            const Real now = rint(i_ray, i, j, k);
+            const Real old = rint_old(i_ray, i, j, k);
+            const Real scale = util::max2(std::abs(now), std::abs(old));
+            if (scale > Real(0)) {
+              max_diff = util::max2(max_diff, std::abs(now - old) / scale);
+            }
           }
         }
       }
@@ -646,6 +652,8 @@ template <typename Real> struct RT {
 
   /// @brief Solve radiative transfer equation
   /// @details All necessary information should be stored in the `rte_t` object.
+  /// @param tolerance Iteration stops when the relative change of the
+  /// intensity is below this value everywhere (see `get_max_diff`).
   template <typename BoundaryCondition>
   void solve(const Grid<Real> &grid, const mpi::Shape &mpi_shape,
              const Real tolerance, const int max_iters, BoundaryCondition &&bc) {
