@@ -86,8 +86,8 @@ fs::path write_table(const std::string &kind, bool uniform = true,
 // TableEOS<double, Backend> on the Backend, copied to the host.
 template <typename Backend>
 void check_gas_pressure_and_sound_speed(const fs::path &path) {
-  const std::vector<double> log_ros = {-4.7, -2.5, -0.1, -10.0};
-  const std::vector<double> log_ens = {20.3, 22.0, 23.9, 30.0};
+  const std::vector<double> log_ros = {-4.7, -2.5, -0.1, -10.0, 3.0};
+  const std::vector<double> log_ens = {20.3, 22.0, 23.9, 30.0, 10.0};
   const int n = static_cast<int>(log_ros.size());
   Array3D<double> ro_h(n, 1, 1), ei_h(n, 1, 1), pr_h(n, 1, 1), cs_h(n, 1, 1);
   for (int i = 0; i < n; ++i) {
@@ -107,7 +107,8 @@ void check_gas_pressure_and_sound_speed(const fs::path &path) {
   cs_h.copy_from(cs);
 
   for (int i = 0; i < n; ++i) {
-    // The last cell is outside the table: the value at the nearest edge.
+    // The last two cells are outside the table: the value at the nearest
+    // edge (two opposite corners).
     const double log_ro = std::min(std::max(log_ros[i], log_ro_min), log_ro_max);
     const double log_en = std::min(std::max(log_ens[i], log_en_min), log_en_max);
     CHECK(std::log(pr_h(i, 0, 0)) ==

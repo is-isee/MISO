@@ -14,7 +14,10 @@
 // The state is uniform (v = 0, B = 0) at a table point in the photosphere, with
 // periodic boundaries. The time step from the CFL condition is then
 // cfl_number * min(dx) / c_s with the sound speed of the table, and one step
-// with a constant heating rate q gives e = e0 + dt q / rho.
+// with a constant heating rate q gives e = e0 + dt q / rho. Since the pressure
+// is uniform, this does not check its value (test_eos_table does); it checks
+// that the solver runs with the table EOS on the backend. `eos.gm` in
+// config_source.yaml is not used by TableEOS.
 
 namespace test_mhd_table_eos {
 
