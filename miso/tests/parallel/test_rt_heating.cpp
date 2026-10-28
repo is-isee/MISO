@@ -171,8 +171,7 @@ TEST_CASE("Q_rad in an atmosphere with a known solution" *
 
   {
     // S and alpha from the table in input_data
-    const fs::path path = fs::path(__FILE__).parent_path() /
-                          "../../../input_data/eos_table_roen_blend.tbl";
+    const fs::path path = fs::path(INPUT_DATA_DIR) / "eos_table_roen_blend.tbl";
     eos::TableEOS<Real> eos(path);
     const Real ro_photo = std::exp(-15.377656523015137);
     const Real ei_photo = std::exp(27.981135057266535);

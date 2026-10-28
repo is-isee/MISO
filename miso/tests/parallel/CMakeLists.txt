@@ -12,7 +12,8 @@ function(miso_add_tests pattern suffix)
                                    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
         target_compile_definitions(
             ${target_name}
-            PRIVATE CONFIG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/config/")
+            PRIVATE CONFIG_DIR="${CMAKE_CURRENT_SOURCE_DIR}/config/"
+                    INPUT_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../../input_data/")
         target_link_libraries(${target_name} PRIVATE MISO::MISO
                                                      doctest::doctest)
 

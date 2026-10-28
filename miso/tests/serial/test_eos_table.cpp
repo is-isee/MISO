@@ -100,8 +100,7 @@ TEST_CASE("TableEOS rejects other kinds of tables" *
 
 TEST_CASE("TableEOS reads the table in input_data" *
           doctest::test_suite("eos_table")) {
-  const fs::path path = fs::path(__FILE__).parent_path() / "../../../input_data" /
-                        "eos_table_roen_blend.tbl";
+  const fs::path path = fs::path(INPUT_DATA_DIR) / "eos_table_roen_blend.tbl";
   eos::TableEOS<double> eos(path);
   REQUIRE(eos.log_te.extent(0) == 256);
   REQUIRE(eos.log_te.extent(1) == 256);
