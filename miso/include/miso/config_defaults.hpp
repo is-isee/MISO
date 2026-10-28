@@ -23,6 +23,15 @@ io:
   # Number of digits for output file naming (e.g., 8 means 00000001)
   n_output_digits: 8
 
+rt:
+  # Number of rays (24: Carlson A4, 1: a single +z ray)
+  num_rays: 24
+  # Iteration stops when the largest relative change of the intensity in an
+  # iteration is below this value
+  tolerance: 1.0e-4
+  # Maximum number of iterations (a message is printed if not converged)
+  max_iters: 100
+
 mhd:
     # CFL number for time-stepping
     cfl_number: 0.5

@@ -33,7 +33,7 @@ domain:
 
 rt:
   num_rays: 24
-  tolerance: 1.0e-5
+  tolerance: 1.0e-5  # largest relative change of the intensity in an iteration
   max_iters: 100
 
 searchlight:

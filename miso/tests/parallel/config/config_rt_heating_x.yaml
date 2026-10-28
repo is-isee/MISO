@@ -1,0 +1,31 @@
+io:
+  enabled: false
+  continue: false
+
+grid:
+  i_size: 8
+  j_size: 4
+  k_size: 8
+  margin: 2
+  x_min: 0.0
+  x_max: 8.0
+  y_min: 0.0
+  y_max: 4.0
+  z_min: 0.0
+  z_max: 8.0
+
+mhd:
+
+eos:
+  gm: 1.4
+
+mpi:
+  x_procs: 2
+  y_procs: 1
+  z_procs: 1
+
+domain:
+  periodic:
+    x: false
+    y: true
+    z: false
