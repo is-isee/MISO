@@ -138,9 +138,10 @@ struct TableFile {
 /// Pressure and sound speed are used by the MHD solver (`gas_pressure` and
 /// `sound_speed`), so their tables are kept in the memory of `Backend`.
 /// Temperature and opacity are used by the radiative transfer on the host.
-/// Next to the cells where the EOS failed (see below; rho > 0.17 g/cm^3, deep
-/// in the convection zone) the pressure and sound speed are far too small,
-/// without a warning. ro and ei must be positive.
+/// Next to the cells where the EOS failed (see below; dense and cold, rho >
+/// 0.17 g/cm^3 and e < 3.6e12 erg/g, which the Sun does not reach) the
+/// pressure and sound speed are far too small, without a warning. ro and ei
+/// must be positive.
 ///
 /// The opacity table has `inf` where the opacity is not defined (rho < 3.4e-7
 /// g/cm^3 and T = 3e4 to 5e6 K, see `input_data/README.md`). It is kept as is,
