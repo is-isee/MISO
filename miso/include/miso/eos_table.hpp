@@ -127,9 +127,9 @@ struct TableFile {
 /// @brief Temperature and opacity from a table in (ln rho, ln e).
 /// @details Reads a table of kind `eos_table_roen` (for example,
 /// `input_data/eos_table_roen_blend.tbl`). The axes `ro` and `en` are ln(rho
-/// [g/cm^3]) and ln(e [erg/g]) on uniform grids. The logarithms of temperature
-/// `te` [K] and Rosseland mean opacity `op` [cm^2/g] are interpolated
-/// bilinearly. Outside the table range, the value at the nearest edge is used.
+/// [g/cm^3]) and ln(e [erg/g]) on uniform grids (checked when reading). The
+/// logarithms of temperature `te` [K] and Rosseland mean opacity `op` [cm^2/g]
+/// are interpolated bilinearly. Outside the table range, the value at the nearest edge is used.
 ///
 /// The opacity table has `inf` where the opacity is not defined (rho < 3.4e-7
 /// g/cm^3 and T = 3e4 to 5e6 K, see `input_data/README.md`). It is kept as is,
@@ -156,6 +156,8 @@ template <typename Real> struct TableEOS {
     const auto &te = file.get("te", {n_ro, n_en});
     const auto &op = file.get("op", {n_ro, n_en});
 
+    check_uniform(ro, "ro");
+    check_uniform(en, "en");
     log_ro_min = static_cast<Real>(ro.front());
     log_ro_max = static_cast<Real>(ro.back());
     log_en_min = static_cast<Real>(en.front());
@@ -195,6 +197,22 @@ private:
       throw std::runtime_error("Table has no 1D axis '" + name + "'");
     }
     return it->second[0];
+  }
+
+  // The interpolation uses only the ends of the axes, so the axes must be
+  // uniform.
+  static void check_uniform(const std::vector<double> &axis,
+                            const std::string &name) {
+    const std::size_t n = axis.size();
+    if (n < 2) {
+      throw std::runtime_error("Table axis '" + name + "' is too short");
+    }
+    const double d = (axis.back() - axis.front()) / static_cast<double>(n - 1);
+    for (std::size_t i = 0; i + 1 < n; ++i) {
+      if (!(std::abs(axis[i + 1] - axis[i] - d) <= 1.e-6 * std::abs(d))) {
+        throw std::runtime_error("Table axis '" + name + "' is not uniform");
+      }
+    }
   }
 
   Real interpolate(const Array2D<Real> &table, Real ro, Real ei) const {

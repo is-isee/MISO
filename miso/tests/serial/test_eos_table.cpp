@@ -26,7 +26,7 @@ double log_op_exact(double log_ro, double log_en) {
 }
 
 // Write a small table in the r2d2plus-table format.
-fs::path write_table(const std::string &kind) {
+fs::path write_table(const std::string &kind, bool uniform = true) {
   const fs::path path =
       fs::temp_directory_path() / ("miso_test_eos_table_" + kind + ".tbl");
   std::vector<double> ro(n_ro), en(n_en), te(n_ro * n_en), op(n_ro * n_en);
@@ -35,6 +35,9 @@ fs::path write_table(const std::string &kind) {
   }
   for (int j = 0; j < n_en; ++j) {
     en[j] = log_en_min + (log_en_max - log_en_min) * j / (n_en - 1);
+  }
+  if (!uniform) {
+    ro[2] += 0.1;
   }
   for (int i = 0; i < n_ro; ++i) {
     for (int j = 0; j < n_en; ++j) {
@@ -96,6 +99,13 @@ TEST_CASE("TableEOS rejects other kinds of tables" *
   CHECK_THROWS_AS(eos::TableEOS<double>{path}, std::runtime_error);
   fs::remove(path);
   CHECK_THROWS_AS(eos::TableEOS<double>{path}, std::runtime_error);
+}
+
+TEST_CASE("TableEOS rejects non-uniform axes" *
+          doctest::test_suite("eos_table")) {
+  const auto path = write_table("eos_table_roen", false);
+  CHECK_THROWS_AS(eos::TableEOS<double>{path}, std::runtime_error);
+  fs::remove(path);
 }
 
 TEST_CASE("TableEOS reads the table in input_data" *
