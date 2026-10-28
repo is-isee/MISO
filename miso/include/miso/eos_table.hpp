@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "array2d.hpp"
@@ -204,15 +205,23 @@ template <typename Real, typename Backend = backend::Host> struct TableEOS {
 
   /// @brief Compute gas pressure from primitive MHD fields.
   /// @note The signature must not be changed as it is called inside mhd::MHD.
-  void gas_pressure(Backend btag, mhd::FieldsView<const Real> qq,
+  template <typename B>
+  void gas_pressure(B btag, mhd::FieldsView<const Real> qq,
                     Array3DView<Real> pr) const {
+    static_assert(std::is_same_v<B, Backend>,
+                  "TableEOS<Real, Backend>: Backend must be the backend of "
+                  "the MHD model (TableEOS<Real, backend::CUDA> for CUDA)");
     interpolate_fields(btag, log_pr, qq, pr);
   }
 
   /// @brief Compute speed of sound from primitive MHD fields.
   /// @note The signature must not be changed as it is called inside mhd::MHD.
-  void sound_speed(Backend btag, mhd::FieldsView<const Real> qq,
+  template <typename B>
+  void sound_speed(B btag, mhd::FieldsView<const Real> qq,
                    Array3DView<Real> cs) const {
+    static_assert(std::is_same_v<B, Backend>,
+                  "TableEOS<Real, Backend>: Backend must be the backend of "
+                  "the MHD model (TableEOS<Real, backend::CUDA> for CUDA)");
     interpolate_fields(btag, log_cs, qq, cs);
   }
 

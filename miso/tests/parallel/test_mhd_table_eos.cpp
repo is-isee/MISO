@@ -4,4 +4,5 @@
 TEST_CASE("TableEOS through the MHD solver" * doctest::test_suite("eos_table")) {
   miso::Env env;
   test_mhd_table_eos::check_table_eos<miso::backend::Host>();
+  test_mhd_table_eos::check_pressure_gradient<miso::backend::Host>();
 }
