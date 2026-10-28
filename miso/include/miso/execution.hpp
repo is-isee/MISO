@@ -1,4 +1,6 @@
 #pragma once
+#include <memory>
+
 #include "backend.hpp"
 #include "cuda_compat.hpp"
 #ifdef __CUDACC__
@@ -299,6 +301,41 @@ inline T reduce(backend::CUDA b, Range3D range, T init, F map, Op op,
   return reduce<T, Range3D, F, Op>(b, range, init, map, op, helper, stream);
 }
 
+#endif  // __CUDACC__
+
+/// @brief Wait until all work submitted to the backend has completed.
+/// @details No-op for the Host backend.
+inline void fence(backend::Host) {}
+
+#ifdef __CUDACC__
+/// @brief Wait until all work submitted to the CUDA device has completed.
+inline void fence(backend::CUDA) { MISO_CUDA_CHECK(cudaDeviceSynchronize()); }
+#endif  // __CUDACC__
+
+/// @brief Reduction with a persistent workspace, written once for any backend.
+/// @details The Host backend needs no workspace. The CUDA backend keeps a
+/// ReduceHelper so that device buffers are not allocated on every call. The
+/// helper is held by shared_ptr so that a struct holding this stays cheap to
+/// copy (e.g., passed to CUDA kernels by value); it is used on the host only.
+/// @code
+/// ReduceWorkspace<Real, Backend> ws;
+/// Real dt = ws.reduce(range, Real(1e10), f, op);
+/// @endcode
+template <class T, class Backend> struct ReduceWorkspace {
+  template <class Range, class F, class Op>
+  T reduce(Range range, T init, F map, Op op) const {
+    return miso::reduce(Backend{}, range, init, map, op);
+  }
+};
+
+#ifdef __CUDACC__
+template <class T> struct ReduceWorkspace<T, backend::CUDA> {
+  std::shared_ptr<ReduceHelper<T>> helper = std::make_shared<ReduceHelper<T>>();
+  template <class Range, class F, class Op>
+  T reduce(Range range, T init, F map, Op op) const {
+    return miso::reduce(backend::CUDA{}, range, init, map, op, *helper);
+  }
+};
 #endif  // __CUDACC__
 
 }  // namespace miso

@@ -4,13 +4,11 @@
 
 #include "array3d.hpp"
 #include "backend.hpp"
+#include "execution.hpp"
 #include "grid.hpp"
 #include "mpi_util.hpp"
 #include "types.hpp"
 #include "utility.hpp"
-#ifdef __CUDACC__
-#include "cuda_util.cuh"
-#endif  // __CUDACC__
 
 namespace miso {
 namespace boundary_condition {
@@ -89,8 +87,8 @@ __host__ __device__ inline void symmetric_index(int i, int i_total, int i_margin
   }
 }
 
-bool is_physical_boundary(const Direction direction, const Side side,
-                          const mpi::Shape &mpi_shape) {
+inline bool is_physical_boundary(const Direction direction, const Side side,
+                                 const mpi::Shape &mpi_shape) {
   switch (direction) {
   case Direction::X:
     return (side == Side::INNER) ? (mpi_shape.x_procs_neg == MPI_PROC_NULL)
@@ -105,16 +103,18 @@ bool is_physical_boundary(const Direction direction, const Side side,
   return false;
 }
 
-/// @brief Apply symmetric boundary condition to an given 3D array (Host backend).
-template <typename Real>
-void symmetric(backend::Host, Array3DView<Real> arr, GridView<const Real> grid,
+/// @brief Apply symmetric boundary condition to an given 3D array.
+/// @details One implementation for all backends. The loop runs over the ghost
+/// cells of the given side only.
+template <typename Real, typename Backend>
+void symmetric(Backend, Array3DView<Real> arr, GridView<const Real> grid,
                Sign sign, Direction direction, Side side) {
   int i0_, i1_, j0_, j1_, k0_, k1_;
   range_set(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
-  Real sign_f = (sign == Sign::Pos) ? Real(1.0) : Real(-1.0);
-  for (int i = i0_; i < i1_; ++i) {
-    for (int j = j0_; j < j1_; ++j) {
-      for (int k = k0_; k < k1_; ++k) {
+  const Range3D range{{i0_, i1_}, {j0_, j1_}, {k0_, k1_}};
+  const Real sign_f = (sign == Sign::Pos) ? Real(1.0) : Real(-1.0);
+  for_each(
+      Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
         int i_ghst = i, i_trgt = i;
         int j_ghst = j, j_trgt = j;
         int k_ghst = k, k_trgt = k;
@@ -130,57 +130,8 @@ void symmetric(backend::Host, Array3DView<Real> arr, GridView<const Real> grid,
           break;
         }
         arr(i_ghst, j_ghst, k_ghst) = sign_f * arr(i_trgt, j_trgt, k_trgt);
-      }
-    }
-  }
-};
-
-#ifdef __CUDACC__
-template <typename Real>
-__global__ void symmetric_kernel(Array3DView<Real> arr, GridView<const Real> grid,
-                                 Sign sign, Direction direction, Side side) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-  int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  int i0_, i1_, j0_, j1_, k0_, k1_;
-  range_set(i0_, i1_, j0_, j1_, k0_, k1_, direction, grid);
-  Real sign_f = (sign == Sign::Pos) ? Real(1.0) : Real(-1.0);
-
-  if (i >= i0_ && i < i1_ && j >= j0_ && j < j1_ && k >= k0_ && k < k1_) {
-    int i_ghst = i, i_trgt = i;
-    int j_ghst = j, j_trgt = j;
-    int k_ghst = k, k_trgt = k;
-
-    switch (direction) {
-    case Direction::X:
-      symmetric_index(i, grid.i_total, grid.i_margin, i_ghst, i_trgt, side);
-      break;
-    case Direction::Y:
-      symmetric_index(j, grid.j_total, grid.j_margin, j_ghst, j_trgt, side);
-      break;
-    case Direction::Z:
-      symmetric_index(k, grid.k_total, grid.k_margin, k_ghst, k_trgt, side);
-      break;
-    }
-    arr(i_ghst, j_ghst, k_ghst) = sign_f * arr(i_trgt, j_trgt, k_trgt);
-  }
+      });
 }
-
-/// @brief Apply symmetric boundary condition to an given 3D array (CUDA backend).
-template <typename Real>
-void symmetric(backend::CUDA, Array3DView<Real> arr, GridView<const Real> grid,
-               Sign sign, Direction direction, Side side) {
-  dim3 block_dim(8, 8, 8);
-  dim3 grid_dim((grid.i_total + block_dim.x - 1) / block_dim.x,
-                (grid.j_total + block_dim.y - 1) / block_dim.y,
-                (grid.k_total + block_dim.z - 1) / block_dim.z);
-
-  symmetric_kernel<Real>
-      <<<grid_dim, block_dim>>>(arr, grid, sign, direction, side);
-  MISO_CUDA_CHECK(cudaGetLastError());
-};
-#endif  // __CUDACC__
 
 }  // namespace boundary_condition
 }  // namespace miso

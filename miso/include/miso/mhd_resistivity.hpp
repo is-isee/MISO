@@ -43,32 +43,6 @@ __host__ __device__ inline Real resistive_flux(
   return eta_f * (normal - tangential);
 }
 
-namespace impl_resistivity {
-
-/// @brief Reduction with a persistent workspace (CUDA) or none (host)
-template <typename Real, typename Backend> struct ReduceWorkspace {
-  template <typename F, typename Op>
-  Real reduce(Range3D range, Real init, F f, Op op) const {
-    return miso::reduce(Backend{}, range, init, f, op);
-  }
-};
-
-#ifdef __CUDACC__
-/// @details The helper is held by shared_ptr so that ResistiveSource stays
-/// cheap to copy (it is passed to CUDA kernels by value); the helper is used
-/// on the host only.
-template <typename Real> struct ReduceWorkspace<Real, backend::CUDA> {
-  std::shared_ptr<ReduceHelper<Real>> helper =
-      std::make_shared<ReduceHelper<Real>>();
-  template <typename F, typename Op>
-  Real reduce(Range3D range, Real init, F f, Op op) const {
-    return miso::reduce(backend::CUDA{}, range, init, f, op, *helper);
-  }
-};
-#endif  // __CUDACC__
-
-}  // namespace impl_resistivity
-
 /// @brief Explicit resistivity (magnetic diffusion) as a source term.
 /// @details Adds -curl(eta curl B) to the induction equation and the
 /// corresponding energy flux div((1/4pi) eta (curl B) x B) to the energy
@@ -123,7 +97,7 @@ template <typename Real, typename Backend> struct ResistiveSource {
   /// lambda <= 4*eta*sum(1/ds^2), i.e., cfl_number < 0.69.
   Real cfl_number;
   /// @brief Workspace of the reduction in dt_limit() (used on the host only)
-  impl_resistivity::ReduceWorkspace<Real, Backend> workspace;
+  ReduceWorkspace<Real, Backend> workspace;
 
   /// @throws std::runtime_error if eta is negative or not finite somewhere
   /// on this rank

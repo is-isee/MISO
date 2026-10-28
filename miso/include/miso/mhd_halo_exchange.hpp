@@ -1,39 +1,63 @@
 #pragma once
 
-#include <array>
-
 #include "array3d.hpp"
 #include "array4d.hpp"
 #include "backend.hpp"
+#include "cuda_compat.hpp"
+#include "execution.hpp"
 #include "grid.hpp"
-#include "mhd_buffers.hpp"
 #include "mhd_core.hpp"
 #include "mhd_fields.hpp"
 #include "mpi_util.hpp"
 #include "types.hpp"
-#ifdef __CUDACC__
-#include "cuda_util.cuh"
-#endif  // __CUDACC__
 
 namespace miso {
 namespace mhd {
 
-template <typename Real, typename Backend> struct HaloExchanger {};
+/// @brief The m-th variable of the MHD fields (ro, vx, vy, vz, bx, by, bz, ei,
+/// ph), the order of the halo exchange buffers.
+template <typename T>
+__host__ __device__ inline Array3DView<T> field_at(const FieldsView<T> &qq,
+                                                   int m) {
+  switch (m) {
+  case 0:
+    return qq.ro;
+  case 1:
+    return qq.vx;
+  case 2:
+    return qq.vy;
+  case 3:
+    return qq.vz;
+  case 4:
+    return qq.bx;
+  case 5:
+    return qq.by;
+  case 6:
+    return qq.bz;
+  case 7:
+    return qq.ei;
+  default:
+    return qq.ph;
+  }
+}
 
-template <typename Real> struct HaloExchanger<Real, backend::Host> {
-  // MPI communication buffers
-  Array4D<Real> recv_x_pos, recv_x_neg;
-  Array4D<Real> recv_y_pos, recv_y_neg;
-  Array4D<Real> recv_z_pos, recv_z_neg;
-  Array4D<Real> send_x_pos, send_x_neg;
-  Array4D<Real> send_y_pos, send_y_neg;
-  Array4D<Real> send_z_pos, send_z_neg;
+/// @brief Halo exchange of the MHD fields by MPI.
+/// @details One implementation for all backends. The buffers are arrays of
+/// the backend; with the CUDA backend, device pointers are passed to MPI
+/// (CUDA-aware MPI).
+template <typename Real, typename Backend> struct HaloExchanger {
+  // MPI communication buffers (i, j, k, variable)
+  Array4D<Real, Backend> recv_x_pos, recv_x_neg;
+  Array4D<Real, Backend> recv_y_pos, recv_y_neg;
+  Array4D<Real, Backend> recv_z_pos, recv_z_neg;
+  Array4D<Real, Backend> send_x_pos, send_x_neg;
+  Array4D<Real, Backend> send_y_pos, send_y_neg;
+  Array4D<Real, Backend> send_z_pos, send_z_neg;
 
-  Grid<Real, backend::Host> &grid;
+  Grid<Real, Backend> &grid;
   mpi::Shape &mpi_shape;
 
-  HaloExchanger(Grid<Real, backend::Host> &grid,
-                ExecContext<Real, backend::Host> &exec_ctx)
+  HaloExchanger(Grid<Real, Backend> &grid, ExecContext<Real, Backend> &exec_ctx)
       : recv_x_pos(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_x_neg(grid.i_margin, grid.j_total, grid.k_total, n_fields),
         recv_y_pos(grid.i_total, grid.j_margin, grid.k_total, n_fields),
@@ -48,610 +72,105 @@ template <typename Real> struct HaloExchanger<Real, backend::Host> {
         send_z_neg(grid.i_total, grid.j_total, grid.k_margin, n_fields),
         grid(grid), mpi_shape(exec_ctx.mpi_shape) {}
 
-  void apply(Fields<Real, backend::Host> &qq_trgt) {
-    std::array<Array3D<Real, backend::Host> *, 9> vars = {
-        &qq_trgt.ro, &qq_trgt.vx, &qq_trgt.vy, &qq_trgt.vz, &qq_trgt.bx,
-        &qq_trgt.by, &qq_trgt.bz, &qq_trgt.ei, &qq_trgt.ph};
-    MPI_Request reqs[12];
+  /// @brief Copy the cells in `range` (offset by `src` in the direction) into
+  /// the buffer, or the buffer back into them (`to_buffer = false`).
+  /// @details The buffer index is the cell index relative to the beginning of
+  /// `range`.
+  static void copy(FieldsView<Real> qq, Array4DView<Real> buf, Range3D range,
+                   bool to_buffer) {
+    const int i0 = range.range0.begin, j0 = range.range1.begin,
+              k0 = range.range2.begin;
+    if (to_buffer) {
+      for_each(
+          Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
+            for (int m = 0; m < n_fields; ++m)
+              buf(i - i0, j - j0, k - k0, m) = field_at(qq, m)(i, j, k);
+          });
+    } else {
+      for_each(
+          Backend{}, range, MISO_LAMBDA(int i, int j, int k) {
+            for (int m = 0; m < n_fields; ++m)
+              field_at(qq, m)(i, j, k) = buf(i - i0, j - j0, k - k0, m);
+          });
+    }
+  }
+
+  /// @brief Exchange the ghost cells in one direction with both neighbors.
+  /// @param send_pos, send_neg Ranges of the cells sent to the neighbors
+  /// @param recv_pos, recv_neg Ranges of the ghost cells received from them
+  void exchange(FieldsView<Real> qq, int rank_pos, int rank_neg, int tag,
+                Array4D<Real, Backend> &buf_send_pos,
+                Array4D<Real, Backend> &buf_send_neg,
+                Array4D<Real, Backend> &buf_recv_pos,
+                Array4D<Real, Backend> &buf_recv_neg, Range3D send_pos,
+                Range3D send_neg, Range3D recv_pos, Range3D recv_neg) {
+    const bool has_pos = rank_pos != MPI_PROC_NULL;
+    const bool has_neg = rank_neg != MPI_PROC_NULL;
+    if (!has_pos && !has_neg)
+      return;
+
+    if (has_pos)
+      copy(qq, buf_send_pos.view(), send_pos, true);
+    if (has_neg)
+      copy(qq, buf_send_neg.view(), send_neg, true);
+    // The send buffers must be filled before MPI reads them. This also
+    // ensures that no kernel still reads the receive buffers.
+    fence(Backend{});
+
+    MPI_Request reqs[4];
     int req_count = 0;
+    const auto type = mpi::data_type<Real>();
+    if (has_pos) {
+      MPI_Isend(buf_send_pos.data(), buf_send_pos.size(), type, rank_pos, tag,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(buf_recv_pos.data(), buf_recv_pos.size(), type, rank_pos,
+                tag + 100, mpi_shape.cart_comm, &reqs[req_count++]);
+    }
+    if (has_neg) {
+      MPI_Isend(buf_send_neg.data(), buf_send_neg.size(), type, rank_neg,
+                tag + 100, mpi_shape.cart_comm, &reqs[req_count++]);
+      MPI_Irecv(buf_recv_neg.data(), buf_recv_neg.size(), type, rank_neg, tag,
+                mpi_shape.cart_comm, &reqs[req_count++]);
+    }
+    MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
+
+    if (has_pos)
+      copy(qq, buf_recv_pos.view(), recv_pos, false);
+    if (has_neg)
+      copy(qq, buf_recv_neg.view(), recv_neg, false);
+  }
+
+  void apply(Fields<Real, Backend> &qq_trgt) {
+    const auto qq = qq_trgt.view();
+    const int it = grid.i_total, jt = grid.j_total, kt = grid.k_total;
+    const int im = grid.i_margin, jm = grid.j_margin, km = grid.k_margin;
 
     // Exchange one direction at a time so that edge and corner ghost cells
     // are filled with up-to-date values (the y/z buffers include the
     // ghost cells received in the previous directions).
-
-    // ################
-    // x-direction
-    // positive x-direction
-    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_size > 1) {
-      for (int i = 0; i < grid.i_margin; ++i) {
-        for (int j = 0; j < grid.j_total; ++j) {
-          for (int k = 0; k < grid.k_total; ++k) {
-            for (int v = 0; v < 9; ++v) {
-              send_x_pos(i, j, k, v) =
-                  (*vars[v])(grid.i_total - 2 * grid.i_margin + i, j, k);
-            }
-          }
-        }
-      }
-      MPI_Isend(send_x_pos.data(), send_x_pos.size(), mpi::data_type<Real>(),
-                mpi_shape.x_procs_pos, 100, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_x_pos.data(), recv_x_pos.size(), mpi::data_type<Real>(),
-                mpi_shape.x_procs_pos, 200, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+    if (grid.i_size > 1) {
+      exchange(qq, mpi_shape.x_procs_pos, mpi_shape.x_procs_neg, 100, send_x_pos,
+               send_x_neg, recv_x_pos, recv_x_neg,
+               {{it - 2 * im, it - im}, {0, jt}, {0, kt}},
+               {{im, 2 * im}, {0, jt}, {0, kt}},  //
+               {{it - im, it}, {0, jt}, {0, kt}}, {{0, im}, {0, jt}, {0, kt}});
     }
-
-    // negative x-direction
-    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_size > 1) {
-      for (int i = 0; i < grid.i_margin; ++i) {
-        for (int j = 0; j < grid.j_total; ++j) {
-          for (int k = 0; k < grid.k_total; ++k) {
-            for (int v = 0; v < 9; ++v) {
-              send_x_neg(i, j, k, v) = (*vars[v])(grid.i_margin + i, j, k);
-            }
-          }
-        }
-      }
-      MPI_Isend(send_x_neg.data(), send_x_neg.size(), mpi::data_type<Real>(),
-                mpi_shape.x_procs_neg, 200, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_x_neg.data(), recv_x_neg.size(), mpi::data_type<Real>(),
-                mpi_shape.x_procs_neg, 100, mpi_shape.cart_comm,
-                &reqs[req_count++]);
+    if (grid.j_size > 1) {
+      exchange(qq, mpi_shape.y_procs_pos, mpi_shape.y_procs_neg, 300, send_y_pos,
+               send_y_neg, recv_y_pos, recv_y_neg,
+               {{0, it}, {jt - 2 * jm, jt - jm}, {0, kt}},
+               {{0, it}, {jm, 2 * jm}, {0, kt}},  //
+               {{0, it}, {jt - jm, jt}, {0, kt}}, {{0, it}, {0, jm}, {0, kt}});
     }
-
-    if (req_count > 0) {
-      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
-    }
-    req_count = 0;
-
-    // positive x-direction
-    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_margin; ++i) {
-          for (int j = 0; j < grid.j_total; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(grid.i_total - grid.i_margin + i, j, k) =
-                  recv_x_pos(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // negative x-direction
-    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_margin; ++i) {
-          for (int j = 0; j < grid.j_total; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, j, k) = recv_x_neg(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // ################
-    // y-direction
-    // positive y-direction
-    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_size > 1) {
-      for (int i = 0; i < grid.i_total; ++i) {
-        for (int j = 0; j < grid.j_margin; ++j) {
-          for (int k = 0; k < grid.k_total; ++k) {
-            for (int v = 0; v < 9; ++v) {
-              send_y_pos(i, j, k, v) =
-                  (*vars[v])(i, grid.j_total - 2 * grid.j_margin + j, k);
-            }
-          }
-        }
-      }
-      MPI_Isend(send_y_pos.data(), send_y_pos.size(), mpi::data_type<Real>(),
-                mpi_shape.y_procs_pos, 300, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_y_pos.data(), recv_y_pos.size(), mpi::data_type<Real>(),
-                mpi_shape.y_procs_pos, 400, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-    }
-
-    // negative y-direction
-    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_size > 1) {
-      for (int i = 0; i < grid.i_total; ++i) {
-        for (int j = 0; j < grid.j_margin; ++j) {
-          for (int k = 0; k < grid.k_total; ++k) {
-            for (int v = 0; v < 9; ++v) {
-              send_y_neg(i, j, k, v) = (*vars[v])(i, grid.j_margin + j, k);
-            }
-          }
-        }
-      }
-      MPI_Isend(send_y_neg.data(), send_y_neg.size(), mpi::data_type<Real>(),
-                mpi_shape.y_procs_neg, 400, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_y_neg.data(), recv_y_neg.size(), mpi::data_type<Real>(),
-                mpi_shape.y_procs_neg, 300, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-    }
-
-    if (req_count > 0) {
-      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
-    }
-    req_count = 0;
-
-    // positive y-direction
-    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_total; ++i) {
-          for (int j = 0; j < grid.j_margin; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, grid.j_total - grid.j_margin + j, k) =
-                  recv_y_pos(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // negative y-direction
-    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_total; ++i) {
-          for (int j = 0; j < grid.j_margin; ++j) {
-            for (int k = 0; k < grid.k_total; ++k) {
-              (*vars[v])(i, j, k) = recv_y_neg(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // ################
-    // z-direction
-    // positive z-direction
-    if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_size > 1) {
-      for (int i = 0; i < grid.i_total; ++i) {
-        for (int j = 0; j < grid.j_total; ++j) {
-          for (int k = 0; k < grid.k_margin; ++k) {
-            for (int v = 0; v < 9; ++v) {
-              send_z_pos(i, j, k, v) =
-                  (*vars[v])(i, j, grid.k_total - 2 * grid.k_margin + k);
-            }
-          }
-        }
-      }
-      MPI_Isend(send_z_pos.data(), send_z_pos.size(), mpi::data_type<Real>(),
-                mpi_shape.z_procs_pos, 500, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_z_pos.data(), recv_z_pos.size(), mpi::data_type<Real>(),
-                mpi_shape.z_procs_pos, 600, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-    }
-
-    // negative z-direction
-    if (mpi_shape.z_procs_neg != MPI_PROC_NULL && grid.k_size > 1) {
-      for (int i = 0; i < grid.i_total; ++i) {
-        for (int j = 0; j < grid.j_total; ++j) {
-          for (int k = 0; k < grid.k_margin; ++k) {
-            for (int v = 0; v < 9; ++v) {
-              send_z_neg(i, j, k, v) = (*vars[v])(i, j, grid.k_margin + k);
-            }
-          }
-        }
-      }
-      MPI_Isend(send_z_neg.data(), send_z_neg.size(), mpi::data_type<Real>(),
-                mpi_shape.z_procs_neg, 600, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-      MPI_Irecv(recv_z_neg.data(), recv_z_neg.size(), mpi::data_type<Real>(),
-                mpi_shape.z_procs_neg, 500, mpi_shape.cart_comm,
-                &reqs[req_count++]);
-    }
-
-    if (req_count > 0) {
-      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
-    }
-    req_count = 0;
-
-    // positive z-direction
-    if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_total; ++i) {
-          for (int j = 0; j < grid.j_total; ++j) {
-            for (int k = 0; k < grid.k_margin; ++k) {
-              (*vars[v])(i, j, grid.k_total - grid.k_margin + k) =
-                  recv_z_pos(i, j, k, v);
-            }
-          }
-        }
-      }
-    }
-
-    // negative z-direction
-    if (mpi_shape.z_procs_neg != MPI_PROC_NULL && grid.k_size > 1) {
-      for (int v = 0; v < 9; ++v) {
-        for (int i = 0; i < grid.i_total; ++i) {
-          for (int j = 0; j < grid.j_total; ++j) {
-            for (int k = 0; k < grid.k_margin; ++k) {
-              (*vars[v])(i, j, k) = recv_z_neg(i, j, k, v);
-            }
-          }
-        }
-      }
+    if (grid.k_size > 1) {
+      exchange(qq, mpi_shape.z_procs_pos, mpi_shape.z_procs_neg, 500, send_z_pos,
+               send_z_neg, recv_z_pos, recv_z_neg,
+               {{0, it}, {0, jt}, {kt - 2 * km, kt - km}},
+               {{0, it}, {0, jt}, {km, 2 * km}},  //
+               {{0, it}, {0, jt}, {kt - km, kt}}, {{0, it}, {0, jt}, {0, km}});
     }
   }
 };
-
-#ifdef __CUDACC__
-// ##################
-// x-direction send
-template <typename Real>
-__global__ void pack_x_send(BuffersView<Real> buff,
-                            const FieldsView<Real> qq_trgt,
-                            const GridView<Real> grid, Face face) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-  const int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  if (i >= grid.i_margin || j >= grid.j_total || k >= grid.k_total)
-    return;
-
-  Real *__restrict__ send_buff =
-      (face == Face::Pos) ? buff.send_x_pos : buff.send_x_neg;
-
-  const int i_src = (face == Face::Pos) ? (grid.i_total - 2 * grid.i_margin + i)
-                                        : (grid.i_margin + i);
-  const size_t src_idx = (i_src * grid.j_total + j) * grid.k_total + k;
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_fields;
-
-  const Real *__restrict__ var[n_fields] = {
-      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
-      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
-      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
-
-#pragma unroll
-  for (int m = 0; m < n_fields; ++m) {
-    send_buff[buf_idx + m] = var[m][src_idx];
-  }
-};
-
-// y-direction send
-template <typename Real>
-__global__ void pack_y_send(BuffersView<Real> buff,
-                            const FieldsView<Real> qq_trgt,
-                            const GridView<Real> grid, Face face) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-  const int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  if (i >= grid.i_total || j >= grid.j_margin || k >= grid.k_total)
-    return;
-
-  Real *__restrict__ send_buff =
-      (face == Face::Pos) ? buff.send_y_pos : buff.send_y_neg;
-
-  const int j_src = (face == Face::Pos) ? (grid.j_total - 2 * grid.j_margin + j)
-                                        : (grid.j_margin + j);
-  const size_t src_idx = (i * grid.j_total + j_src) * grid.k_total + k;
-  const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_fields;
-
-  const Real *__restrict__ var[n_fields] = {
-      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
-      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
-      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
-
-#pragma unroll
-  for (int m = 0; m < n_fields; ++m) {
-    send_buff[buf_idx + m] = var[m][src_idx];
-  }
-};
-
-// z-direction send
-template <typename Real>
-__global__ void pack_z_send(BuffersView<Real> buff,
-                            const FieldsView<Real> qq_trgt,
-                            const GridView<Real> grid, Face face) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-  const int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  if (i >= grid.i_total || j >= grid.j_total || k >= grid.k_margin)
-    return;
-
-  Real *__restrict__ send_buff =
-      (face == Face::Pos) ? buff.send_z_pos : buff.send_z_neg;
-
-  const int k_src = (face == Face::Pos) ? (grid.k_total - 2 * grid.k_margin + k)
-                                        : (grid.k_margin + k);
-  const size_t src_idx = (i * grid.j_total + j) * grid.k_total + k_src;
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_fields;
-
-  const Real *__restrict__ var[n_fields] = {
-      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
-      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
-      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
-
-#pragma unroll
-  for (int m = 0; m < n_fields; ++m) {
-    send_buff[buf_idx + m] = var[m][src_idx];
-  }
-};
-
-// ##################
-// x-direction recv
-template <typename Real>
-__global__ void unpack_x_recv(FieldsView<Real> qq_trgt,
-                              const BuffersView<Real> buff,
-                              const GridView<Real> grid, Face face) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-  const int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  if (i >= grid.i_margin || j >= grid.j_total || k >= grid.k_total)
-    return;
-  Real *__restrict__ recv_buff =
-      (face == Face::Pos) ? buff.recv_x_pos : buff.recv_x_neg;
-  const int i_tgt = (face == Face::Pos) ? grid.i_total - grid.i_margin + i : i;
-
-  const size_t tgt_idx = (i_tgt * grid.j_total + j) * grid.k_total + k;
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_total + k) * n_fields;
-
-  Real *__restrict__ var[n_fields] = {
-      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
-      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
-      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
-
-#pragma unroll
-  for (int m = 0; m < n_fields; ++m) {
-    var[m][tgt_idx] = recv_buff[buf_idx + m];
-  }
-};
-
-// y-direction recv
-template <typename Real>
-__global__ void unpack_y_recv(FieldsView<Real> qq_trgt,
-                              const BuffersView<Real> buff,
-                              const GridView<Real> grid, Face face) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-  const int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  if (i >= grid.i_total || j >= grid.j_margin || k >= grid.k_total)
-    return;
-  Real *__restrict__ recv_buff =
-      (face == Face::Pos) ? buff.recv_y_pos : buff.recv_y_neg;
-  const int j_tgt = (face == Face::Pos) ? grid.j_total - grid.j_margin + j : j;
-
-  const size_t tgt_idx = (i * grid.j_total + j_tgt) * grid.k_total + k;
-  const size_t buf_idx = ((i * grid.j_margin + j) * grid.k_total + k) * n_fields;
-
-  Real *__restrict__ var[n_fields] = {
-      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
-      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
-      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
-
-#pragma unroll
-  for (int m = 0; m < n_fields; ++m) {
-    var[m][tgt_idx] = recv_buff[buf_idx + m];
-  }
-};
-
-// z-direction recv
-template <typename Real>
-__global__ void unpack_z_recv(FieldsView<Real> qq_trgt,
-                              const BuffersView<Real> buff,
-                              const GridView<Real> grid, Face face) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-  const int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-  if (i >= grid.i_total || j >= grid.j_total || k >= grid.k_margin)
-    return;
-  Real *__restrict__ recv_buff =
-      (face == Face::Pos) ? buff.recv_z_pos : buff.recv_z_neg;
-  const int k_tgt = (face == Face::Pos) ? grid.k_total - grid.k_margin + k : k;
-
-  const size_t tgt_idx = (i * grid.j_total + j) * grid.k_total + k_tgt;
-  const size_t buf_idx = ((i * grid.j_total + j) * grid.k_margin + k) * n_fields;
-
-  Real *__restrict__ var[n_fields] = {
-      qq_trgt.ro.data(), qq_trgt.vx.data(), qq_trgt.vy.data(),
-      qq_trgt.vz.data(), qq_trgt.bx.data(), qq_trgt.by.data(),
-      qq_trgt.bz.data(), qq_trgt.ei.data(), qq_trgt.ph.data()};
-
-#pragma unroll
-  for (int m = 0; m < n_fields; ++m) {
-    var[m][tgt_idx] = recv_buff[buf_idx + m];
-  }
-};
-
-template <typename Real> struct HaloExchanger<Real, backend::CUDA> {
-  Buffers<Real, backend::CUDA> buff;
-  Grid<Real, backend::CUDA> &grid;
-  mpi::Shape &mpi_shape;
-  cuda::KernelShape3D &cu_shape;
-
-  explicit HaloExchanger(Grid<Real, backend::CUDA> &grid,
-                         ExecContext<Real, backend::CUDA> &exec_ctx)
-      : buff(grid), grid(grid), mpi_shape(exec_ctx.mpi_shape),
-        cu_shape(exec_ctx.cu_shape) {}
-
-  void apply(Fields<Real, backend::CUDA> &qq_trgt) {
-    MPI_Request reqs[12];
-    int req_count = 0;
-
-    // Exchange one direction at a time so that edge and corner ghost cells
-    // are filled with up-to-date values (the y/z buffers include the
-    // ghost cells received in the previous directions).
-
-    // ##################
-    // x-direction
-    // positive x-direction
-    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
-      pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-
-      MPI_Isend(buff.send_x_pos,
-                grid.i_margin * grid.j_total * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.x_procs_pos, 100,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_x_pos,
-                grid.i_margin * grid.j_total * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.x_procs_pos, 200,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    // negative x-direction
-    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
-      pack_x_send<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-      MPI_Isend(buff.send_x_neg,
-                grid.i_margin * grid.j_total * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 200,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_x_neg,
-                grid.i_margin * grid.j_total * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.x_procs_neg, 100,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    if (req_count > 0) {
-      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
-    }
-    req_count = 0;
-
-    // positive x-direction
-    if (mpi_shape.x_procs_pos != MPI_PROC_NULL && grid.i_total > 1) {
-      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // negative x-direction
-    if (mpi_shape.x_procs_neg != MPI_PROC_NULL && grid.i_total > 1) {
-      unpack_x_recv<<<cu_shape.grid_dim_x_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // ##################
-    // y-direction
-    // positive y-direction
-    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
-      pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-
-      MPI_Isend(buff.send_y_pos,
-                grid.i_total * grid.j_margin * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.y_procs_pos, 300,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_y_pos,
-                grid.i_total * grid.j_margin * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.y_procs_pos, 400,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    // negative y-direction
-    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
-      pack_y_send<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-      MPI_Isend(buff.send_y_neg,
-                grid.i_total * grid.j_margin * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 400,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_y_neg,
-                grid.i_total * grid.j_margin * grid.k_total * n_fields,
-                mpi::data_type<Real>(), mpi_shape.y_procs_neg, 300,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    if (req_count > 0) {
-      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
-    }
-    req_count = 0;
-
-    // positive y-direction
-    if (mpi_shape.y_procs_pos != MPI_PROC_NULL && grid.j_total > 1) {
-      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // negative y-direction
-    if (mpi_shape.y_procs_neg != MPI_PROC_NULL && grid.j_total > 1) {
-      unpack_y_recv<<<cu_shape.grid_dim_y_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // ##################
-    // z-direction
-    // positive z-direction
-    if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
-      pack_z_send<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-
-      MPI_Isend(buff.send_z_pos,
-                grid.i_total * grid.j_total * grid.k_margin * n_fields,
-                mpi::data_type<Real>(), mpi_shape.z_procs_pos, 500,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_z_pos,
-                grid.i_total * grid.j_total * grid.k_margin * n_fields,
-                mpi::data_type<Real>(), mpi_shape.z_procs_pos, 600,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    // negative z-direction
-    if (mpi_shape.z_procs_neg != MPI_PROC_NULL && grid.k_total > 1) {
-      pack_z_send<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
-          buff.view(), qq_trgt.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-      MPI_Isend(buff.send_z_neg,
-                grid.i_total * grid.j_total * grid.k_margin * n_fields,
-                mpi::data_type<Real>(), mpi_shape.z_procs_neg, 600,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-      MPI_Irecv(buff.recv_z_neg,
-                grid.i_total * grid.j_total * grid.k_margin * n_fields,
-                mpi::data_type<Real>(), mpi_shape.z_procs_neg, 500,
-                mpi_shape.cart_comm, &reqs[req_count++]);
-    }
-
-    if (req_count > 0) {
-      MPI_Waitall(req_count, reqs, MPI_STATUSES_IGNORE);
-    }
-    req_count = 0;
-
-    // positive z-direction
-    if (mpi_shape.z_procs_pos != MPI_PROC_NULL && grid.k_total > 1) {
-      unpack_z_recv<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Pos);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-
-    // negative z-direction
-    if (mpi_shape.z_procs_neg != MPI_PROC_NULL && grid.k_total > 1) {
-      unpack_z_recv<<<cu_shape.grid_dim_z_margin, cu_shape.block_dim>>>(
-          qq_trgt.view(), buff.view(), grid.view(), Face::Neg);
-      MISO_CUDA_CHECK(cudaGetLastError());
-      MISO_CUDA_CHECK(cudaDeviceSynchronize());
-    }
-  }
-};
-#endif  // __CUDACC__
 
 }  // namespace mhd
 }  // namespace miso
