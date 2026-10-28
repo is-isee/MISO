@@ -26,6 +26,8 @@ namespace mhd {
 // the same name that cannot be called in this way (e.g., not const, or
 // taking FieldsView<Real>) is a compile error, not silently ignored.
 // With the CUDA backend, the member functions must be __host__ __device__.
+// The Source is copied by value into the kernel (on both backends), so it
+// must be copyable and should be a lightweight type that holds only views.
 // clang-format off
 #define MISO_MHD_DEFINE_SOURCE_TERM(name)                                      \
   namespace impl_source {                                                      \
