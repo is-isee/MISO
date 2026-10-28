@@ -29,6 +29,8 @@ inline constexpr Real stefan_boltzmann = static_cast<Real>(5.670374419e-5);
 /// @brief Set S = sigma T^4 / pi and alpha = rho kappa in all cells.
 /// @param ro density [g/cm^3]
 /// @param ei specific internal energy [erg/g]
+/// @details Throws if alpha or S is not finite, e.g. where the opacity table
+/// has `inf` (see `eos::TableEOS`).
 template <typename Real>
 void set_source_and_absorption(RT<Real> &rt, const Grid<Real> &grid,
                                const Array3D<Real> &ro, const Array3D<Real> &ei,
@@ -41,6 +43,13 @@ void set_source_and_absorption(RT<Real> &rt, const Grid<Real> &grid,
             stefan_boltzmann<Real> * util::pow2(util::pow2(te)) / pi<Real>;
         rt.abs_coeff(i, j, k) =
             ro(i, j, k) * eos.opacity(ro(i, j, k), ei(i, j, k));
+        if (!std::isfinite(rt.abs_coeff(i, j, k)) ||
+            !std::isfinite(rt.src_func(i, j, k))) {
+          throw std::runtime_error(
+              "Opacity or temperature from the table is not finite at ro = " +
+              std::to_string(ro(i, j, k)) +
+              ", ei = " + std::to_string(ei(i, j, k)));
+        }
       }
     }
   }
@@ -100,6 +109,10 @@ template <typename Real> struct RadiativeHeating {
                const mpi::Shape &mpi_shape) {
     if (grid.k_size == 1) {
       throw std::runtime_error("RadiativeHeating needs the z direction");
+    }
+    if (rt.ang_quad.num_rays != 24) {
+      // Otherwise the quadrature is a single ray in +z, which gives no J or F.
+      throw std::runtime_error("RadiativeHeating needs 24 rays");
     }
     compute_optical_depth(rt, grid, mpi_shape);
     compute_moments(rt);
@@ -256,9 +269,10 @@ private:
         send[a * nb + b] = element(a, b, send_index);
       }
     }
-    MPI_Sendrecv(send.data(), size, mpi::data_type<Real>(), neg, 2200,
-                 recv.data(), size, mpi::data_type<Real>(), pos, 2200,
-                 mpi_shape.cart_comm, MPI_STATUS_IGNORE);
+    const int tag = 2200 + static_cast<int>(direction);
+    MPI_Sendrecv(send.data(), size, mpi::data_type<Real>(), neg, tag, recv.data(),
+                 size, mpi::data_type<Real>(), pos, tag, mpi_shape.cart_comm,
+                 MPI_STATUS_IGNORE);
     if (pos != MPI_PROC_NULL) {
       for (int a = 0; a < na; ++a) {
         for (int b = 0; b < nb; ++b) {

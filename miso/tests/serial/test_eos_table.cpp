@@ -97,3 +97,23 @@ TEST_CASE("TableEOS rejects other kinds of tables" *
   fs::remove(path);
   CHECK_THROWS_AS(eos::TableEOS<double>{path}, std::runtime_error);
 }
+
+TEST_CASE("TableEOS reads the table in input_data" *
+          doctest::test_suite("eos_table")) {
+  const fs::path path = fs::path(__FILE__).parent_path() / "../../../input_data" /
+                        "eos_table_roen_blend.tbl";
+  eos::TableEOS<double> eos(path);
+  REQUIRE(eos.log_te.extent(0) == 256);
+  REQUIRE(eos.log_te.extent(1) == 256);
+
+  // A table point in the photosphere (values read from the file with numpy)
+  const double ro = std::exp(-15.377656523015137);
+  const double ei = std::exp(27.981135057266535);
+  CHECK(eos.temperature(ro, ei) ==
+        doctest::Approx(3296.3360304098305).epsilon(1e-10));
+  CHECK(eos.opacity(ro, ei) ==
+        doctest::Approx(0.04658069461584091).epsilon(1e-10));
+
+  // The opacity is inf here (rho = 1.1e-11 g/cm^3, T = 2.1e6 K) and kept so.
+  CHECK(std::isinf(eos.opacity(1.0944997993195436e-11, 460706556163877.0)));
+}

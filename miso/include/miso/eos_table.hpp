@@ -1,9 +1,11 @@
+///
+/// @brief Equation of state and opacity tables (r2d2plus-table format)
+///
 #pragma once
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstring>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -159,8 +161,11 @@ template <typename Real> struct TableEOS {
     log_en_min = static_cast<Real>(en.front());
     log_en_max = static_cast<Real>(en.back());
 
-    // Cells where the EOS failed have te = 0. A floor keeps the logarithm
-    // finite. The same floor is used for the opacity.
+    // Cells where the EOS failed have te = 0 (valid = 0 in the table; in
+    // input_data/eos_table_roen_blend.tbl, rho > 0.17 g/cm^3 with low e, far
+    // from the photosphere). A floor keeps the logarithm finite, so T next to
+    // them is far too small. The same floor is used for opacity = 0. Opacity
+    // = inf is kept, so the interpolated opacity near it is inf or nan.
     constexpr double floor = 1.e-20;
     for (int i = 0; i < n_ro; ++i) {
       for (int j = 0; j < n_en; ++j) {
