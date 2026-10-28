@@ -14,6 +14,8 @@
 #include <vector>
 
 #include "array2d.hpp"
+#include "execution.hpp"
+#include "mhd_fields.hpp"
 #include "table_interpolator.hpp"
 #include "utility.hpp"
 
@@ -124,19 +126,27 @@ struct TableFile {
   }
 };
 
-/// @brief Temperature and opacity from a table in (ln rho, ln e).
+/// @brief Equation of state and opacity from a table in (ln rho, ln e).
 /// @details Reads a table of kind `eos_table_roen` (for example,
 /// `input_data/eos_table_roen_blend.tbl`). The axes `ro` and `en` are ln(rho
 /// [g/cm^3]) and ln(e [erg/g]) on uniform grids (checked when reading). The
-/// logarithms of temperature `te` [K] and Rosseland mean opacity `op` [cm^2/g]
-/// are interpolated bilinearly. Outside the table range, the value at the nearest edge is used.
+/// logarithms of pressure `pr` [dyn/cm^2], sound speed `cs` [cm/s],
+/// temperature `te` [K] and Rosseland mean opacity `op` [cm^2/g] are
+/// interpolated bilinearly. Outside the table range, the value at the nearest
+/// edge is used.
+///
+/// Pressure and sound speed are used by the MHD solver (`gas_pressure` and
+/// `sound_speed`), so their tables are kept in the memory of `Backend`.
+/// Temperature and opacity are used by the radiative transfer on the host.
 ///
 /// The opacity table has `inf` where the opacity is not defined (rho < 3.4e-7
 /// g/cm^3 and T = 3e4 to 5e6 K, see `input_data/README.md`). It is kept as is,
 /// so the opacity there is `inf` or `nan`.
-template <typename Real> struct TableEOS {
-  /// @brief ln(T) and ln(kappa) on the (ln rho, ln e) grid
+template <typename Real, typename Backend = backend::Host> struct TableEOS {
+  /// @brief ln(T) and ln(kappa) on the (ln rho, ln e) grid (host)
   Array2D<Real> log_te, log_op;
+  /// @brief ln(p) and ln(c_s) on the (ln rho, ln e) grid (Backend)
+  Array2D<Real, Backend> log_pr, log_cs;
   /// @brief Range of the axes
   Real log_ro_min, log_ro_max, log_en_min, log_en_max;
 
@@ -144,7 +154,9 @@ template <typename Real> struct TableEOS {
 
   explicit TableEOS(const TableFile &file)
       : log_te(shape_of(file, "ro"), shape_of(file, "en")),
-        log_op(shape_of(file, "ro"), shape_of(file, "en")) {
+        log_op(shape_of(file, "ro"), shape_of(file, "en")),
+        log_pr(shape_of(file, "ro"), shape_of(file, "en")),
+        log_cs(shape_of(file, "ro"), shape_of(file, "en")) {
     if (file.kind != "eos_table_roen") {
       throw std::runtime_error("Expected a table of kind eos_table_roen, got: " +
                                file.kind);
@@ -153,8 +165,6 @@ template <typename Real> struct TableEOS {
     const int n_en = log_te.extent(1);
     const auto &ro = file.get("ro", {n_ro});
     const auto &en = file.get("en", {n_en});
-    const auto &te = file.get("te", {n_ro, n_en});
-    const auto &op = file.get("op", {n_ro, n_en});
 
     check_uniform(ro, "ro");
     check_uniform(en, "en");
@@ -165,17 +175,41 @@ template <typename Real> struct TableEOS {
 
     // Cells where the EOS failed have te = 0 (valid = 0 in the table; in
     // input_data/eos_table_roen_blend.tbl, rho > 0.17 g/cm^3 with low e, far
-    // from the photosphere). A floor keeps the logarithm finite, so T next to
-    // them is far too small. The same floor is used for opacity = 0. Opacity
-    // = inf is kept, so the interpolated opacity near it is inf or nan.
-    constexpr double floor = 1.e-20;
-    for (int i = 0; i < n_ro; ++i) {
-      for (int j = 0; j < n_en; ++j) {
-        const int ij = i * n_en + j;
-        log_te(i, j) = static_cast<Real>(std::log(std::max(te[ij], floor)));
-        log_op(i, j) = static_cast<Real>(std::log(std::max(op[ij], floor)));
+    // from the photosphere), and also pr = cs = 0. A floor keeps the logarithm
+    // finite, so the values next to them are far too small. The same floor is
+    // used for opacity = 0. Opacity = inf is kept, so the interpolated opacity
+    // near it is inf or nan.
+    Array2D<Real> log_host(n_ro, n_en);
+    const auto take_log = [&](const std::string &name, Array2D<Real> &out) {
+      const auto &v = file.get(name, {n_ro, n_en});
+      constexpr double floor = 1.e-20;
+      for (int i = 0; i < n_ro; ++i) {
+        for (int j = 0; j < n_en; ++j) {
+          out(i, j) =
+              static_cast<Real>(std::log(std::max(v[i * n_en + j], floor)));
+        }
       }
-    }
+    };
+    take_log("te", log_te);
+    take_log("op", log_op);
+    take_log("pr", log_host);
+    log_pr.copy_from(log_host);
+    take_log("cs", log_host);
+    log_cs.copy_from(log_host);
+  }
+
+  /// @brief Compute gas pressure from primitive MHD fields.
+  /// @note The signature must not be changed as it is called inside mhd::MHD.
+  void gas_pressure(Backend btag, mhd::FieldsView<const Real> qq,
+                    Array3DView<Real> pr) const {
+    interpolate_fields(btag, log_pr, qq, pr);
+  }
+
+  /// @brief Compute speed of sound from primitive MHD fields.
+  /// @note The signature must not be changed as it is called inside mhd::MHD.
+  void sound_speed(Backend btag, mhd::FieldsView<const Real> qq,
+                   Array3DView<Real> cs) const {
+    interpolate_fields(btag, log_cs, qq, cs);
   }
 
   /// @brief Temperature [K] at density ro [g/cm^3] and specific internal
@@ -188,6 +222,29 @@ template <typename Real> struct TableEOS {
   /// specific internal energy ei [erg/g]
   Real opacity(Real ro, Real ei) const {
     return std::exp(interpolate(log_op, ro, ei));
+  }
+
+  /// @brief exp of the table interpolated at (ln rho, ln e) of every cell.
+  /// @note Public because nvcc does not allow a device lambda in a private
+  /// member function.
+  void interpolate_fields(Backend btag, const Array2D<Real, Backend> &table,
+                          mhd::FieldsView<const Real> qq,
+                          Array3DView<Real> out) const {
+    // device lambdas must not capture `this`
+    const Real *table_ = table.data();
+    const int n_ro = table.extent(0);
+    const int n_en = table.extent(1);
+    const Real log_ro_min_ = log_ro_min;
+    const Real log_en_min_ = log_en_min;
+    const Real dro_inv = Real(n_ro - 1) / (log_ro_max - log_ro_min);
+    const Real den_inv = Real(n_en - 1) / (log_en_max - log_en_min);
+    Range1D range{0, qq.size()};
+    for_each(
+        btag, range, MISO_LAMBDA(int i) {
+          out[i] = util::exp(interpolate_uniform_table2d(
+              table_, log_ro_min_, dro_inv, log_en_min_, den_inv,
+              util::log(qq.ro[i]), util::log(qq.ei[i]), n_ro, n_en));
+        });
   }
 
 private:
