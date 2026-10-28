@@ -31,10 +31,10 @@ inline constexpr Real stefan_boltzmann = static_cast<Real>(5.670374419e-5);
 /// @param ei specific internal energy [erg/g]
 /// @details Throws if alpha or S is not finite, e.g. where the opacity table
 /// has `inf` (see `eos::TableEOS`).
-template <typename Real>
+template <typename Real, typename Backend>
 void set_source_and_absorption(RT<Real> &rt, const Grid<Real> &grid,
                                const Array3D<Real> &ro, const Array3D<Real> &ei,
-                               const eos::TableEOS<Real> &eos) {
+                               const eos::TableEOS<Real, Backend> &eos) {
   for (int i = 0; i < grid.i_total; ++i) {
     for (int j = 0; j < grid.j_total; ++j) {
       for (int k = 0; k < grid.k_total; ++k) {

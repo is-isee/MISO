@@ -1,72 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#include <cmath>
-#include <fstream>
-#include <string>
-#include <vector>
-
-#include <miso/eos_table.hpp>
-
-using namespace miso;
-
-namespace {
-
-constexpr int n_ro = 6, n_en = 5;
-constexpr double log_ro_min = -5.0, log_ro_max = 0.0;
-constexpr double log_en_min = 20.0, log_en_max = 24.0;
-
-// ln T and ln kappa are linear in (ln rho, ln e), so bilinear interpolation
-// in the table is exact.
-double log_te_exact(double log_ro, double log_en) {
-  return 0.1 * log_ro + 0.5 * log_en - 2.0;
-}
-double log_op_exact(double log_ro, double log_en) {
-  return 0.7 * log_ro - 0.3 * log_en + 1.0;
-}
-
-// Write a small table in the r2d2plus-table format.
-fs::path write_table(const std::string &kind, bool uniform = true) {
-  const fs::path path =
-      fs::temp_directory_path() / ("miso_test_eos_table_" + kind + ".tbl");
-  std::vector<double> ro(n_ro), en(n_en), te(n_ro * n_en), op(n_ro * n_en);
-  for (int i = 0; i < n_ro; ++i) {
-    ro[i] = log_ro_min + (log_ro_max - log_ro_min) * i / (n_ro - 1);
-  }
-  for (int j = 0; j < n_en; ++j) {
-    en[j] = log_en_min + (log_en_max - log_en_min) * j / (n_en - 1);
-  }
-  if (!uniform) {
-    ro[2] += 0.1;
-  }
-  for (int i = 0; i < n_ro; ++i) {
-    for (int j = 0; j < n_en; ++j) {
-      te[i * n_en + j] = std::exp(log_te_exact(ro[i], en[j]));
-      op[i * n_en + j] = std::exp(log_op_exact(ro[i], en[j]));
-    }
-  }
-
-  std::string header = "r2d2plus-table 1\nkind " + kind +
-                       "\nlayout row_major little_endian float64\n"
-                       "binary_offset 1024\n"
-                       "array ro " +
-                       std::to_string(n_ro) + "\narray en " +
-                       std::to_string(n_en) + "\narray te " +
-                       std::to_string(n_ro) + " " + std::to_string(n_en) +
-                       "\narray op " + std::to_string(n_ro) + " " +
-                       std::to_string(n_en) + "\nmeta {}\n";
-  header.resize(1024, '\0');
-
-  std::ofstream ofs(path, std::ios::binary);
-  ofs.write(header.data(), header.size());
-  for (const auto *v : {&ro, &en, &te, &op}) {
-    ofs.write(reinterpret_cast<const char *>(v->data()),
-              sizeof(double) * v->size());
-  }
-  return path;
-}
-
-}  // namespace
+#include "test_eos_table_common.hpp"
 
 TEST_CASE("TableEOS interpolates ln T and ln kappa" *
           doctest::test_suite("eos_table")) {
@@ -90,6 +25,13 @@ TEST_CASE("TableEOS interpolates ln T and ln kappa" *
   CHECK(std::log(eos.temperature(std::exp(-10.0), std::exp(30.0))) ==
         doctest::Approx(log_te_exact(log_ro_min, log_en_max)).epsilon(1e-12));
 
+  fs::remove(path);
+}
+
+TEST_CASE("TableEOS computes pressure and sound speed on the host" *
+          doctest::test_suite("eos_table")) {
+  const auto path = write_table("eos_table_roen");
+  check_gas_pressure_and_sound_speed<backend::Host>(path);
   fs::remove(path);
 }
 
@@ -122,6 +64,17 @@ TEST_CASE("TableEOS reads the table in input_data" *
         doctest::Approx(3296.3360304098305).epsilon(1e-10));
   CHECK(eos.opacity(ro, ei) ==
         doctest::Approx(0.04658069461584091).epsilon(1e-10));
+
+  Array3D<double> ro_a(1, 1, 1), ei_a(1, 1, 1), pr(1, 1, 1), cs(1, 1, 1);
+  ro_a(0, 0, 0) = ro;
+  ei_a(0, 0, 0) = ei;
+  const auto r = ro_a.const_view();
+  const mhd::FieldsView<const double> qq(r, r, r, r, r, r, r, ei_a.const_view(),
+                                         r);
+  eos.gas_pressure(backend::Host{}, qq, pr.view());
+  eos.sound_speed(backend::Host{}, qq, cs.view());
+  CHECK(pr(0, 0, 0) == doctest::Approx(39138.30864711022).epsilon(1e-10));
+  CHECK(cs(0, 0, 0) == doctest::Approx(463724.90858549863).epsilon(1e-10));
 
   // The opacity is inf here (rho = 1.1e-11 g/cm^3, T = 2.1e6 K) and kept so.
   CHECK(std::isinf(eos.opacity(1.0944997993195436e-11, 460706556163877.0)));
