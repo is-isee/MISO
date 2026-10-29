@@ -1,0 +1,45 @@
+io:
+  continue: false
+
+time:
+  tend: 2400.0
+  dt_output: 60.0
+
+grid:
+  i_size: 128
+  j_size: 1
+  k_size: 64
+  margin: 2
+  x_min: 0.0
+  x_max: 6.0e8
+  y_min: 0.0
+  y_max: 4.6875e6
+  z_min: -2.5e8
+  z_max: 0.5e8
+
+mpi:
+  x_procs: 2
+  y_procs: 1
+  z_procs: 2
+
+domain:
+  periodic:
+    x: true
+    y: true
+    z: false
+
+photosphere:
+  # Directory of the EOS table and the stratification (relative to this file)
+  input_data: ../../input_data
+  # Amplitude of the initial random vertical velocity [cm/s]
+  v_amp: 1.0e3
+  # Velocity damping at the start (as [physics.initial_damping] of R2D2plus):
+  # time scale damping_tau [s] at t = 0, weakening linearly to none at
+  # damping_end [s]. It calms the transient of the initial state.
+  damping_end: 600.0
+  damping_tau: 30.0
+  # Absorbing layer at the top (as top_velocity_damping of R2D2plus): the
+  # velocity is damped at the rate top_layer_rate ((z - z_edge) / top_layer)^2
+  # [1/s] above z_edge = z_max - top_layer [cm]
+  top_layer: 2.0e7
+  top_layer_rate: 0.3
