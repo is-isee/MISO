@@ -1,5 +1,6 @@
-// Solar photosphere in 2D (x-z): convection with the table EOS, gravity, and
-// radiative heating and cooling by the RT with 24 rays (#201).
+// Solar photosphere in 3D: convection with the table EOS, gravity, and
+// radiative heating and cooling by the RT with 24 rays (#201). It also runs in
+// 2D (x-z) with j_size = 1.
 //
 // - Initial condition: the 1D stratification in input_data/ and a small random
 //   vertical velocity.

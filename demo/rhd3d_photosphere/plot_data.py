@@ -79,23 +79,31 @@ table = read_table(this_dir / "../../input_data/eos_table_roen_blend.tbl")
 fig_dir = this_dir / "figs"
 fig_dir.mkdir(exist_ok=True)
 
-# Temperature and vertical velocity at the last output
+# At the last output: the intensity of the vertical ray at the top, and the
+# temperature and vertical velocity near z = 0, as functions of (x, y)
 d.load(d.n_output)
-x, z = d.x / 1e8, d.z / 1e8
-te = from_table(table, "te", d.ro, d.ei)
-fig, axs = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-im = axs[0].pcolormesh(x, z, te.T, shading="auto", cmap="inferno")
-fig.colorbar(im, ax=axs[0], label="T [K]")
-vmax = np.abs(d.vz).max() / 1e5
-im = axs[1].pcolormesh(
-    x, z, d.vz.T / 1e5, shading="auto", cmap="RdBu_r", vmin=-vmax, vmax=vmax
-)
-fig.colorbar(im, ax=axs[1], label="$v_z$ [km/s]")
-for ax in axs:
+x, y, z = d.x / 1e8, d.y / 1e8, d.z / 1e8
+k0 = np.argmin(np.abs(z))
+inten = emergent_intensity(table, d.ro, d.ei, d.z)
+te = from_table(table, "te", d.ro[:, :, k0], d.ei[:, :, k0])
+vz = d.vz[:, :, k0] / 1e5
+vmax = np.abs(vz).max()
+fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
+panels = [
+    (inten / inten.mean(), "gray", None, "$I / \\langle I \\rangle$ ($\\mu = 1$)"),
+    (te, "inferno", None, f"T [K] at z = {z[k0]:.2f} Mm"),
+    (vz, "RdBu_r", vmax, f"$v_z$ [km/s] at z = {z[k0]:.2f} Mm"),
+]
+for ax, (val, cmap, vm, label) in zip(axs, panels, strict=True):
+    if vm is None:
+        im = ax.pcolormesh(x, y, val.T, shading="auto", cmap=cmap)
+    else:
+        im = ax.pcolormesh(x, y, val.T, shading="auto", cmap=cmap, vmin=-vm, vmax=vm)
+    fig.colorbar(im, ax=ax, label=label)
     ax.set_aspect("equal")
-    ax.set_ylabel("z [Mm]")
+    ax.set_xlabel("x [Mm]")
+    ax.set_ylabel("y [Mm]")
 axs[0].set_title(f"t = {d.time.time:.0f} s")
-axs[1].set_xlabel("x [Mm]")
 fig.tight_layout()
 fig.savefig(fig_dir / "photosphere.png")
 
@@ -110,20 +118,8 @@ ax.legend()
 fig.tight_layout()
 fig.savefig(fig_dir / "teff.png")
 
-# Intensity of the vertical ray at the top
-inten = emergent_intensity(table, d.ro, d.ei, d.z)
-fig, ax = plt.subplots(figsize=(6, 3))
-ax.plot(x, inten / inten.mean())
-ax.set_xlabel("x [Mm]")
-ax.set_ylabel("$I / \\langle I \\rangle$ ($\\mu = 1$)")
-ax.set_title(f"t = {d.time.time:.0f} s")
-fig.tight_layout()
-fig.savefig(fig_dir / "intensity.png")
-print(f"intensity contrast (rms): {inten.std() / inten.mean():.3f}")
-
-# rms of vz near z = 0
-k0 = np.argmin(np.abs(z))
 print(
     f"T_eff = {teff[-1]:.0f} K at t = {t[-1]:.0f} s; at t = {d.time.time:.0f} s, "
-    f"rms vz at z = {z[k0]:.2f} Mm: {np.sqrt((d.vz[:, k0] ** 2).mean()) / 1e5:.2f} km/s"
+    f"intensity contrast (rms) {inten.std() / inten.mean():.3f}, "
+    f"rms vz at z = {z[k0]:.2f} Mm: {np.sqrt((vz**2).mean()):.2f} km/s"
 )

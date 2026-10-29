@@ -13,6 +13,6 @@ APP_LIST=(
   "mhd2d_reconnection"
   "mhd2d_vortex"
   "mhd3d_magnetosphere"
-  "rhd2d_photosphere"
+  "rhd3d_photosphere"
   "rt2d_searchlight"
 )
