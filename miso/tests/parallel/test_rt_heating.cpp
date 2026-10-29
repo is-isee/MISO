@@ -194,6 +194,32 @@ TEST_CASE("Q_rad in an atmosphere with a known solution" *
   }
 
   {
+    // Vertical 2D domain in x-z (j_size = 1): the same solution as in 3D.
+    Config config_xz(std::string(CONFIG_DIR) + "config_rt_heating_xz.yaml");
+    mpi::Shape shape_xz(config_xz);
+    Grid<Real> grid_xz(config_xz, shape_xz);
+    REQUIRE(grid_xz.j_size == 1);
+    REQUIRE(grid_xz.j_total == 1);
+    rt::RT<Real> rt_xz(grid_xz, 24);
+    rt::RadiativeHeating<Real> heating_xz(grid_xz);
+    const Atmosphere atm{10.0, -0.2, 2.0e-3, 0.05};
+    solve(atm, grid_xz, shape_xz, rt_xz, heating_xz);
+    for (int i = rt_xz.ib0 + grid_xz.is; i <= rt_xz.ib1; ++i) {
+      for (int k = rt_xz.kb0 + grid_xz.ks; k <= rt_xz.kb1; ++k) {
+        const Real z = grid_xz.z[k];
+        CHECK(heating_xz.flux_z(i, 0, k) ==
+              doctest::Approx(atm.flux_z(z)).epsilon(0.01));
+        CHECK(std::abs(heating_xz.flux_y(i, 0, k)) <
+              1e-12 * 4 * pi<Real> * atm.a);
+        if (heating_xz.tau(i, 0, k) >= heating_xz.tau_gate) {
+          CHECK(heating_xz.qrad(i, 0, k) ==
+                doctest::Approx(atm.heating()).epsilon(0.01));
+        }
+      }
+    }
+  }
+
+  {
     // Horizontal flux across two ranks in x (non-periodic). With
     //   I(mu) = S + mu_x g x + mu_z h z  (S and alpha constant),
     // J = S, F_x = 4 pi g x / 3, F_z = 4 pi h z / 3 and Q_rad = -4 pi (g + h) / 3
