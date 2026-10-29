@@ -58,7 +58,8 @@ def emergent_intensity(table, ro, ei, z):
 
     Solved again from rho and e (not the intensity of the RT in the run):
     S = sigma T^4 / pi and alpha = rho kappa from the table, I = S at the
-    bottom, and the formal solution with S linear in tau in each interval.
+    bottom (thermalized), and the formal solution with S linear in tau in each
+    interval. The result is at the center of the topmost cell.
     """
     sigma = 5.670374419e-5
     src = sigma * from_table(table, "te", ro, ei) ** 4 / np.pi
