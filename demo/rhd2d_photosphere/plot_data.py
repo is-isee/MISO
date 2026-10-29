@@ -31,9 +31,10 @@ def read_table(path):
     return arrays
 
 
-def temperature(table, ro, ei):
-    """T from the EOS table, bilinear in (ln rho, ln e) as in MISO."""
-    log_te = np.log(np.maximum(table["te"], 1e-20))
+def from_table(table, name, ro, ei):
+    """A quantity of the EOS table (e.g. "te", "op"), bilinear in
+    (ln rho, ln e) of its logarithm as in MISO."""
+    log_te = np.log(np.maximum(table[name], 1e-20))
     x = np.log(ro)
     y = np.log(ei)
     fi = (x - table["ro"][0]) / (table["ro"][1] - table["ro"][0])
@@ -52,6 +53,26 @@ def temperature(table, ro, ei):
     )
 
 
+def emergent_intensity(table, ro, ei, z):
+    """Intensity of the vertical ray (mu = 1) at the top, z the last axis.
+
+    Solved again from rho and e (not the intensity of the RT in the run):
+    S = sigma T^4 / pi and alpha = rho kappa from the table, I = S at the
+    bottom, and the formal solution with S linear in tau in each interval.
+    """
+    sigma = 5.670374419e-5
+    src = sigma * from_table(table, "te", ro, ei) ** 4 / np.pi
+    alpha = ro * from_table(table, "op", ro, ei)
+    inten = src[..., 0]
+    for k in range(1, len(z)):
+        dtau = 0.5 * (alpha[..., k - 1] + alpha[..., k]) * (z[k] - z[k - 1])
+        e = np.exp(-dtau)
+        w = (1 - e) / np.maximum(dtau, 1e-300)  # mean of exp(-tau') over the interval
+        w = np.where(dtau > 1e-6, w, 1 - 0.5 * dtau)
+        inten = inten * e + src[..., k] * (1 - w) + src[..., k - 1] * (w - e)
+    return inten
+
+
 d = pymiso.Data(data_dir=this_dir / "data")
 table = read_table(this_dir / "../../input_data/eos_table_roen_blend.tbl")
 
@@ -61,7 +82,7 @@ fig_dir.mkdir(exist_ok=True)
 # Temperature and vertical velocity at the last output
 d.load(d.n_output)
 x, z = d.x / 1e8, d.z / 1e8
-te = temperature(table, d.ro, d.ei)
+te = from_table(table, "te", d.ro, d.ei)
 fig, axs = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 im = axs[0].pcolormesh(x, z, te.T, shading="auto", cmap="inferno")
 fig.colorbar(im, ax=axs[0], label="T [K]")
@@ -88,6 +109,17 @@ ax.set_ylabel("$T_\\mathrm{eff}$ [K]")
 ax.legend()
 fig.tight_layout()
 fig.savefig(fig_dir / "teff.png")
+
+# Intensity of the vertical ray at the top
+inten = emergent_intensity(table, d.ro, d.ei, d.z)
+fig, ax = plt.subplots(figsize=(6, 3))
+ax.plot(x, inten / inten.mean())
+ax.set_xlabel("x [Mm]")
+ax.set_ylabel("$I / \\langle I \\rangle$ ($\\mu = 1$)")
+ax.set_title(f"t = {d.time.time:.0f} s")
+fig.tight_layout()
+fig.savefig(fig_dir / "intensity.png")
+print(f"intensity contrast (rms): {inten.std() / inten.mean():.3f}")
 
 # rms of vz near z = 0
 k0 = np.argmin(np.abs(z))
