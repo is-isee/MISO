@@ -44,17 +44,28 @@ struct Model : public mhd::ModelBase<Model, Real, Backend> {
   /// @brief RT for the current state, then one MHD step
   void update() {
     radiation.update(mhd.qq, eos, grid, mpi_shape);
-    // once after each output (the state of the output)
-    if (time.n_output - 1 > n_teff) {
-      save_teff();
-      n_teff = time.n_output - 1;
-    }
+    save_teff_once();
     src.set_time(time.time);
     ModelBase::update();
   }
 
+  /// @brief T_eff of the last output (update() writes it only before the next
+  /// step)
+  void finish() {
+    radiation.update(mhd.qq, eos, grid, mpi_shape);
+    save_teff_once();
+  }
+
 private:
   int n_teff = -1;
+
+  /// @brief save_teff once after each output (the state of the output)
+  void save_teff_once() {
+    if (time.n_output - 1 > n_teff) {
+      save_teff();
+      n_teff = time.n_output - 1;
+    }
+  }
 
   /// @brief Append the time and T_eff (from the mean vertical flux at the
   /// topmost cells) to save_dir/teff.txt
@@ -94,4 +105,5 @@ int main(int argc, char **argv) {
   // Run simulation
   Model model(config);
   model.run();
+  model.finish();
 }

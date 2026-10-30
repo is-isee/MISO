@@ -36,7 +36,8 @@ inline Array1D<Real> log_ei_at_entropy(const eos::TableFile &file, Real se0) {
   return out;
 }
 
-/// @brief Entropy of the table at the initial state at the bottom
+/// @brief Entropy of the table at the initial state at the bottom (grid of a
+/// rank at the bottom)
 inline Real bottom_entropy(const eos::TableFile &file,
                            const Stratification<Real> &strat,
                            const Grid<Real> &grid) {
@@ -86,19 +87,23 @@ struct BoundaryCondition {
     const auto &ro = file.get("ro", {log_ei_upflow.size()});
     log_ro_min = ro.front();
     dlog_ro_inv = (ro.size() - 1) / (ro.back() - ro.front());
-    const Real se0 = bottom_entropy(file, strat, grid);
-    const auto le = log_ei_at_entropy(file, se0);
-    log_ei_upflow.copy_from(le);
-    // ln rho of the rows used at the bottom (within a factor e of the initial
-    // bottom ghost cells) must have the entropy se0
     const int km = grid.k_margin;
-    for (int i = 0; i < le.size(); ++i) {
-      const Real lr = ro[0] + i / dlog_ro_inv;
-      if (std::log(strat.at(grid.z[0]).ro) - 1 < lr &&
-          lr < std::log(strat.at(grid.z[km]).ro) + 1 && !std::isfinite(le[i])) {
-        throw std::runtime_error(
-            "The EOS table has no e at the bottom entropy for ln rho = " +
-            std::to_string(lr));
+    // Only the ranks at the bottom use log_ei_upflow (grid.z is local)
+    if (boundary_condition::is_physical_boundary(Direction::Z, Side::INNER,
+                                                 mpi_shape)) {
+      const Real se0 = bottom_entropy(file, strat, grid);
+      const auto le = log_ei_at_entropy(file, se0);
+      log_ei_upflow.copy_from(le);
+      // ln rho of the rows used at the bottom (within a factor e of the
+      // initial bottom ghost cells) must have the entropy se0
+      for (int i = 0; i < le.size(); ++i) {
+        const Real lr = ro[0] + i / dlog_ro_inv;
+        if (std::log(strat.at(grid.z[0]).ro) - 1 < lr &&
+            lr < std::log(strat.at(grid.z[km]).ro) + 1 && !std::isfinite(le[i])) {
+          throw std::runtime_error(
+              "The EOS table has no e at the bottom entropy for ln rho = " +
+              std::to_string(lr));
+        }
       }
     }
 
